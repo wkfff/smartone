@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap
+    PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+    "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="utility.matInfo">
+
+    <sql id="searchMaterialCondition" >
+        <isNotEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+                (
+                    MI.MAT_NAME              LIKE concat('%',TRIM(#keyWord#),'%')
+                    OR MI.OLD_NAME           LIKE concat('%',TRIM(#keyWord#),'%')
+                    OR MI.BP_NAME            LIKE concat('%',TRIM(#keyWord#),'%')
+                )
+            ]]>
+        </isNotEmpty>
+    </sql>
+
+    <select id="getMaterialList" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <!-- <![CDATA[
+            SELECT  MI.MAT_NO                MAT_NO,
+                    MI.MAT_ID                MAT_ID,
+                    MI.MAT_NAME              MAT_NAME,
+                    MI.OLD_NAME              OLD_NAME,
+                    MI.BP_NAME               BP_NAME,
+                    PRI.TYPE_NO              MAT_TYPE_NO,
+                    PRI.STATE_NO             MAT_STATUS_NO,
+                    POTI.OBJECT_TYPE_NAME    MAT_TYPE_NAME,
+                    PSI.STATUS_NAME          MAT_STATUS_NAME,
+                    SC.CODE_NAME             MAT_UNIT_NAME,
+                    MI.MAT_UNIT_CODE         MAT_UNIT_CODE,
+                    MI.MAT_DESCRIPTION       MAT_DESCRIPTION
+            FROM    MAT_INFO                     MI,
+                    PROCESS_RUNNING_INFO         PRI,
+                    PROCESS_OBJECT_TYPE_INFO     POTI,
+                    PROCESS_STATUS_INFO          PSI,
+                    SY_CODE                      SC
+            WHERE MI.RUNNING_NO = PRI.RUNNING_NO(+)
+            AND PRI.TYPE_NO = POTI.OBJECT_TYPE_NO(+)
+            AND PRI.STATE_NO = PSI.STATUS_NO(+)
+            AND MI.MAT_UNIT_CODE = SC.CODE_ID(+)
+            AND MI.ACTIVITY = 1
+            AND MI.CPNY_ID = #CPNY_ID#
+        ]]> -->
+        <![CDATA[
+            SELECT  MI.MAT_NO                MAT_NO,
+                    MI.MAT_ID                MAT_ID,
+                    MI.MAT_NAME              MAT_NAME,
+                    MI.OLD_NAME              OLD_NAME,
+                    MI.BP_NAME               BP_NAME,
+                    PRI.TYPE_NO              MAT_TYPE_NO,
+                    PRI.STATE_NO             MAT_STATUS_NO,
+                    POTI.OBJECT_TYPE_NAME    MAT_TYPE_NAME,
+                    PSI.STATUS_NAME          MAT_STATUS_NAME,
+                    SC.CODE_NAME             MAT_UNIT_NAME,
+                    MI.MAT_UNIT_CODE         MAT_UNIT_CODE,
+                    MI.MAT_DESCRIPTION       MAT_DESCRIPTION
+            FROM    MAT_INFO                     MI
+                    left join PROCESS_RUNNING_INFO         PRI on MI.RUNNING_NO = PRI.RUNNING_NO
+                    left join PROCESS_OBJECT_TYPE_INFO     POTI on PRI.TYPE_NO = POTI.OBJECT_TYPE_NO
+                    left join PROCESS_STATUS_INFO          PSI  on PRI.STATE_NO = PSI.STATUS_NO
+                    left join SY_CODE                      SC   on MI.MAT_UNIT_CODE = SC.CODE_ID
+            WHERE  MI.ACTIVITY = 1
+            AND MI.CPNY_ID = #CPNY_ID#
+        ]]>
+        <include refid="searchMaterialCondition" />
+    </select>
+
+    <select id="getMaterialListCnt" parameterClass="linkMap" resultClass="int">
+        <!-- <![CDATA[
+            SELECT COUNT(0)
+            FROM    MAT_INFO                     MI,
+                    PROCESS_RUNNING_INFO         PRI,
+                    PROCESS_OBJECT_TYPE_INFO     POTI,
+                    PROCESS_STATUS_INFO          PSI,
+                    SY_CODE                      SC
+            WHERE MI.RUNNING_NO = PRI.RUNNING_NO(+)
+            AND PRI.TYPE_NO = POTI.OBJECT_TYPE_NO(+)
+            AND PRI.STATE_NO = PSI.STATUS_NO(+)
+            AND MI.MAT_UNIT_CODE = SC.CODE_ID(+)
+            AND MI.ACTIVITY = 1
+            AND MI.CPNY_ID = #CPNY_ID#
+        ]]> -->
+        <![CDATA[
+            SELECT COUNT(0)
+            FROM    MAT_INFO                     MI
+                    left join PROCESS_RUNNING_INFO         PRI on MI.RUNNING_NO = PRI.RUNNING_NO
+                    left join PROCESS_OBJECT_TYPE_INFO     POTI on PRI.TYPE_NO = POTI.OBJECT_TYPE_NO
+                    left join PROCESS_STATUS_INFO          PSI  on PRI.STATE_NO = PSI.STATUS_NO
+                    left join SY_CODE                      SC   on MI.MAT_UNIT_CODE = SC.CODE_ID
+            WHERE  MI.ACTIVITY = 1
+            AND MI.CPNY_ID = #CPNY_ID#
+        ]]>
+        <include refid="searchMaterialCondition" />
+    </select>
+
+</sqlMap>

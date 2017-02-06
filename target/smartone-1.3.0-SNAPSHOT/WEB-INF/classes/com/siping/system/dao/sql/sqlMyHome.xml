@@ -1,0 +1,945 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+    "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="system.myhome">
+    <delete id="deleteModel" parameterClass="linkMap">
+        <![CDATA[
+            DELETE FROM SY_MYHOME
+            WHERE EMPID = #empid#
+                AND PAGE = #page#
+        ]]>
+    </delete>
+    <insert id="insertModel" parameterClass="linkMap">
+        <![CDATA[
+            INSERT INTO SY_MYHOME(EMPID,MSTATE,MID,MCONTENT,PAGE)
+            VALUES(#empid#,#mstate#,#mid#,#mcontent#,#page#)
+        ]]>
+    </insert>
+    <select id="getModel" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT SUBSTR(MID,1,LENGTH(MID)-5) MID,MSTATE,MCONTENT
+            FROM SY_MYHOME
+            WHERE EMPID = #ADMINID#
+                AND PAGE=#page#
+        ]]>
+        <isNotEmpty prepend="AND" property="model">
+            <![CDATA[
+            MID=#model#
+        ]]>
+        </isNotEmpty>
+    </select>
+    <select id="getHomePurview" remapResults="true" parameterClass="linkMap"
+        resultClass="linkMap">
+        <![CDATA[
+            SELECT  MID,
+                MNAME_$language$ AS MNAME,
+                MDIV,
+                (CASE WHEN MID IN(SELECT MID FROM SY_MYHOME
+                    WHERE EMPID = #ADMINID#
+                    AND MSTATE='1'
+                    AND PAGE = #page#)
+                THEN 1 ELSE 0 END ) AS MSTATE
+            FROM SY_HOME_ELEMENT
+            WHERE MID IN(
+                SELECT MID FROM SY_HOME_PURVIEW WHERE SCREEN_GRANT_ID IN(
+                    SELECT TO_NUMBER(column_value) SCREEN_GRANT_ID from (
+	                    SELECT * from TABLE (CAST (SPLIT ( (
+	                       SELECT SCREEN_GRANT_ID
+	                       FROM SY_ADMIN WHERE ADMINID=#ADMINID#), ',') AS TYPE_SPLIT) 
+                        )
+                    )
+                )
+            )
+            ORDER BY ORDERNO
+        ]]>
+    </select>
+    <select id="getHomePage" parameterClass="linkMap" resultClass="string">
+        <![CDATA[
+            SELECT  APPCNT
+            FROM SY_ADMIN
+            WHERE ADMINID = #ADMINID#
+        ]]>
+    </select>
+    <update id="updateApp" parameterClass="linkMap">
+        <![CDATA[
+            UPDATE SY_ADMIN SET APPCNT = #appcnt#
+                WHERE ADMINID = #ADMINID#
+        ]]>
+    </update>
+    <delete id="deletePage" parameterClass="linkMap">
+        <![CDATA[
+            DELETE FROM  SY_MYHOME
+            WHERE EMPID = #ADMINID#
+                AND PAGE=#page#
+        ]]>
+    </delete>
+    <update id="updatePage" parameterClass="linkMap">
+        <![CDATA[
+            UPDATE SY_MYHOME SET PAGE=PAGE-1
+            WHERE EMPID = #ADMINID#
+                AND PAGE > TO_NUMBER(#page#)
+        ]]>
+    </update>
+    <select id="getSyMenu" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT T.MENU_CODE,
+                (CASE WHEN #language# = 'en' THEN
+                    NVL(T.MENU_EN_INTRO, ' ')
+                ELSE
+                   T.MENU_INTRO
+                END) AS MENU_INTRO,
+                   T.MENU_URL,
+                   T.MENU_PARENT_CODE,
+                ( CASE WHEN T.MENU_CODE IN ( SELECT MENU_CODE FROM SY_EMP_SHORTCUT
+                        WHERE EMPID = #ADMINID#
+                        AND PAGE = #page# )
+                    THEN 'true' ELSE 'false' END
+                 ) AS ISCHECKED
+            FROM SY_MENU T
+            WHERE T.ACTIVITY = 1
+                AND T.MENU_CODE IN (
+                SELECT SCREEN_CODE FROM SY_SCREEN_GRANT
+                    WHERE SCREEN_GRANT_ID IN(
+                    select TO_NUMBER(column_value) SCREEN_GRANT_ID from (
+                    select * from table (cast (split (( select SCREEN_GRANT_ID
+                        from SY_ADMIN where ADMINID=#ADMINID#), ',') as TYPE_SPLIT) )
+                        )
+                    )
+                )
+              ORDER BY MENU_NO
+        ]]>
+    </select>
+    <delete id="deleteShort" parameterClass="linkMap">
+        <![CDATA[
+            DELETE FROM SY_EMP_SHORTCUT
+            WHERE EMPID = #EMPID#
+                AND MENU_CODE =
+                (
+                    SELECT SY_MENU.MENU_CODE FROM SY_MENU WHERE SY_MENU.MENU_NO = #MENU_NO#
+                )
+        ]]>
+    </delete>
+
+    <insert id="insertShort" parameterClass="linkMap">
+        <![CDATA[
+            INSERT INTO SY_EMP_SHORTCUT
+                (EMPID, MENU_CODE, CREATE_DATE, CREATED_BY)
+            VALUES
+                (#EMPID#,
+                    (SELECT SY_MENU.MENU_CODE FROM SY_MENU WHERE SY_MENU.MENU_NO = #MENU_NO#),
+                    SYSDATE,
+                    #CREATED_BY#
+                )
+        ]]>
+    </insert>
+
+    <select id="getShort" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT *
+            FROM (
+                SELECT SMS.EMPID,
+                    SMS.MENU_CODE,
+                    SM.MENU_NO,
+                    DECODE(#language#, 'en', SM.MENU_EN_INTRO, SM.MENU_INTRO) MENU_INTRO,
+                    SM.MENU_URL,
+                    SM.DESCRIPTION,
+                    PSM.MENU_PARENT_CODE,
+                    '1' AS STATUS_CODE,
+                    DECODE(#language#, 'en', 'Available', '可用') STATUS_NAME
+            FROM SY_MENU SM, SY_EMP_SHORTCUT SMS, SY_MENU PSM
+            WHERE SMS.EMPID = #ADMINID#
+                AND SMS.MENU_CODE = SM.MENU_CODE
+                AND SM.MENU_PARENT_CODE = PSM.MENU_CODE
+            
+            UNION
+            
+            SELECT #ADMINID# AS EMPID,
+                SM.MENU_CODE,
+                SM.MENU_NO,
+                DECODE(#language#, 'en', SM.MENU_EN_INTRO, SM.MENU_INTRO) MENU_INTRO,
+                SM.MENU_URL,
+                SM.DESCRIPTION,
+                PSM.MENU_PARENT_CODE,
+                '0' STATUS_CODE,
+                DECODE(#language#, 'en', 'Unavailable', '不可用') STATUS_NAME
+            FROM SY_MENU SM, SY_MENU PSM
+            WHERE SM.MENU_PARENT_CODE = PSM.MENU_CODE
+                AND SM.DEPTH = 2
+                AND SM.ACTIVITY = 1
+                AND SM.CPNY_ID = #CPNY_ID#
+                AND NOT EXISTS (SELECT SMS.MENU_CODE
+                                FROM SY_EMP_SHORTCUT SMS
+                                WHERE SM.MENU_CODE = SMS.MENU_CODE
+                                AND SMS.EMPID = #ADMINID#)
+                AND EXISTS (SELECT SCREEN_CODE
+                     FROM SY_SCREEN_GRANT
+                     WHERE SCREEN_CODE = SM.MENU_CODE
+                     AND (SELECTR = 1 OR SAVER = 1 OR INSERTR = 1 OR
+                           UPDATER = 1 OR DELETER = 1 OR CANCELR = 1)
+                     AND SCREEN_GRANT_ID IN (SELECT TO_NUMBER(COLUMN_VALUE) SCREEN_GRANT_ID
+                              FROM (SELECT * FROM TABLE(CAST(SPLIT((SELECT SCREEN_GRANT_ID
+                                    FROM SY_ADMIN
+                                    WHERE ADMINID = #ADMINID#),
+                                    ',') AS TYPE_SPLIT)))))
+                     )
+                WHERE 1 = 1
+        ]]>
+        <isNotEmpty prepend="AND" property="MENU_CODE">
+            <![CDATA[
+                   MENU_PARENT_CODE = #MENU_CODE#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="STATUS_CODE">
+            <![CDATA[
+                   STATUS_CODE = #STATUS_CODE#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                  ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY STATUS_CODE DESC
+            ]]>
+        </isEmpty>
+    </select>
+    <select id="getShortCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(*) FROM (
+                SELECT SMS.EMPID,
+                       SMS.MENU_CODE,
+                       DECODE(#language#, 'en', SM.MENU_EN_INTRO, SM.MENU_INTRO) MENU_INTRO,
+                       SM.MENU_URL,
+                       SM.DESCRIPTION,
+                       PSM.MENU_PARENT_CODE,
+                       '1' AS STATUS_CODE,
+                       DECODE(#language#, 'en', 'Available', '可用') STATUS_NAME
+                FROM SY_MENU SM, SY_EMP_SHORTCUT SMS, SY_MENU PSM
+                WHERE SMS.EMPID = #ADMINID#
+                    AND SMS.MENU_CODE = SM.MENU_CODE
+                    AND SM.MENU_PARENT_CODE = PSM.MENU_CODE
+                    AND SM.ACTIVITY = 1
+                UNION
+                SELECT #ADMINID# AS EMPID,
+                       SM.MENU_CODE,
+                       DECODE(#language#, 'en', SM.MENU_EN_INTRO, SM.MENU_INTRO) MENU_INTRO,
+                       SM.MENU_URL,
+                       SM.DESCRIPTION,
+                       PSM.MENU_PARENT_CODE,
+                       '0' STATUS_CODE,
+                       DECODE(#language#, 'en', 'Unavailable', '不可用') STATUS_NAME
+                 FROM SY_MENU SM, SY_MENU PSM
+                 WHERE SM.MENU_PARENT_CODE = PSM.MENU_CODE
+                    AND SM.DEPTH = 2
+                    AND SM.ACTIVITY = 1
+                    AND SM.CPNY_ID = #CPNY_ID#
+                    AND NOT EXISTS (SELECT SMS.MENU_CODE
+                                      FROM SY_EMP_SHORTCUT SMS
+                                      WHERE SM.MENU_CODE = SMS.MENU_CODE
+                                      AND SMS.EMPID = #ADMINID#)
+                    AND EXISTS (SELECT SCREEN_CODE
+                          FROM SY_SCREEN_GRANT
+                         WHERE SCREEN_CODE = SM.MENU_CODE
+                           AND (SELECTR = 1 OR SAVER = 1 OR INSERTR = 1 OR
+                               UPDATER = 1 OR DELETER = 1 OR CANCELR = 1)
+                           AND SCREEN_GRANT_ID IN
+                               (SELECT TO_NUMBER(COLUMN_VALUE) SCREEN_GRANT_ID
+                                  FROM (SELECT *
+                                          FROM TABLE(CAST(SPLIT((SELECT SCREEN_GRANT_ID
+                                                                  FROM SY_ADMIN
+                                                                 WHERE ADMINID = #ADMINID#),
+                                                                ',') AS TYPE_SPLIT)))))
+            )
+            WHERE 1 = 1
+        ]]>
+        <isNotEmpty prepend="AND" property="MENU_CODE">
+            <![CDATA[
+                   MENU_PARENT_CODE = #MENU_CODE#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="STATUS_CODE">
+            <![CDATA[
+                   STATUS_CODE = #STATUS_CODE#
+            ]]>
+        </isNotEmpty>
+    </select>
+    <select id="getBirthday" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+           SELECT HRE.EMPID,
+               DECODE(#language#, 'en', HRE.ENGLISHNAME, HRE.CHINESENAME) CHINESENAME,
+               HRE.DEPTID,
+               DECODE(#language#, 'en', HRD.DEPT_EN_NAME, HRD.DEPTNAME) DEPTNAME,
+               HRE.POST_ID,
+               DECODE(#language#, 'en', HPO.POST_EN_NAME, HPO.POST_NAME) POST_NAME,
+               TO_CHAR(HRP.BIRTHDAY, 'MM-DD') BIRTHDAY
+           FROM HR_EMPLOYEE         HRE,
+               HR_PERSONAL_INFO    HRP,
+               HR_DEPARTMENT       HRD,
+               HR_POST             HPO
+           WHERE HRE.EMPID = HRP.EMPID
+               AND HRE.DEPTID = HRD.DEPTID(+)
+               AND HRE.POST_ID = HPO.POST_ID(+)
+               AND TO_CHAR(HRP.BIRTHDAY, 'MM') = TO_CHAR(SYSDATE, 'MM')
+               AND (HRE.LEFT_DATE IS NULL OR HRE.LEFT_DATE >= SYSDATE)
+        ]]>
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                  ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY HRP.BIRTHDAY DESC
+            ]]>
+        </isEmpty>
+    </select>
+    <select id="getBirthdayCnt" parameterClass="linkMap"
+        resultClass="int">
+        <![CDATA[
+            SELECT COUNT(*)
+            FROM HR_EMPLOYEE        HRE,
+                HR_PERSONAL_INFO    HRP,
+                HR_DEPARTMENT       HRD,
+                HR_POST             HPO
+            WHERE HRE.EMPID = HRP.EMPID
+                AND HRE.DEPTID = HRD.DEPTID(+)
+                AND HRE.POST_ID = HPO.POST_ID(+)
+                AND TO_CHAR(HRP.BIRTHDAY, 'MM') = TO_CHAR(SYSDATE, 'MM')
+                AND (HRE.LEFT_DATE IS NULL OR HRE.LEFT_DATE >= SYSDATE)
+     ]]>
+    </select>
+    <select id="getMonthExperience" parameterClass="linkMap"
+        resultClass="linkMap">
+        <![CDATA[
+            SELECT HREI.TRANS_CODE,
+                   DECODE(#language#, 'en', A.CODE_EN_NAME, A.CODE_NAME) TRANS_CODE_NAME,
+                   HRE.EMPID,
+                   DECODE(#language#, 'en', HRE.ENGLISHNAME, HRE.CHINESENAME) CHINESENAME,
+                   HRE.DEPTID,
+                   DECODE(#language#, 'en', HRD.DEPT_EN_NAME, HRD.DEPTNAME) DEPTNAME,
+                   HRE.POST_ID,
+                   DECODE(#language#, 'en', HPO.POST_EN_NAME, HPO.POST_NAME) POST_NAME,
+                   TO_CHAR(HREI.START_DATE, 'YYYY-mm-dd') START_DATE
+            FROM HR_EXPERIENCE_INSIDE HREI,
+                   HR_EMPLOYEE HRE,
+                   HR_DEPARTMENT       HRD,
+                   HR_POST         HPO,
+                   SY_CODE             A
+            WHERE HREI.EMPID = HRE.EMPID
+                AND HRE.DEPTID = HRD.DEPTID(+)
+                AND HRE.POST_ID = HPO.POST_ID(+)
+                AND HREI.TRANS_CODE = A.CODE_ID(+)
+                AND HREI.START_DATE BETWEEN ADD_MONTHS(SYSDATE, -1) AND SYSDATE
+                AND HREI.ACTIVITY = 1
+     ]]>
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY HREI.START_DATE DESC
+            ]]>
+        </isEmpty>
+    </select>
+    <select id="getMonthExperienceCnt" parameterClass="linkMap"
+        resultClass="int">
+        <![CDATA[
+            SELECT COUNT(*)
+            FROM HR_EXPERIENCE_INSIDE  HREI,
+                   HR_EMPLOYEE         HRE,
+                   HR_DEPARTMENT       HRD,
+                   HR_POST             HPO,
+                   SY_CODE             A
+            WHERE HREI.EMPID = HRE.EMPID
+               AND HRE.DEPTID = HRD.DEPTID(+)
+               AND HRE.POST_ID = HPO.POST_ID(+)
+               AND HREI.TRANS_CODE = A.CODE_ID(+)
+               AND HREI.START_DATE BETWEEN ADD_MONTHS(SYSDATE, -1) AND SYSDATE
+               AND HREI.ACTIVITY = 1
+        ]]>
+    </select>
+    <select id="getExpiredContract" parameterClass="linkMap"
+        resultClass="linkMap">
+        <![CDATA[
+            SELECT HRE.EMPID,
+                   DECODE(#language#, 'en', HRE.ENGLISHNAME, HRE.CHINESENAME) CHINESENAME,
+                   HRE.DEPTID,
+                   DECODE(#language#, 'en', HRD.DEPT_EN_NAME, HRD.DEPTNAME) DEPTNAME,
+                   HRE.POST_ID,
+                   DECODE(#language#, 'en', HPO.POST_EN_NAME, HPO.POST_NAME) POST_NAME,
+                   TO_CHAR(NVL(C.END_CONTRACT_DATE,C.START_CONTRACT_DATE), 'yyyy-mm-dd') END_CONTRACT_DATE,
+                   ROUND(NVL(C.END_CONTRACT_DATE,C.START_CONTRACT_DATE) - SYSDATE) DAYS
+            FROM HR_EMPLOYEE HRE,
+                   HR_PERSONAL_INFO HRP,
+                   HR_DEPARTMENT HRD,
+                   HR_POST HPO,
+                   (SELECT P.*
+                    FROM (SELECT O.*,
+                        ROW_NUMBER() OVER(PARTITION BY O.EMPID ORDER BY O.END_CONTRACT_DATE DESC) ROW_NUMBER
+                        FROM HR_CONTRACT O) P
+                    WHERE P.ROW_NUMBER = 1) C
+            WHERE HRE.EMPID = HRP.EMPID
+                AND HRE.EMPID = C.EMPID
+                AND HRE.DEPTID = HRD.DEPTID(+)
+                AND HRE.POST_ID = HPO.POST_ID(+)
+                AND (C.END_CONTRACT_DATE IS NULL OR
+                    C.END_CONTRACT_DATE <= ADD_MONTHS(SYSDATE, 2))
+                AND (HRE.LEFT_DATE IS NULL OR HRE.LEFT_DATE >= SYSDATE)
+        ]]>
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                  ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY C.END_CONTRACT_DATE DESC
+            ]]>
+        </isEmpty>
+    </select>
+    <select id="getExpiredContractCnt" parameterClass="linkMap"
+        resultClass="int">
+        <![CDATA[
+            SELECT COUNT(*)
+            FROM HR_EMPLOYEE          HRE,
+                   HR_PERSONAL_INFO   HRP,
+                   HR_DEPARTMENT      HRD,
+                   HR_POST            HPO,
+                   (SELECT P.*
+                    FROM (SELECT O.*, ROW_NUMBER() OVER(PARTITION BY O.EMPID ORDER BY O.END_CONTRACT_DATE DESC) ROW_NUMBER
+                        FROM HR_CONTRACT O) P
+                    WHERE P.ROW_NUMBER = 1) C
+            WHERE HRE.EMPID = HRP.EMPID
+                AND HRE.EMPID = C.EMPID
+                AND HRE.DEPTID = HRD.DEPTID(+)
+                AND HRE.POST_ID = HPO.POST_ID(+)
+                AND (C.END_CONTRACT_DATE IS NULL OR
+                    C.END_CONTRACT_DATE <= ADD_MONTHS(SYSDATE, 2))
+                AND (HRE.LEFT_DATE IS NULL OR HRE.LEFT_DATE >= SYSDATE)
+        ]]>
+    </select>
+    <select id="getNotExistContract" parameterClass="linkMap"
+        resultClass="linkMap">
+        <![CDATA[
+            SELECT HRE.EMPID,
+                   DECODE(#language#, 'en', HRE.ENGLISHNAME, HRE.CHINESENAME) CHINESENAME,
+                   HRE.DEPTID,
+                   DECODE(#language#, 'en', HRD.DEPT_EN_NAME, HRD.DEPTNAME) DEPTNAME,
+                   HRE.POST_ID,
+                   DECODE(#language#, 'en', HPO.POST_EN_NAME, HPO.POST_NAME) POST_NAME,
+                   TO_CHAR(HRE.JOIN_DATE, 'yyyy-mm-dd') JOIN_DATE
+             FROM HR_EMPLOYEE      HRE,
+                   HR_PERSONAL_INFO HRP,
+                   HR_DEPARTMENT    HRD,
+                   HR_POST          HPO
+            WHERE HRE.EMPID = HRP.EMPID
+                AND HRE.DEPTID = HRD.DEPTID(+)
+                AND HRE.POST_ID = HPO.POST_ID(+)
+                AND (HRE.LEFT_DATE IS NULL OR HRE.LEFT_DATE >= SYSDATE)
+                AND NOT EXISTS (SELECT EMPID
+                                FROM HR_CONTRACT HRC
+                                WHERE HRC.EMPID = HRE.EMPID)
+            ]]>
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY HRE.JOIN_DATE DESC
+            ]]>
+        </isEmpty>
+    </select>
+    <select id="getNotExistContractCnt" parameterClass="linkMap"
+        resultClass="int">
+        <![CDATA[
+            SELECT COUNT(*)
+            FROM HR_EMPLOYEE      HRE,
+                 HR_PERSONAL_INFO HRP,
+                 HR_DEPARTMENT    HRD,
+                 HR_POST          HPO
+            WHERE HRE.EMPID = HRP.EMPID
+                AND HRE.DEPTID = HRD.DEPTID(+)
+                AND HRE.POST_ID = HPO.POST_ID(+)
+                AND (HRE.LEFT_DATE IS NULL OR HRE.LEFT_DATE >= SYSDATE)
+                AND NOT EXISTS (SELECT EMPID
+                                FROM HR_CONTRACT HRC
+                                WHERE HRC.EMPID = HRE.EMPID)
+        ]]>
+    </select>
+    <select id="getExpiredProbation" parameterClass="linkMap"
+        resultClass="linkMap">
+        <![CDATA[
+            SELECT HRE.EMPID,
+                   DECODE(#language#, 'en', HRE.ENGLISHNAME, HRE.CHINESENAME) CHINESENAME,
+                   HRE.DEPTID,
+                   DECODE(#language#, 'en', HRD.DEPT_EN_NAME, HRD.DEPTNAME) DEPTNAME,
+                   HRE.POST_ID,
+                   DECODE(#language#, 'en', HPO.POST_EN_NAME, HPO.POST_NAME) POST_NAME,
+                   TO_CHAR(HRE.END_PROBATION_DATE, 'YYYY-MM-DD') END_PROBATION_DATE
+            FROM HR_EMPLOYEE      HRE,
+                   HR_PERSONAL_INFO HRP,
+                   HR_DEPARTMENT    HRD,
+                   HR_POST      HPO
+            WHERE HRE.EMPID = HRP.EMPID
+                AND HRE.DEPTID = HRD.DEPTID(+)
+                AND HRE.POST_ID = HPO.POST_ID(+)
+                AND (HRE.STATUS_CODE = 'EmpStatus2' OR HRE.STATUS_CODE='EmpStatus1')
+                AND HRE.END_PROBATION_DATE <= ADD_MONTHS(SYSDATE,2)
+                AND (HRE.LEFT_DATE IS NULL OR HRE.LEFT_DATE >= SYSDATE)
+         ]]>
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY HRE.END_PROBATION_DATE DESC
+            ]]>
+        </isEmpty>
+    </select>
+    <select id="getExpiredProbationCnt" parameterClass="linkMap"
+        resultClass="int">
+        <![CDATA[
+            SELECT COUNT(*)
+            FROM HR_EMPLOYEE        HRE,
+                   HR_PERSONAL_INFO HRP,
+                   HR_DEPARTMENT    HRD,
+                   HR_POST          HPO
+            WHERE HRE.EMPID = HRP.EMPID
+                AND HRE.DEPTID = HRD.DEPTID(+)
+                AND HRE.POST_ID = HPO.POST_ID(+)
+                AND (HRE.STATUS_CODE = 'EmpStatus2' OR HRE.STATUS_CODE='EmpStatus1')
+                AND HRE.END_PROBATION_DATE <= ADD_MONTHS(SYSDATE,2)
+                AND (HRE.LEFT_DATE IS NULL OR HRE.LEFT_DATE >= SYSDATE)
+         ]]>
+    </select>
+    <select id="getDispatchInfo" parameterClass="linkMap"
+        resultClass="linkMap">
+        <![CDATA[
+            SELECT HRE.EMPID,
+                DECODE(#language#, 'en', HRE.ENGLISHNAME, HRE.CHINESENAME) CHINESENAME,
+                HRE.DEPTID,
+                DECODE(#language#, 'en', HRD.DEPT_EN_NAME, HRD.DEPTNAME) DEPTNAME,
+                HRE.POST_ID,
+                DECODE(#language#, 'en', HPO.POST_EN_NAME, HPO.POST_NAME) POST_NAME,
+                HRDI.DIS_TYPE_CODE,
+                DECODE(#language#, 'en', B.CODE_EN_NAME, B.CODE_NAME) DIS_TYPE_NAME,
+                HRDI.CONTENTS,
+                HRDI.DIS_TARGET,
+                TO_CHAR(HRDI.START_DATE, 'YYYY-MM-DD') START_DATE,
+                TO_CHAR(HRDI.END_DATE, 'YYYY-MM-DD') END_DATE
+            FROM HR_DISPATCH         HRDI,
+                HR_EMPLOYEE         HRE,
+                HR_PERSONAL_INFO    HRP,
+                HR_DEPARTMENT       HRD,
+                HR_POST             HPO,
+                SY_CODE             B
+            WHERE HRDI.EMPID = HRE.EMPID(+)
+                AND HRE.EMPID = HRP.EMPID(+)
+                AND HRE.DEPTID = HRD.DEPTID(+)
+                AND HRE.POST_ID = HPO.POST_ID(+)
+                AND HRDI.DIS_TYPE_CODE = B.CODE_ID(+)
+                AND (HRE.LEFT_DATE IS NULL OR HRE.LEFT_DATE >= SYSDATE)
+        ]]>
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY HRDI.START_DATE DESC
+            ]]>
+        </isEmpty>
+    </select>
+    <select id="getDispatchInfoCnt" parameterClass="linkMap"
+        resultClass="int">
+        <![CDATA[
+            SELECT COUNT(*)
+            FROM   HR_DISPATCH        HRDI,
+                   HR_EMPLOYEE        HRE,
+                   HR_PERSONAL_INFO   HRP,
+                   HR_DEPARTMENT      HRD,
+                   HR_POST            HPO,
+                   SY_CODE            B
+            WHERE HRDI.EMPID = HRE.EMPID(+)
+                AND HRE.EMPID = HRP.EMPID(+)
+                AND HRE.DEPTID = HRD.DEPTID(+)
+                AND HRE.POST_ID = HPO.POST_ID(+)
+                AND HRDI.DIS_TYPE_CODE = B.CODE_ID(+)
+                AND (HRE.LEFT_DATE IS NULL OR HRE.LEFT_DATE >= SYSDATE)
+        ]]>
+    </select>
+    <select id="getExpiredCertification" parameterClass="linkMap"
+        resultClass="linkMap">
+        <![CDATA[
+            SELECT HQ.EMPID EMPID,
+                   DECODE(#language#, 'en', HE.ENGLISHNAME, HE.CHINESENAME) CHINESENAME,
+                   DECODE(#language#, 'en', HD.DEPT_EN_NAME, HD.DEPTNAME) DEPTNAME,
+                   DECODE(#language#, 'en', HP.POST_EN_NAME, HP.POST_NAME) POST_NAME,
+                   HQ.QUAL_CARD_NAME QUAL_CARD_NAME,
+                   TO_CHAR(HQ.END_QUAL_DATE,'YYYY-MM-DD') END_QUAL_DATE,
+                   TO_CHAR(HQ.ANNUAL_DATE,'YYYY-MM-DD')   ANNUAL_DATE
+            FROM HR_QUALIFICATION HQ,
+                 HR_EMPLOYEE HE,
+                 HR_DEPARTMENT HD,
+                 HR_POST HP
+            WHERE HQ.EMPID = HE.EMPID(+)
+                AND   HE.LEFT_DATE IS NULL
+                AND   HE.DEPTID = HD.DEPTID(+)
+                AND   HE.POST_ID = HP.POST_ID
+                AND   (HQ.END_QUAL_DATE < SYSDATE + 30
+                    OR HQ.ANNUAL_DATE < SYSDATE + 30
+                )
+                ORDER BY END_QUAL_DATE DESC, ANNUAL_DATE DESC
+        ]]>
+    </select>
+    <select id="getExpiredCertificationCnt" parameterClass="linkMap"
+        resultClass="int">
+        <![CDATA[
+            SELECT COUNT(*)
+            FROM HR_QUALIFICATION HQ,
+                 HR_EMPLOYEE HE,
+                 HR_DEPARTMENT HD,
+                 HR_POST HP
+            WHERE HQ.EMPID = HE.EMPID(+)
+                AND   HE.LEFT_DATE IS NULL
+                AND   HE.DEPTID = HD.DEPTID(+)
+                AND   HE.POST_ID = HP.POST_ID
+                AND   (HQ.END_QUAL_DATE < SYSDATE + 30
+                    OR HQ.ANNUAL_DATE < SYSDATE + 30
+                )
+     ]]>
+    </select>
+    <select id="getEduOutside" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT HRE.EMPID,
+                   DECODE(#language#, 'en', HRE.ENGLISHNAME, HRE.CHINESENAME) CHINESENAME,
+                   HRE.DEPTID,
+                   DECODE(#language#, 'en', HRD.DEPT_EN_NAME, HRD.DEPTNAME) DEPTNAME,
+                   HRE.POST_ID,
+                   DECODE(#language#, 'en', HPO.POST_EN_NAME, HPO.POST_NAME) POST_NAME,
+                   HRTO.DESCRIPTION,
+                   TO_CHAR(HRTO.START_DATE, 'YYYY-MM-DD') START_DATE,
+                   HRTO.COURSE_NAME COURSE_NAME,
+                   HRTO.CLASS_HOUR CLASS_HOUR,
+                   HRTO.TEACHER TEACHER,
+                   HRTO.COURSE_CONTENT COURSE_CONTENT,
+                   HRTO.TEACHING_METHODS TEACHING_METHODS,
+                   HRTO.EVALUATION_METHODS EVALUATION_METHODS,
+                   HRTO.MARK MARK,
+                   HRTO.REMARK REMARK
+            FROM HR_TRAINING_OUTSIDE      HRTO,
+                   HR_EMPLOYEE             HRE,
+                   HR_PERSONAL_INFO        HRP,
+                   HR_DEPARTMENT           HRD,
+                   HR_POST                 HPO
+            WHERE HRTO.EMPID = HRE.EMPID(+)
+                AND HRE.EMPID = HRP.EMPID(+)
+                AND HRE.DEPTID = HRD.DEPTID(+)
+                AND HRE.POST_ID = HPO.POST_ID(+)
+                AND (HRE.LEFT_DATE IS NULL OR HRE.LEFT_DATE >= SYSDATE)
+        ]]>
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY HRTO.START_DATE DESC
+            ]]>
+        </isEmpty>
+    </select>
+    <select id="getEduOutsideCnt" parameterClass="linkMap"
+        resultClass="int">
+        <![CDATA[
+            SELECT COUNT(*)
+            FROM HR_TRAINING_OUTSIDE  HRTO,
+                HR_EMPLOYEE           HRE,
+                HR_PERSONAL_INFO      HRP,
+                HR_DEPARTMENT         HRD,
+                HR_POST               HPO
+            WHERE HRTO.EMPID = HRE.EMPID(+)
+                AND HRE.EMPID = HRP.EMPID(+)
+                AND HRE.DEPTID = HRD.DEPTID(+)
+                AND HRE.POST_ID = HPO.POST_ID(+)
+                AND (HRE.LEFT_DATE IS NULL OR HRE.LEFT_DATE >= SYSDATE)
+        ]]>
+    </select>
+    <select id="getTipsMenu" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT T.MENU_CODE,
+                (CASE WHEN #language# = 'en' THEN
+                    NVL(T.MENU_EN_INTRO, ' ')
+                ELSE
+                   T.MENU_INTRO
+                END) AS MENU_INTRO,
+                   T.MENU_URL,
+                   T.MENU_NO
+            FROM SY_MENU T
+            WHERE T.ACTIVITY = 1
+                AND T.MENU_PARENT_CODE=#parentCode#
+                AND T.MENU_CODE IN (
+                    SELECT SCREEN_CODE FROM SY_SCREEN_GRANT
+                    WHERE (selectr=1 OR saver=1 OR insertr=1 OR updater=1 OR deleter=1 OR cancelr=1)
+                        AND SCREEN_GRANT_ID IN(
+                    select TO_NUMBER(column_value) SCREEN_GRANT_ID from (
+                    select * from table (cast (split (( select SCREEN_GRANT_ID
+                        from SY_ADMIN where ADMINID=#ADMINID#), ',') as TYPE_SPLIT) )
+                        )
+                    )
+                )
+            ORDER BY MENU_NO
+        ]]>
+    </select>
+    <select id="getPersonalInfoApplyCount" parameterClass="linkMap"
+        resultClass="int">
+        <![CDATA[
+            select count(*) from ess_personal_info where ACTIVITY='0' and EMPID=#ADMINID#
+        ]]>
+    </select>
+    <select id="getPersonalApplyOtCount" parameterClass="linkMap"
+        resultClass="int">
+        <![CDATA[
+            select count(*) from ESS_APPLY_OT where EMPID=#ADMINID# and ACTIVITY='0'
+        ]]>
+    </select>
+    <select id="getPersonalApplyErvectionCount" parameterClass="linkMap"
+        resultClass="int">
+        <![CDATA[
+            select count(*) from ESS_APPLY_LEAVE
+            where EMPID=#ADMINID# and ACTIVITY='0'
+                AND LEAVE_TYPE_CODE in (
+                    SELECT CODE_ID
+                    FROM SY_CODE
+                    WHERE PARENT_CODE = 'BTTypeCode'
+                        AND ACTIVITY = '1'
+                )
+        ]]>
+    </select>
+    <select id="getPersonalApplyTrainningCount" parameterClass="linkMap"
+        resultClass="int">
+        <![CDATA[
+            select count(*) from ESS_APPLY_LEAVE
+            where EMPID=#ADMINID# and ACTIVITY='0'
+                and LEAVE_TYPE_CODE in (
+                    SELECT CODE_ID
+                    FROM SY_CODE
+                    WHERE PARENT_CODE = 'TrainingTypeCode'
+                        AND ACTIVITY = '1' )
+        ]]>
+    </select>
+    <select id="getPersonalApplyEduCount" parameterClass="linkMap"
+        resultClass="int">
+        <![CDATA[
+            select count(*) from ESS_APPLY_ETN
+            where empid=#ADMINID# and ACTIVITY='0'
+        ]]>
+    </select>
+    <select id="getPersonalApplyLeavelCount" parameterClass="linkMap"
+        resultClass="int">
+        <![CDATA[
+            select count(*) from ESS_APPLY_LEAVE where EMPID=#ADMINID# and ACTIVITY='0'
+        ]]>
+    </select>
+    <select id="getPersonalApplyWHCount" parameterClass="linkMap"
+        resultClass="int">
+        <![CDATA[
+            select count(*) from ESS_APPLY_WH where EMPID=#ADMINID# and ACTIVITY='0'
+        ]]>
+    </select>
+    <select id="getPersonalApplyToolCount" parameterClass="linkMap"
+        resultClass="int">
+        <![CDATA[
+            select count(*) from ESS_APPLY_TOOL where EMPID=#ADMINID# and ACTIVITY='0'
+        ]]>
+    </select>
+    <select id="getPersonalApplyHandselCount" parameterClass="linkMap"
+        resultClass="int">
+        <![CDATA[
+            SELECT count(*) from ESS_APPLY_LEAVE
+            WHERE EMPID=#ADMINID# AND ACTIVITY='0'
+                AND LEAVE_TYPE_CODE in (
+                SELECT CODE_ID
+                FROM SY_CODE
+                WHERE PARENT_CODE = 'HandselTypeCode'
+                    AND ACTIVITY = '1')
+        ]]>
+    </select>
+    <select id="getCountOt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(*) 
+            FROM ( SELECT * FROM ESS_AFFIRM T
+                WHERE  T.AFFIRM_FLAG = 0
+                    AND ( ( T.APPLY_NO IN
+                        (SELECT TT.APPLY_NO
+                         FROM ESS_AFFIRM TT
+                         WHERE TT.APPLY_NO = T.APPLY_NO
+                            AND TT.AFFIRMOR_ID <> T.AFFIRMOR_ID
+                            AND TT.AFFIRM_FLAG = 1
+                            AND TT.AFFIRM_LEVEL = T.AFFIRM_LEVEL - 1
+                            AND TT.APPLY_TYPE = 'OtApply')
+                    ) OR T.AFFIRM_LEVEL = '1')
+                AND T.APPLY_TYPE = 'OtApply'
+                AND T.AFFIRMOR_ID = #ADMINID#
+            )
+        ]]>
+    </select>
+    <select id="getCountLeave" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(*)
+            FROM ( SELECT * FROM ESS_AFFIRM T
+                WHERE  T.AFFIRM_FLAG = 0
+                AND ( ( T.APPLY_NO IN (
+                            SELECT TT.APPLY_NO
+                            FROM ESS_AFFIRM TT
+                            WHERE TT.APPLY_NO = T.APPLY_NO
+                                AND TT.AFFIRMOR_ID <> T.AFFIRMOR_ID
+                                AND TT.AFFIRM_FLAG = 1
+                                AND TT.AFFIRM_LEVEL = T.AFFIRM_LEVEL - 1
+                                AND TT.APPLY_TYPE = 'LeaveApply')
+                   ) OR T.AFFIRM_LEVEL = '1')
+                AND T.APPLY_TYPE = 'LeaveApply'
+                AND T.AFFIRMOR_ID = #ADMINID#
+            )
+        ]]>
+    </select>
+    <select id="getCountEvection" parameterClass="linkMap"
+        resultClass="int">
+        <![CDATA[
+            select count(*) 
+            from (  SELECT * from ess_affirm t
+                where  t.affirm_flag = 0
+                    and ( ( t.apply_no in
+                        (select tt.apply_no
+                        from ess_affirm tt
+                        where tt.apply_no = t.apply_no
+                            and tt.affirmor_id <> t.affirmor_id
+                            and tt.affirm_flag = 1
+                            and tt.affirm_level = t.affirm_level - 1
+                            and tt.APPLY_TYPE = 'EvectionApply')
+                   ) or t.affirm_level = '1')
+                and t.apply_type = 'EvectionApply'
+                AND t.affirmor_id = #ADMINID#
+            )
+        ]]>
+    </select>
+    <select id="getCountTraining" parameterClass="linkMap"
+        resultClass="int">
+        <![CDATA[
+            SELECT COUNT(*) 
+            FROM (  SELECT * FROM ess_affirm t
+                    WHERE  t.affirm_flag = 0
+                    AND ( ( t.apply_no in
+                          ( select tt.apply_no
+                            from ess_affirm tt
+                            where tt.apply_no = t.apply_no
+                                and tt.affirmor_id <> t.affirmor_id
+                                and tt.affirm_flag = 1
+                                and tt.affirm_level = t.affirm_level - 1
+                                and tt.APPLY_TYPE = 'TrainingApply')
+                       ) OR t.affirm_level = '1' )
+                    AND t.apply_type = 'TrainingApply'
+                    AND t.affirmor_id = #ADMINID#
+            )
+        ]]>
+    </select>
+    <select id="getCountEtnApply" parameterClass="linkMap"
+        resultClass="int">
+        <![CDATA[
+            SELECT COUNT(*) 
+            FROM (  SELECT * FROM ess_affirm t
+                    WHERE  t.affirm_flag = 0
+                    AND ( ( t.apply_no in
+                            (select tt.apply_no
+                             from ess_affirm tt
+                             where tt.apply_no = t.apply_no
+                                and tt.affirmor_id <> t.affirmor_id
+                                and tt.affirm_flag = 1
+                                and tt.affirm_level = t.affirm_level - 1
+                                and tt.APPLY_TYPE = 'EtnApply')
+                        ) or t.affirm_level = '1')
+                    AND t.apply_type = 'EtnApply'
+                    AND t.affirmor_id = #ADMINID#
+            )
+        ]]>
+    </select>
+    <select id="getCountHandselApply" parameterClass="linkMap"
+        resultClass="int">
+        <![CDATA[
+            SELECT COUNT(*) 
+            FROM ( SELECT * FROM ess_affirm t
+                    where  t.affirm_flag = 0
+                    AND ( ( t.apply_no in
+                          ( select tt.apply_no
+                            from ess_affirm tt
+                            where tt.apply_no = t.apply_no
+                                and tt.affirmor_id <> t.affirmor_id
+                                and tt.affirm_flag = 1
+                                and tt.affirm_level = t.affirm_level - 1
+                                and tt.APPLY_TYPE = 'HandselApply')
+                   ) OR t.affirm_level = '1')
+                AND t.apply_type = 'HandselApply'
+                AND t.affirmor_id = #ADMINID#
+            )
+        ]]>
+    </select>
+    <select id="getEssPersonalInfoCnt" parameterClass="linkMap"
+        resultClass="int">
+        <![CDATA[
+            SELECT  COUNT(A.EMPID)
+            FROM ESS_PERSONAL_INFO A,
+                HR_EMPLOYEE        B
+            WHERE A.EMPID = B.EMPID(+)
+                AND A.ACTIVITY=0
+        ]]>
+    </select>
+    <select id="getEssOTInfoCnt" parameterClass="linkMap"
+        resultClass="int">
+        <![CDATA[
+            SELECT  COUNT(A.EMPID)
+            FROM ESS_APPLY_OT   A,
+                HR_EMPLOYEE     B
+            WHERE A.EMPID = B.EMPID(+)
+                AND A.ACTIVITY=0
+        ]]>
+    </select>
+    <select id="getEssLeaveInfoCnt" parameterClass="linkMap"
+        resultClass="int">
+        <![CDATA[
+            SELECT  COUNT(A.EMPID)
+               FROM ESS_APPLY_LEAVE A,
+                    HR_EMPLOYEE B
+              WHERE A.EMPID = B.EMPID(+)
+              AND A.ACTIVITY=0
+        ]]>
+    </select>
+    <select id="getEssWHInfoCnt" parameterClass="linkMap"
+        resultClass="int">
+        <![CDATA[
+            SELECT  COUNT(A.EMPID)
+            FROM ESS_APPLY_WH A,
+                    HR_EMPLOYEE B
+            WHERE A.EMPID = B.EMPID(+)
+                AND A.ACTIVITY=0
+        ]]>
+    </select>
+    <select id="getEssToolInfoCnt" parameterClass="linkMap"
+        resultClass="int">
+        <![CDATA[
+            SELECT  COUNT(A.EMPID)
+            FROM ESS_APPLY_TOOL A,
+                HR_EMPLOYEE     B
+            WHERE A.EMPID = B.EMPID(+)
+                AND A.ACTIVITY=0
+        ]]>
+    </select>
+</sqlMap>

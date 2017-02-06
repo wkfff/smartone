@@ -1,0 +1,669 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+    PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+    "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="utility.empInfo">
+    <resultMap id="allEmployeesMap" class="employee">
+        <result property="empId" column="EMPID" />
+        <result property="empName" column="EMPNAME" />
+        <result property="position" column="POST_NAME" />
+        <result property="status.codeId" column="STATUS_CODE" />
+        <result property="status.codeName" column="STATUS" />
+        <result property="company.companyId" column="CPNY_ID" />
+        <result property="joinDate" column="JOIN_DATE" />
+        <result property="company.companyName" column="CPNY_NAME" />
+        <result property="dept.deptName" column="DEPTNAME" />
+        <result property="empType.codeName" column="EMP_TYPE_NAME" />
+        <result property="eduBackground.codeName" column="EDU_HIS_NAME" />
+    </resultMap>
+    <select id="getAllEmployeesUsingBeanMap" parameterClass="adminBean" resultMap="allEmployeesMap" remapResults="true">
+        <![CDATA[
+            SELECT
+                HRE.EMPID                                                 EMPID,
+                HRE.CHINESENAME                                           EMPNAME,
+                HP.POST_NAME                                              POST_NAME,
+                HRE.STATUS_CODE                                           STATUS_CODE,
+                C.CODE_NAME                                               STATUS,
+                HRD.CPNY_ID                                               CPNY_ID,
+                HRE.JOIN_DATE                                             JOIN_DATE,
+                B.CPNY_NAME                                               CPNY_NAME,
+                HRD.DEPTNAME                                              DEPTNAME,
+                D.CODE_NAME                                               EMP_TYPE_NAME,
+                E.CODE_NAME                                               EDU_HIS_NAME
+            FROM HR_EMPLOYEE HRE, HR_DEPARTMENT HRD,HR_COMPANY B, SY_CODE C,SY_CODE D,SY_CODE E,
+                HR_POST HP,HR_PERSONAL_INFO HPI
+            WHERE HRE.DEPTID = HRD.DEPTID(+)
+                AND HRE.EMPID = HPI.EMPID(+)
+                AND HRE.EMP_TYPE_CODE = D.CODE_ID(+)
+                AND HPI.EDU_HIS_CODE = E.CODE_ID(+)
+                AND HRE.STATUS_CODE = C.CODE_ID(+)
+                AND HRE.POST_ID = HP.POST_ID(+)
+                AND HRD.CPNY_ID = B.CPNY_ID(+)
+        ]]>
+    </select>
+
+    <sql id="CustAndAttAndHrSearchEmployeeCondition" >
+        <isNotEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+                  ( HRE.EMPID LIKE CONCAT(TRIM(#keyWord:VARCHAR#) , '%') 
+                  OR HRE.CHINESENAME LIKE CONCAT('%' , TRIM(#keyWord:VARCHAR#) , '%' )
+                  OR HRE.CHINESE_PINYIN LIKE CONCAT('%' , TRIM(#keyWord:VARCHAR#) , '%')
+                  OR HRE.ENGLISHNAME LIKE CONCAT('%' , TRIM(#keyWord:VARCHAR#) , '%')) 
+            ]]>
+        </isNotEmpty>
+        
+        <isNotEmpty prepend="AND" property="CPNY_ID">
+            <![CDATA[
+                  HRD.CPNY_ID = #CPNY_ID:VARCHAR#
+            ]]>
+        </isNotEmpty>
+        
+        <isNotEmpty prepend="AND" property="STATUS_CODE">
+            <![CDATA[
+                  HRE.STATUS_CODE = #STATUS_CODE:VARCHAR#
+            ]]>
+        </isNotEmpty>
+    
+        <!-- <isNotEmpty prepend="AND" property="DEPTID">
+            <![CDATA[ 
+                      EXISTS(
+                        SELECT * FROM HR_DEPARTMENT WHERE HR_DEPARTMENT.DEPTID!='00110000'
+                      )
+            ]]>
+        </isNotEmpty> -->
+        <isNotEmpty prepend="AND" property="DEPTID">
+            <![CDATA[ 
+                      EXISTS(
+                        SELECT * FROM HR_DEPARTMENT WHERE HR_DEPARTMENT.DEPTID!='00110000'
+                      )
+            ]]>
+        </isNotEmpty>
+        
+        <isNotEmpty prepend="AND" property="CR_DEPTID">
+            <![CDATA[ 
+                HRE.DEPTID = #CR_DEPTID#
+            ]]>
+        </isNotEmpty>
+        
+        <isNotEmpty prepend="AND" property="NOT_THE_EMPID">
+            <![CDATA[ 
+                HRE.EMPID != #NOT_THE_EMPID#
+            ]]>
+        </isNotEmpty>
+    
+        <isNotEmpty prepend="AND" property="AR_ADMIN_ID">
+            <![CDATA[
+                  EXISTS(
+                    SELECT *
+                      FROM AR_SUPERVISOR_INFO
+                     WHERE AR_SUPERVISOR_INFO.SUPERVISED_DEPTID = HRE.DEPTID
+                       AND AR_SUPERVISOR_ID = #AR_ADMIN_ID:VARCHAR#
+                  )
+            ]]>
+        </isNotEmpty>
+    
+        <isNotEmpty prepend="AND" property="HR_ADMIN_ID">
+            <![CDATA[
+               EXISTS (
+                    SELECT EMPID FROM  
+                        (
+                        SELECT EMPID FROM HR_EMPLOYEE H2 
+                            WHERE EXISTS
+                            (
+                            SELECT S2.ADMINID AS EMPID
+                                FROM SY_ADMIN_DEPTID S1, SY_ADMIN S2
+                                WHERE S2.ADMINNO = S1.ADMIN_NO
+                                AND S2.ADMINID = #HR_ADMIN_ID#
+                                AND H2.DEPTID=S1.ADMIN_DEPTID
+                            )
+                        UNION
+                        SELECT #HR_ADMIN_ID# AS EMPID FROM DUAL  
+                     ) S3
+                     WHERE S3.EMPID = HRE.EMPID
+               )
+            ]]>
+        </isNotEmpty>
+         
+        <isNotEmpty prepend="AND" property="PA_INS_EMP">
+            <![CDATA[ 
+            HRE.EMPID NOT IN(
+                    SELECT PIE.EMPID 
+                      FROM PA_INS_EMP PIE 
+                     WHERE PIE.PA_MONTH = #PA_MONTH#
+                  )
+            ]]>
+        </isNotEmpty>
+         
+        <isNotEmpty prepend="AND" property="PA_BONUS_EMP">
+            <![CDATA[ 
+            HRE.EMPID NOT IN(
+                    SELECT PBE.EMPID 
+                      FROM PA_BONUS_EMP PBE 
+                     WHERE PBE.PA_MONTH = #PA_MONTH#
+                  )
+            ]]>
+        </isNotEmpty>
+         
+        <isNotEmpty prepend="AND" property="ESS_PRO_EMP">
+            <![CDATA[ 
+            HRE.EMPID NOT IN(
+                    SELECT EPE.EMPID 
+                      FROM ESS_PROJECT_EMP EPE 
+                     WHERE EPE.PRO_NO = #PRO_NO#
+                  )
+            ]]>
+        </isNotEmpty>
+        
+        <isNotEmpty prepend="AND" property="EVA_KPI_ID">
+            <![CDATA[ 
+            HRE.EMPID NOT IN(
+                    SELECT EKV.EMPID
+                        FROM EVA_KPI_VALIDATER EKV
+                    WHERE   EKV.EVA_KPI_ID = #EVA_KPI_ID#
+                    AND     EKV.ACTIVITY = 1
+                )
+            ]]>
+        </isNotEmpty>
+        
+        <isNotEmpty prepend="AND" property="GROUP_NO">
+            <![CDATA[ 
+            HRE.EMPID IN(
+                    SELECT ASE.EMPID
+                        FROM AR_SHIFT_GROUP_EMP ASE
+                    WHERE   ASE.GROUP_NO = #GROUP_NO#
+                )
+            ]]>
+        </isNotEmpty>
+        
+        <isNotEmpty prepend="AND" property="GROUP_NOT_NO">
+            <![CDATA[
+            HRE.EMPID NOT IN(
+                    SELECT ASE.EMPID
+                        FROM AR_SHIFT_GROUP_EMP ASE
+                )
+            ]]>
+        </isNotEmpty>
+    </sql>
+    
+    <select id="getCustAndAttAndHrSearchEmployee" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+             SELECT HRE.EMPID, 
+                    HRE.CHINESENAME,
+                    HRE.ENGLISHNAME,
+                    HRE.STATUS_CODE,
+                    HRE.POST_LEVEL_ID,
+                    IF(#language#='en', C.CODE_EN_NAME, C.CODE_NAME) STATUS,
+                    HRD.CPNY_ID,
+                    HRE.POST_ID POST_ID,
+                    IF(#language#= 'en', HP.POST_EN_NAME, HP.POST_NAME) POST_NAME,
+                    HRE.DEPTID,
+                    IF(#language#= 'en', B.CPNY_EN_NAME, B.CPNY_NAME) CPNY_NAME,
+                    IF(#language#= 'en', HRD.DEPT_EN_NAME, HRD.DEPTNAME) DEPTNAME,
+                    HPL.POST_GRADE_NAME POST_LEVEL_NAME
+            FROM HR_EMPLOYEE HRE LEFT JOIN HR_POST_LEVEL HPL ON HRE.POST_LEVEL_ID = HPL.POST_GRADE_ID
+            					 LEFT JOIN SY_CODE C ON HRE.STATUS_CODE = C.CODE_ID
+            					 LEFT JOIN HR_POST HP ON  HRE.POST_ID = HP.POST_ID,
+            	
+            HR_DEPARTMENT HRD LEFT JOIN HR_COMPANY B ON HRD.CPNY_ID = B.CPNY_ID
+            WHERE HRE.DEPTID = HRD.DEPTID
+            AND HRD.CPNY_ID = #CPNY_ID:VARCHAR#
+        ]]>
+        
+         <isNotEmpty prepend="AND" property="keyWord">
+            ( 
+                HRE.EMPID LIKE CONCAT('%',TRIM(#keyWord#),'%') 
+                OR  HRE.CHINESENAME LIKE CONCAT('%',TRIM(#keyWord#),'%')
+                OR  HRE.ENGLISHNAME LIKE CONCAT('%',TRIM(#keyWord#),'%')
+            )
+        </isNotEmpty>
+        <isEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+                HRE.DEPTID LIKE CONCAT('%',TRIM(#DEPTID#),'%')
+            ]]>
+        </isEmpty> 
+        
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                  ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY HRE.DEPTID, HRE.EMPID
+            ]]>
+        </isEmpty> 
+         
+    </select>
+    
+<!--     aibi更改 -->
+<!-- <select id="getCustAndAttAndHrSearchEmployeeCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(*)
+              FROM HR_EMPLOYEE HRE
+               HR_DEPARTMENT HRD,HR_COMPANY B, SY_CODE C,HR_POST HP
+             WHERE HRE.DEPTID = HRD.DEPTID
+               AND HRE.STATUS_CODE = C.CODE_ID(+)
+               AND HRE.POST_ID = HP.POST_ID(+)
+               AND HRD.CPNY_ID = B.CPNY_ID(+)
+             
+        ]]> -->
+<!-- end -->
+    <select id="getCustAndAttAndHrSearchEmployeeCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(*)
+              FROM HR_EMPLOYEE HRE LEFT JOIN SY_CODE C ON HRE.STATUS_CODE = C.CODE_ID
+									LEFT JOIN HR_POST HP ON HRE.POST_ID = HP.POST_ID,
+               HR_DEPARTMENT HRD  LEFT JOIN HR_COMPANY B ON HRD.CPNY_ID = B.CPNY_ID
+             WHERE HRE.DEPTID = HRD.DEPTID
+             AND HRD.CPNY_ID = #CPNY_ID:VARCHAR#
+        ]]>
+        <isNotEmpty prepend="AND" property="keyWord">
+            ( 
+                HRE.EMPID LIKE CONCAT('%',TRIM(#keyWord#),'%') 
+                OR  HRE.CHINESENAME LIKE CONCAT('%',TRIM(#keyWord#),'%')
+                OR  HRE.ENGLISHNAME LIKE CONCAT('%',TRIM(#keyWord#),'%')
+            )
+        </isNotEmpty>
+         <isEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+                HRE.DEPTID LIKE CONCAT('%',TRIM(#DEPTID#),'%')
+            ]]>
+        </isEmpty> 
+        
+    </select>
+    
+    <select id="getEmpInfoList" parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT HR.EMPID,
+                   HR.DEPTID,
+                   A.DEPTNAME DEPTNAME,
+                   HR.CHINESENAME,
+                   HR.CHINESE_PINYIN,
+                   HR.ENGLISHNAME,
+                   HR.STATUS_CODE,
+                   HR.POST_ID,
+                   HR.POST_LEVEL_ID,
+                   HP.POST_NAME POST_NAME,
+                   C.CODE_NAME STATUS,
+                   A.CPNY_ID,
+                   B.CPNY_NAME CPNY_NAME,
+                   HPL.POST_GRADE_NAME POST_LEVEL_NAME
+            FROM HR_EMPLOYEE HR LEFT JOIN HR_DEPARTMENT A ON HR.DEPTID = A.DEPTID
+                 LEFT JOIN HR_POST_LEVEL HPL ON HR.POST_LEVEL_ID = HPL.POST_GRADE_ID
+								 LEFT JOIN HR_POST HP ON HR.POST_ID = HP.POST_ID
+								 LEFT JOIN SY_CODE C ON HR.STATUS_CODE = C.CODE_ID
+								 LEFT JOIN HR_COMPANY B ON A.CPNY_ID = B.CPNY_ID
+						WHERE HR.LEFT_DATE IS NULL
+        ]]>
+        <isNotEmpty prepend="AND" property="keyWord">
+            ( 
+                HR.EMPID LIKE CONCAT('%',TRIM(#keyWord#),'%') 
+                OR  HR.CHINESENAME LIKE CONCAT('%',TRIM(#keyWord#),'%')
+                OR  HR.CHINESE_PINYIN LIKE CONCAT('%',TRIM(#keyWord#),'%')
+                OR  HR.ENGLISHNAME LIKE CONCAT('%',TRIM(#keyWord#),'%')
+            )
+        </isNotEmpty>   
+                
+        <isNotEmpty prepend="AND" property="DEPTID">
+            HR.DEPTID = #DEPTID#
+        </isNotEmpty>
+        
+        <isNotEmpty prepend="AND" property="ADMINID">
+            EXISTS (
+                    SELECT *
+                      FROM SY_ADMIN_DEPTID S1, SY_ADMIN S2
+                     WHERE S2.ADMINNO = S1.ADMIN_NO
+                       AND S1.ADMIN_DEPTID = HR.DEPTID
+                       AND S2.ADMINID = #ADMINID#
+                )
+        </isNotEmpty>
+        
+        <isNotEmpty prepend="AND" property="CPNY_ID">
+            <![CDATA[
+                  A.CPNY_ID = #CPNY_ID:VARCHAR#
+            ]]>
+        </isNotEmpty>
+        
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                    ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                    ORDER BY HR.DEPTID, HR.EMPID
+            ]]>
+        </isEmpty>
+    </select>
+    
+    <select id="getEmpInfoListCnt" parameterClass="linkMap"
+        resultClass="int">
+        <![CDATA[
+            SELECT COUNT(0)
+            FROM HR_EMPLOYEE HR LEFT JOIN HR_DEPARTMENT A ON HR.DEPTID = A.DEPTID
+                 LEFT JOIN HR_POST_LEVEL HPL ON HR.POST_LEVEL_ID = HPL.POST_GRADE_ID
+								 LEFT JOIN HR_POST HP ON HR.POST_ID = HP.POST_ID
+								 LEFT JOIN SY_CODE C ON HR.STATUS_CODE = C.CODE_ID
+								 LEFT JOIN HR_COMPANY B ON A.CPNY_ID = B.CPNY_ID
+						WHERE HR.LEFT_DATE IS NULL
+        ]]>
+        <isNotEmpty prepend="AND" property="keyWord">
+            ( 
+                HR.EMPID LIKE CONCAT('%',TRIM(#keyWord#),'%') 
+                OR  HR.CHINESENAME LIKE CONCAT('%',TRIM(#keyWord#),'%')
+                OR  HR.CHINESE_PINYIN LIKE CONCAT('%',TRIM(#keyWord#),'%')
+                OR  HR.ENGLISHNAME LIKE CONCAT('%',TRIM(#keyWord#),'%')
+            )
+        </isNotEmpty>
+        
+        <isNotEmpty prepend="AND" property="DEPTID">
+            HR.DEPTID = #DEPTID#
+        </isNotEmpty>
+        
+        <isNotEmpty prepend="AND" property="ADMINID">
+            EXISTS (
+                    SELECT *
+                      FROM SY_ADMIN_DEPTID S1, SY_ADMIN S2
+                     WHERE S2.ADMINNO = S1.ADMIN_NO
+                       AND S1.ADMIN_DEPTID = HR.DEPTID
+                       AND S2.ADMINID = #ADMINID#
+                )
+        </isNotEmpty>
+          
+        <isNotEmpty prepend="AND" property="CPNY_ID">
+            <![CDATA[
+                  A.CPNY_ID = #CPNY_ID:VARCHAR#
+            ]]>
+        </isNotEmpty>
+    </select>
+    <resultMap id="basicInfoMap" class="employee">
+        <result property="empId" column="EMPID"/>
+        <result property="empName" column="EMPNAME"/>
+        <result property="dept.deptName" column="DEPTNAME"/>
+    </resultMap>
+    <select id="getEmpBasicInfoUsingBeanMap" parameterClass="linkMap" resultMap="basicInfoMap">
+        <![CDATA[
+            SELECT HRE.EMPID                            EMPID,
+                   HRE.CHINESENAME                      EMPNAME,
+                   HRD.DEPTNAME                         DEPTNAME
+              FROM HR_EMPLOYEE HRE ,HR_DEPARTMENT HRD
+             WHERE HRE.EMPID = #EMPID#
+               AND HRE.DEPTID = HRD.DEPTID
+        ]]>
+        <isNotEmpty prepend="AND" property="HR_ADMIN_ID">
+            <![CDATA[
+               EXISTS (
+                    SELECT EMPID FROM
+                        (
+                        SELECT EMPID FROM HR_EMPLOYEE H2
+                            WHERE EXISTS
+                            (
+                            SELECT S2.ADMINID AS EMPID
+                                FROM SY_ADMIN_DEPTID S1, SY_ADMIN S2
+                                WHERE S2.ADMINNO = S1.ADMIN_NO
+                                AND S2.ADMINID = #HR_ADMIN_ID#
+                                AND H2.DEPTID=S1.ADMIN_DEPTID
+                            )
+                        UNION
+                        SELECT #HR_ADMIN_ID# AS EMPID FROM DUAL
+                     ) S3
+                     WHERE S3.EMPID = HRE.EMPID
+               )
+            ]]>
+        </isNotEmpty>
+    </select>
+    <select id="getEmpBasicInfo" parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[   
+            SELECT HRE.EMPID EMPID,
+                   IF(#language#='en', HRE.ENGLISHNAME, HRE.CHINESENAME) CHINESENAME,
+                   IF(#language#='en', HRD.DEPT_EN_NAME, HRD.DEPTNAME) DEPTNAME
+              FROM HR_EMPLOYEE HRE ,HR_DEPARTMENT HRD
+             WHERE HRE.EMPID = #EMPID#
+               AND HRE.DEPTID = HRD.DEPTID
+        ]]>
+        <isNotEmpty prepend="AND" property="HR_ADMIN_ID">
+            <![CDATA[
+               EXISTS (
+                    SELECT EMPID FROM  
+                        (
+                        SELECT EMPID FROM HR_EMPLOYEE H2 
+                            WHERE EXISTS
+                            (
+                            SELECT S2.ADMINID AS EMPID
+                                FROM SY_ADMIN_DEPTID S1, SY_ADMIN S2
+                                WHERE S2.ADMINNO = S1.ADMIN_NO
+                                AND S2.ADMINID = #HR_ADMIN_ID#
+                                AND H2.DEPTID=S1.ADMIN_DEPTID
+                            )
+                        UNION
+                        SELECT #HR_ADMIN_ID# AS EMPID FROM DUAL  
+                     ) S3
+                     WHERE S3.EMPID = HRE.EMPID
+               )
+            ]]>
+        </isNotEmpty> 
+    </select>
+    
+    <select id="isSupervisor" parameterClass="linkMap"
+        resultClass="string" remapResults="true">
+        <![CDATA[   
+            SELECT SUPERVISOR_ID
+              FROM AR_SUPERVISOR A, SY_ADMIN B
+             WHERE A.SUPERVISOR_ID = B.ADMINID
+               AND A.SUPERVISOR_ID = #ADMINID#
+               AND B.SCREEN_GRANT_ID LIKE CONCAT('%',replace(#supervisorRoleNo#,' ',''),'%')
+        ]]> 
+    </select>
+    <sql id="proSearchEmployeeCondition" >
+        <isNotEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+                   EMPID LIKE CONCAT('%',TRIM(#keyWord:VARCHAR#),'%') OR CHINESENAME LIKE CONCAT('%',TRIM(#keyWord:VARCHAR#),'%') 
+            ]]>
+        </isNotEmpty>
+        
+        <isEmpty prepend="AND" property="keyWord">
+             <![CDATA[
+                 DEPTID LIKE CONCAT('%',TRIM(#DEPTID#),'%')
+            ]]>
+        </isEmpty>
+        
+        <isNotEmpty prepend="AND" property="STATUS_CODE">
+            <![CDATA[
+                  STATUS_CODE = #STATUS_CODE:VARCHAR#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="HR_ADMIN_ID">
+            <![CDATA[
+               EXISTS (
+                    SELECT EMPID FROM  
+                        (
+                        SELECT EMPID FROM HR_EMPLOYEE H2 
+                            WHERE EXISTS
+                            (
+                            SELECT S2.ADMINID AS EMPID
+                                FROM SY_ADMIN_DEPTID S1, SY_ADMIN S2
+                                WHERE S2.ADMINNO = S1.ADMIN_NO
+                                AND S2.ADMINID = #HR_ADMIN_ID#
+                                AND H2.DEPTID=S1.ADMIN_DEPTID
+                            )
+                        UNION
+                        SELECT #HR_ADMIN_ID# AS EMPID FROM DUAL  
+                     ) S3
+                     WHERE S3.EMPID = EMPID
+               )
+            ]]>
+        </isNotEmpty>
+    </sql>
+    <select id="getProSearchEmployeeInfo" parameterClass="linkMap" 
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+        SELECT * FROM (
+             SELECT 0 PRO_NO,
+                       HRE.EMPID,
+                       IF(#language#='en', HRE.ENGLISHNAME, HRE.CHINESENAME) CHINESENAME,
+                       HRD.DEPTID DEPTID,
+                       IF(#language#='en', HRD.DEPT_EN_NAME, HRD.DEPTNAME) DEPTNAME,
+                       HRE.STATUS_CODE,
+                       IF(#language#='en', C.CODE_EN_NAME, C.CODE_NAME) STATUS_NAME,
+                       HRD.CPNY_ID,
+                       IF(#language#='en', B.CPNY_EN_NAME, B.CPNY_NAME) CPNY_NAME,
+                       '' START_DATE,
+                       '' END_DATE,
+                       0 QUANTITY,
+                       '' REMARK
+              FROM HR_EMPLOYEE HRE LEFT JOIN  HR_DEPARTMENT HRD ON HRE.DEPTID = HRD.DEPTID
+                       LEFT JOIN SY_CODE C ON HRE.STATUS_CODE = C.CODE_ID
+											 LEFT JOIN HR_COMPANY B ON HRD.CPNY_ID = B.CPNY_ID
+                  WHERE HRE.EMPID NOT IN(
+                                SELECT EPE.EMPID 
+                                  FROM ESS_PROJECT_EMP EPE 
+                                 WHERE EPE.PRO_NO = #PRO_NO#    
+                              )
+               UNION
+               SELECT EPE.PRO_NO,
+                          EPE.EMPID,
+                          IF(#language#='en', HRE.ENGLISHNAME, HRE.CHINESENAME) CHINESENAME,
+                          HRE.DEPTID,
+                          IF(#language#='en', HRD.DEPT_EN_NAME, HRD.DEPTNAME) DEPTNAME,
+                          HRE.STATUS_CODE,
+                          IF(#language#='en', M.CODE_EN_NAME, M.CODE_NAME) STATUS_NAME,
+                          HRD.CPNY_ID,
+                          IF(#language#='en', B.CPNY_EN_NAME, B.CPNY_NAME) CPNY_NAME, 
+                          date_format(EPE.START_DATE, '%Y-%m-%d') START_DATE,
+                          date_format(EPE.END_DATE, '%Y-%m-%d') END_DATE,
+                          EPE.QUANTITY,
+                          EPE.REMARK
+                FROM ESS_PROJECT_EMP EPE LEFT JOIN ESS_PROJECT EP ON EPE.PRO_NO = EP.PRO_NO
+                        LEFT JOIN HR_EMPLOYEE HRE ON EPE.EMPID = HRE.EMPID
+                        LEFT JOIN HR_DEPARTMENT HRD ON HRE.DEPTID = HRD.DEPTID
+											LEFT JOIN HR_COMPANY B ON HRD.CPNY_ID = B.CPNY_ID
+                        LEFT JOIN SY_CODE M ON HRE.STATUS_CODE = M.CODE_ID
+                        LEFT JOIN SY_CODE N	ON EP.TYPE_CODE = N.CODE_ID
+                     
+                    WHERE EPE.PRO_NO = #PRO_NO# 
+              )  as aa1  
+              WHERE 1 = 1  
+        ]]>
+        
+        <include refid="proSearchEmployeeCondition"/>
+        
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                  ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY START_DATE desc
+            ]]>
+        </isEmpty>
+         
+    </select>
+    
+    <select id="getProSearchEmployeeInfoCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[ 
+            SELECT count(*) FROM (
+             SELECT 0 PRO_NO,
+                       HRE.EMPID,
+                       IF(#language#='en', HRE.ENGLISHNAME, HRE.CHINESENAME) CHINESENAME,
+                       HRD.DEPTID DEPTID,
+                       IF(#language#='en', HRD.DEPT_EN_NAME, HRD.DEPTNAME) DEPTNAME,
+                       HRE.STATUS_CODE,
+                       IF(#language#='en', C.CODE_EN_NAME, C.CODE_NAME) STATUS_NAME,
+                       HRD.CPNY_ID,
+                       IF(#language#='en', B.CPNY_EN_NAME, B.CPNY_NAME) CPNY_NAME,
+                       '' START_DATE,
+                       '' END_DATE,
+                       0 QUANTITY,
+                       '' REMARK
+              FROM HR_EMPLOYEE HRE LEFT JOIN  HR_DEPARTMENT HRD ON HRE.DEPTID = HRD.DEPTID
+                       LEFT JOIN SY_CODE C ON HRE.STATUS_CODE = C.CODE_ID
+											 LEFT JOIN HR_COMPANY B ON HRD.CPNY_ID = B.CPNY_ID
+                  WHERE HRE.EMPID NOT IN(
+                                SELECT EPE.EMPID 
+                                  FROM ESS_PROJECT_EMP EPE 
+                                 WHERE EPE.PRO_NO = #PRO_NO#    
+                              )
+               UNION
+               SELECT EPE.PRO_NO,
+                          EPE.EMPID,
+                          IF(#language#='en', HRE.ENGLISHNAME, HRE.CHINESENAME) CHINESENAME,
+                          HRE.DEPTID,
+                          IF(#language#='en', HRD.DEPT_EN_NAME, HRD.DEPTNAME) DEPTNAME,
+                          HRE.STATUS_CODE,
+                          IF(#language#='en', M.CODE_EN_NAME, M.CODE_NAME) STATUS_NAME,
+                          HRD.CPNY_ID,
+                          IF(#language#='en', B.CPNY_EN_NAME, B.CPNY_NAME) CPNY_NAME, 
+                          date_format(EPE.START_DATE, '%Y-%m-%d') START_DATE,
+                          date_format(EPE.END_DATE, '%Y-%m-%d') END_DATE,
+                          EPE.QUANTITY,
+                          EPE.REMARK
+                FROM ESS_PROJECT_EMP EPE LEFT JOIN ESS_PROJECT EP ON EPE.PRO_NO = EP.PRO_NO
+                        LEFT JOIN HR_EMPLOYEE HRE ON EPE.EMPID = HRE.EMPID
+                        LEFT JOIN HR_DEPARTMENT HRD ON HRE.DEPTID = HRD.DEPTID
+											LEFT JOIN HR_COMPANY B ON HRD.CPNY_ID = B.CPNY_ID
+                        LEFT JOIN SY_CODE M ON HRE.STATUS_CODE = M.CODE_ID
+                        LEFT JOIN SY_CODE N	ON EP.TYPE_CODE = N.CODE_ID
+                     
+                    WHERE EPE.PRO_NO = #PRO_NO# 
+              )  as aa2  
+              WHERE 1 = 1 
+                       
+        ]]> 
+        <include refid="proSearchEmployeeCondition"/>
+          <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                  ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY START_DATE,EMPID
+            ]]>
+        </isEmpty> 
+    </select>
+    
+    <select id="getCustAndAttAndHrSearchEmployeeScore" parameterClass="linkMap" 
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+             SELECT HRE.EMPID, 
+                    HRE.CHINESENAME,
+                    HRE.ENGLISHNAME,  
+                    HRE.STATUS_CODE,
+                    if(#language#= 'en', C.CODE_EN_NAME, C.CODE_NAME) STATUS,
+                    HRD.CPNY_ID,
+                    HRE.POST_ID POST_ID,
+                    if(#language#= 'en', HP.POST_EN_NAME, HP.POST_NAME) POST_NAME,
+                    HRE.DEPTID DEPTID,
+                    if(#language#= 'en', B.CPNY_EN_NAME, B.CPNY_NAME) CPNY_NAME,
+                    if(#language#='en', HRD.DEPT_EN_NAME, HRD.DEPTNAME) DEPTNAME,
+                    ifnull((SELECT SUM(ES.SCORE) FROM EVA_KPI_SCORE ES WHERE ES.PA_MONTH = #PA_MONTH# GROUP BY EMPID HAVING ES.EMPID = HRE.EMPID),0) SCORE
+            FROM HR_EMPLOYEE HRE left join SY_CODE C on HRE.STATUS_CODE = C.CODE_ID
+            					 left join HR_POST HP on HRE.POST_ID = HP.POST_ID,
+            HR_DEPARTMENT HRD left join HR_COMPANY B on HRD.CPNY_ID = B.CPNY_ID
+            WHERE HRE.DEPTID = HRD.DEPTID
+        ]]>
+        
+        <include refid="CustAndAttAndHrSearchEmployeeCondition"/>
+        
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                  ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY HRE.DEPTID, HRE.EMPID
+            ]]>
+        </isEmpty>
+         
+    </select>
+    
+</sqlMap>

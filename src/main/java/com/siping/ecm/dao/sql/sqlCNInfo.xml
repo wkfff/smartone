@@ -1,0 +1,391 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap
+    PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+    "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="ecm.cnInfo">
+     <sql id="EcmChangeNoCondition">
+        <isNotEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+                (
+                    ECNI.CHANGE_ID             LIKE '%'||TRIM(#keyWord#)||'%'
+                    OR ECNI.REASON             LIKE '%'||TRIM(#keyWord#)||'%'
+                    OR ECNI.DESCRIPTION        LIKE '%'||TRIM(#keyWord#)||'%'
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="S_DATE">
+            <![CDATA[
+                ECNI.S_DATE >= TO_DATE(#S_DATE#,'YYYY-MM-DD')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="E_DATE">
+            <![CDATA[
+                ECNI.S_DATE <= TO_DATE(#E_DATE#,'YYYY-MM-DD')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="CHANGE_STATUS_NO">
+            <![CDATA[
+                PRI.STATE_NO = #CHANGE_STATUS_NO#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="CHANGE_TYPE_NO">
+            <![CDATA[
+                PRI.TYPE_NO = #CHANGE_TYPE_NO#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="CHANGE_NO">
+            <![CDATA[
+                ECNI.CHANGE_NO = #CHANGE_NO#
+            ]]>
+        </isNotEmpty>
+     </sql>
+
+    <resultMap class="engineerChange" id="changeMap">
+        <result property="id" column="CHANGE_ID"/>
+        <result property="no" column="CHANGE_NO"/>
+        <result property="reason" column="REASON"/>
+        <result property="startDate" column="S_DATE"/>
+        <result property="endDate" column="E_DATE"/>
+        <result property="description" column="DESCRIPTION"/>
+        <result property="processRunning.type.no" column="CHANGE_TYPE_NO"/>
+        <result property="processRunning.type.name" column="CHANGE_TYPE"/>
+        <result property="processRunning.state.no" column="CHANGE_STATUS_NO"/>
+        <result property="processRunning.state.name" column="CHANGE_STATUS"/>
+        <result property="processRunning.no" column="RUNNING_NO"/>
+    </resultMap>
+
+    <select id="getChangeNoList" parameterClass="linkMap" resultMap="changeMap" remapResults="true">
+        <![CDATA[
+            SELECT ECNI.CHANGE_NO                 CHANGE_NO,
+                   ECNI.CHANGE_ID                 CHANGE_ID,
+                   ECNI.S_DATE                    S_DATE,
+                   ECNI.E_DATE                    E_DATE,
+                   PRI.TYPE_NO                    CHANGE_TYPE_NO,
+                   PRI.STATE_NO                   CHANGE_STATUS_NO,
+                   POTI.OBJECT_TYPE_NAME          CHANGE_TYPE,
+                   PSI.STATUS_NAME                CHANGE_STATUS,
+                   ECNI.RUNNING_NO                RUNNING_NO,
+                   ECNI.REASON                    REASON,
+                   ECNI.DESCRIPTION               DESCRIPTION
+            FROM   ECM_CHANGE_NO_INFO           ECNI,
+                   PROCESS_OBJECT_TYPE_INFO     POTI,
+                   PROCESS_STATUS_INFO          PSI,
+                   PROCESS_RUNNING_INFO         PRI
+            WHERE ECNI.ACTIVITY = 1
+            AND    PRI.TYPE_NO = POTI.OBJECT_TYPE_NO(+)
+            AND    PRI.STATE_NO = PSI.STATUS_NO(+)
+            AND    ECNI.RUNNING_NO = PRI.RUNNING_NO(+)
+            AND    ECNI.CPNY_ID = #metaData.company.companyId#
+        ]]>
+        <include refid="EcmChangeNoCondition" />
+    </select>
+
+    <select id="getChangeNoListCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(0)
+            FROM   ECM_CHANGE_NO_INFO           ECNI,
+                   PROCESS_OBJECT_TYPE_INFO     POTI,
+                   PROCESS_STATUS_INFO          PSI,
+                   PROCESS_RUNNING_INFO         PRI
+            WHERE ECNI.ACTIVITY = 1
+            AND    PRI.TYPE_NO = POTI.OBJECT_TYPE_NO(+)
+            AND    PRI.STATE_NO = PSI.STATUS_NO(+)
+            AND    ECNI.RUNNING_NO = PRI.RUNNING_NO(+)
+            AND    ECNI.CPNY_ID = #metaData.company.companyId#
+        ]]>
+        <include refid="EcmChangeNoCondition" />
+    </select>
+
+    <resultMap class="engineerChange" id="changeDetailMap">
+        <result property="id" column="CHANGE_ID"/>
+        <result property="no" column="CHANGE_NO"/>
+        <result property="reason" column="REASON"/>
+        <result property="startDate" column="S_DATE"/>
+        <result property="endDate" column="E_DATE"/>
+        <result property="description" column="DESCRIPTION"/>
+    </resultMap>
+
+    <select id="getChangeNoDetail" parameterClass="engineerChange" resultMap="changeDetailMap" >
+        <![CDATA[
+            SELECT ECNI.CHANGE_NO                    CHANGE_NO,
+                   ECNI.CHANGE_ID                    CHANGE_ID,
+                   ECNI.DESCRIPTION                  DESCRIPTION,
+                   ECNI.S_DATE                       S_DATE,
+                   ECNI.E_DATE                       E_DATE,
+                   ECNI.REASON                       REASON
+            FROM ECM_CHANGE_NO_INFO         ECNI
+            WHERE  ECNI.ACTIVITY = 1
+            AND    ECNI.CPNY_ID = #metaData.company.companyId#
+            AND    ECNI.CHANGE_NO = #no#
+        ]]>
+    </select>
+
+    <select id="getChangeNoDetailById" parameterClass="engineerChange" resultMap="changeDetailMap" >
+        <![CDATA[
+            SELECT ECNI.CHANGE_NO                    CHANGE_NO,
+                   ECNI.CHANGE_ID                    CHANGE_ID,
+                   ECNI.DESCRIPTION                  DESCRIPTION,
+                   ECNI.S_DATE                       S_DATE,
+                   ECNI.E_DATE                       E_DATE,
+                   ECNI.REASON                       REASON
+            FROM ECM_CHANGE_NO_INFO         ECNI
+            WHERE  ECNI.ACTIVITY = 1
+            AND    ECNI.CPNY_ID = #metaData.company.companyId#
+            AND    ECNI.CHANGE_ID = #id#
+        ]]>
+    </select>
+
+    <select id="getTypeList" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT A.CODE_ID, A.CODE_NAME,
+        ]]>
+        <isNotEmpty property="CHANGE_NO">
+            <![CDATA[
+            (CASE WHEN ECNI.CHANGE_TYPE_NO = A.CODE_ID THEN 1
+                  ELSE 0
+                  END)
+            ]]>
+        </isNotEmpty>
+        <isEmpty property="CHANGE_NO">
+            (0)
+        </isEmpty>
+        <![CDATA[
+            AS CHECKED
+            FROM SY_CODE A
+        ]]>
+        <isNotEmpty property="CHANGE_NO">
+            <![CDATA[
+            , ECM_CHANGE_NO_INFO ECNI
+            ]]>
+        </isNotEmpty>
+        <![CDATA[
+            WHERE A.PARENT_CODE = 'MatTypeCode'
+            AND A.ACTIVITY = 1
+        ]]>
+        <isNotEmpty prepend="AND" property="CHANGE_NO">
+            <![CDATA[
+                ECNI.CHANGE_NO = #CHANGE_NO#
+            ]]>
+        </isNotEmpty>
+    </select>
+
+    <!-- 获取对象列表 -->
+    <!-- 文档列表 -->
+    <sql id="getIncludeDocListSql" >
+        <![CDATA[
+            SELECT DI.DOC_ID                        OBJECT_ID,
+                #OBJECT_CATEGORY#                   OBJECT_CATEGORY,
+                DI.DOC_NAME                         OBJECT_NAME,
+                PSI.STATUS_NAME                     STATUS_NAME,
+                1                                   IS_INCLUDED,
+                ECOI.IS_UPDATED                     IS_UPDATED,
+                DI.DESCRIPTION                      DESCRIPTION
+            FROM ECM_CHANGE_OBJECT_INFO       ECOI,
+                 PROCESS_STATUS_INFO          PSI,
+                 DOC_INFO                     DI
+            WHERE ECOI.ACTIVITY = 1
+            AND ECOI.CPNY_ID = #CPNY_ID#
+            AND ECOI.OBJECT_ID = DI.DOC_ID
+            AND DI.DOC_STATUS_ID = PSI.STATUS_ID
+            AND ECOI.CHANGE_NO = #CHANGE_NO#
+            AND ECOI.OBJECT_CATEGORY = #OBJECT_CATEGORY#
+        ]]>
+    </sql>
+
+    <sql id="getExcludeDocListSql">
+        <![CDATA[
+            SELECT
+                DI.DOC_ID                                             OBJECT_ID,
+                #OBJECT_CATEGORY#                                     OBJECT_CATEGORY,
+                DI.DOC_NAME                                           OBJECT_NAME,
+                ''                                                    STATUS_NAME,
+                0                                                     IS_INCLUDED,
+                ''                                                    IS_UPDATED,
+                DI.DESCRIPTION                                        DESCRIPTION
+            FROM DOC_INFO                     DI
+            WHERE DI.ACTIVITY = 1
+            AND DI.CPNY_ID = #CPNY_ID#
+            AND DI.DOC_ID NOT IN(
+                SELECT  ECOI.OBJECT_ID
+                FROM ECM_CHANGE_OBJECT_INFO       ECOI
+                WHERE ECOI.CPNY_ID = #CPNY_ID#
+                AND ECOI.CHANGE_NO = #CHANGE_NO#
+                AND ECOI.OBJECT_CATEGORY = #OBJECT_CATEGORY#
+            )
+        ]]>
+    </sql>
+
+    <sql id="getAllDocListSql" >
+        <include refid="getIncludeDocListSql" />
+        <![CDATA[
+            UNION ALL
+        ]]>
+        <include refid="getExcludeDocListSql" />
+    </sql>
+
+    <sql id="sqlGetDocumentList" >
+        <isEqual property="LIMIT" compareValue="EXCLUDE">
+        <include refid="getExcludeDocListSql" />
+        </isEqual>
+        <isEqual property="LIMIT" compareValue="INCLUDE">
+        <include refid="getIncludeDocListSql" />
+        </isEqual>
+        <isEqual property="LIMIT" compareValue="ALL">
+        <include refid="getAllDocListSql" />
+        </isEqual>
+    </sql>
+
+    <!-- Material-->
+    <!-- 物料列表 -->
+    <sql id="getIncludeMaterialListSql" >
+        <![CDATA[
+            SELECT MI.MAT_ID                       OBJECT_ID,
+                #OBJECT_CATEGORY#                  OBJECT_CATEGORY,
+                MI.MAT_NAME                        OBJECT_NAME,
+                PSI.STATUS_NAME                    STATUS_NAME,
+                1                                  IS_INCLUDED,
+                ECOI.IS_UPDATED                    IS_UPDATED,
+                MI.MAT_DESCRIPTION                 DESCRIPTION
+            FROM ECM_CHANGE_OBJECT_INFO       ECOI,
+                PROCESS_STATUS_INFO           PSI,
+                MAT_INFO                      MI
+            WHERE ECOI.ACTIVITY = 1
+            AND ECOI.CPNY_ID = #CPNY_ID#
+            AND ECOI.OBJECT_ID = MI.MAT_ID
+            AND MI.MAT_STATUS_ID = PSI.STATUS_ID
+            AND ECOI.CHANGE_NO = #CHANGE_NO#
+            AND ECOI.OBJECT_CATEGORY = #OBJECT_CATEGORY#
+        ]]>
+    </sql>
+
+    <sql id="getExcludeMaterialListSql">
+        <![CDATA[
+            SELECT MI.MAT_ID                                             OBJECT_ID,
+                #OBJECT_CATEGORY#                                     OBJECT_CATEGORY,
+                MI.MAT_NAME                                           OBJECT_NAME,
+                ''                                                    STATUS_NAME,
+                0                                                     IS_INCLUDED,
+                ''                                                    IS_UPDATED,
+                MI.MAT_DESCRIPTION                                    DESCRIPTION
+            FROM MAT_INFO                     MI
+            WHERE MI.ACTIVITY = 1
+            AND MI.CPNY_ID = #CPNY_ID#
+            AND MI.MAT_ID NOT IN(
+                SELECT  ECOI.OBJECT_ID
+                FROM ECM_CHANGE_OBJECT_INFO       ECOI
+                WHERE ECOI.CPNY_ID = #CPNY_ID#
+                AND ECOI.CHANGE_NO = #CHANGE_NO#
+                AND ECOI.OBJECT_CATEGORY = #OBJECT_CATEGORY#
+            )
+        ]]>
+    </sql>
+
+    <sql id="getAllMaterialListSql">
+        <include refid="getIncludeMaterialListSql" />
+            <![CDATA[
+                UNION ALL
+            ]]>
+        <include refid="getExcludeMaterialListSql" />
+    </sql>
+
+    <sql id="sqlGetMaterialList">
+        <isEqual property="LIMIT" compareValue="EXCLUDE">
+        <include refid="getExcludeMaterialListSql" />
+        </isEqual>
+        <isEqual property="LIMIT" compareValue="INCLUDE">
+        <include refid="getIncludeMaterialListSql" />
+        </isEqual>
+        <isEqual property="LIMIT" compareValue="ALL">
+        <include refid="getAllMaterialListSql" />
+        </isEqual>
+    </sql>
+
+    <!-- BOM-->
+    <!-- BOM列表 -->
+    <sql id="getIncludeBOMListSql" >
+        <![CDATA[
+            SELECT BHI.BOM_ID                        OBJECT_ID,
+               #OBJECT_CATEGORY#                     OBJECT_CATEGORY,
+               BHI.BOM_ID                            OBJECT_NAME,
+               PSI.STATUS_NAME                       STATUS_NAME,
+               1                                     IS_INCLUDED,
+               ECOI.IS_UPDATED                       IS_UPDATED,
+               BHI.DESCRIPTION                       DESCRIPTION
+            FROM ECM_CHANGE_OBJECT_INFO       ECOI,
+               PROCESS_STATUS_INFO          PSI,
+               BOM_HEADER_INFO              BHI
+            WHERE ECOI.ACTIVITY = 1
+            AND ECOI.CPNY_ID = #CPNY_ID#
+            AND ECOI.OBJECT_ID = BHI.BOM_ID
+            AND BHI.BOM_STATUS_ID = PSI.STATUS_ID
+            AND ECOI.CHANGE_NO = #CHANGE_NO#
+            AND ECOI.OBJECT_CATEGORY = #OBJECT_CATEGORY#
+        ]]>
+    </sql>
+
+    <sql id="getExcludeBOMListSql">
+        <![CDATA[
+            SELECT
+                BHI.BOM_ID                       OBJECT_ID,
+                #OBJECT_CATEGORY#                OBJECT_CATEGORY,
+                BHI.BOM_ID                       OBJECT_NAME,
+                ''                               STATUS_NAME,
+                0                                IS_INCLUDED,
+                ''                               IS_UPDATED,
+                BHI.DESCRIPTION                  DESCRIPTION
+            FROM BOM_HEADER_INFO                      BHI
+            WHERE BHI.ACTIVITY = 1
+            AND BHI.CPNY_ID = #CPNY_ID#
+            AND BHI.BOM_ID NOT IN(
+                SELECT  ECOI.OBJECT_ID
+                FROM ECM_CHANGE_OBJECT_INFO       ECOI
+                WHERE ECOI.CPNY_ID = #CPNY_ID#
+                AND ECOI.CHANGE_NO = #CHANGE_NO#
+                AND ECOI.OBJECT_CATEGORY = #OBJECT_CATEGORY#
+            )
+        ]]>
+    </sql>
+
+    <sql id="getAllBOMListSql">
+        <include refid="getIncludeBOMListSql" />
+            <![CDATA[
+                UNION ALL
+            ]]>
+        <include refid="getExcludeBOMListSql" />
+    </sql>
+
+    <sql id="sqlGetBOMList">
+        <isEqual property="LIMIT" compareValue="EXCLUDE">
+        <include refid="getExcludeBOMListSql" />
+        </isEqual>
+        <isEqual property="LIMIT" compareValue="INCLUDE">
+        <include refid="getIncludeBOMListSql" />
+        </isEqual>
+        <isEqual property="LIMIT" compareValue="ALL">
+        <include refid="getAllBOMListSql" />
+        </isEqual>
+    </sql>
+
+    <select id="getObjectList" parameterClass="linkMap" resultClass="linkMap">
+        <isEqual property="OBJECT_CATEGORY" compareValue="MAT">
+            <include refid="sqlGetMaterialList" />
+        </isEqual>
+        <isEqual property="OBJECT_CATEGORY" compareValue="DOC">
+            <include refid="sqlGetDocumentList" />
+        </isEqual>
+        <isEqual property="OBJECT_CATEGORY" compareValue="BOM">
+            <include refid="sqlGetBOMList" />
+        </isEqual>
+    </select>
+
+    <select id="getObjectListCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(0)
+            FROM ECM_CHANGE_OBJECT_INFO        ECOI
+            WHERE ECOI.ACTIVITY = 1
+            AND   ECOI.CPNY_ID = #CPNY_ID#
+            AND   ECOI.OBJECT_CATEGORY = #OBJECT_CATEGORY#
+            AND   ECOI.CHANGE_NO = #CHANGE_NO#
+        ]]>
+    </select>
+</sqlMap>

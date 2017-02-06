@@ -1,0 +1,641 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="upload.uploadInfo">
+	<update id="uploadPhoto" parameterClass="linkMap">
+		<![CDATA[
+			UPDATE HR_PERSONAL_INFO
+			SET PHOTOPATH = #PHOTOPATH#
+			WHERE
+			EMPID = #EMPID:VARCHAR# 
+		]]>
+	</update>
+	
+	<update id="uploadProImage" parameterClass="linkMap">
+		<![CDATA[
+			UPDATE PROSTOR_PRODUCT
+			SET PHOTOPATH = #PHOTOPATH#
+			WHERE
+			PRODUCT_NO = #PRODUCT_NO# 
+		]]>
+	</update>
+	
+	<update id="uploadAssetPic" parameterClass="linkMap">
+		<![CDATA[
+			UPDATE ASS_ASSET_INFO
+			SET PHOTOPATH = #PHOTOPATH#
+			WHERE
+			ASSET_ID = #ASSET_ID# 
+		]]>
+	</update>
+
+	<update id="createTmpPersonalInfo" parameterClass="linkMap">
+	<![CDATA[
+		declare
+		v_num number;
+		begin
+		  select count(0) into v_num from dual where exists(select 1 from user_tables where table_name = 'TMP_PERSONAL_INFO');
+		  if v_num>0 then
+		    execute immediate 'drop table tmp_personal_info' ;
+		  end if;  		   
+		  execute immediate 'create table tmp_personal_info(flag varchar2(20), $TITLES$)' ; 
+		  
+		  select count(0) into v_num from dual where exists(select 1 from user_tables where table_name = 'TMP_PERSONAL_TITLES');
+		  if v_num>0 then
+		    execute immediate 'drop table tmp_personal_titles' ;
+		  end if;  		   
+		  execute immediate 'create table tmp_personal_titles(title_code varchar2(40), title_name varchar2(40), datatype varchar2(40), parent_code varchar2(40), table_name varchar2(40), column_code varchar2(40), column_name varchar2(40), order_no number(3))' ;    
+		end;	
+	]]>
+	</update>
+
+	<insert id="updateTmpPersonalTitles" parameterClass="linkMap">
+	<![CDATA[
+		insert into tmp_personal_titles (title_code,title_name,datatype,parent_code,table_name,column_code,column_name,order_no)
+				 values( #TITLE_CODE# , #TITLE_NAME# , #DATA_TYPE#, #PARENT_CODE#, #TABLE_NAME#, #COLUMN_CODE#, #COLUMN_NAME#,#ORDERNO#)
+	]]>
+	</insert>
+
+	<update id="updateTmpPersonalInfo" parameterClass="linkMap">
+	<![CDATA[
+		declare
+		v_num number;
+		begin
+		  select count(0) into v_num from HR_PERSONAL_INFO where empid= #EMPID:VARCHAR# ;
+		  if v_num=1 then
+		    execute immediate 'insert into tmp_personal_info(flag, $titlesStr$ ) values(''修改'', $valuesStr$ )' ;
+		  else 
+		    execute immediate 'insert into tmp_personal_info(flag, $titlesStr$ ) values(''新增'', $valuesStr$ )' ;
+		  end if;
+		end;
+	
+	]]>
+	</update>
+
+	<select id="getColumnList" resultClass="linkMap">
+	<![CDATA[
+	select title_name TITLE_NAME, title_code TITLE_CODE  from tmp_personal_titles order by ORDER_NO
+	]]>
+	</select>
+
+	<select id="getTmpInfoList" parameterClass="linkMap"
+		resultClass="linkMap">
+	<![CDATA[
+	select * from $tableName$
+	]]>
+	</select>
+
+	<insert id="uploadContractAppendix" parameterClass="linkMap">
+	<![CDATA[
+	  INSERT INTO HR_CONTRACT_APPENDIX(
+	  APPENDIX_NO,CONTRACT_NO,EMPID,ORIGINAL_FILE_NAME,MODIFIED_FILE_NAME,
+	  FILE_SUFFIX,CREATE_DATE,CREATED_BY,ACTIVITY
+	  )VALUES(
+	  HR_CONTRACT_APPENDIX_SEQ.NEXTVAL,#CONTRACT_NO#,#EMPID:VARCHAR#,#ORIGINAL_FILE_NAME#,
+	  #MODIFIED_FILE_NAME#,#FILE_SUFFIX#,SYSDATE,#CREATED_BY#,1
+	  )
+	]]>
+	</insert>
+	
+	<insert id="uploadProductAppendix" parameterClass="linkMap">
+	<![CDATA[
+	  INSERT INTO PRO_APPENDIX_INFO(
+	  PRO_APPEN_NO,PRO_APPEN_ID,PRODUCT_ID,APPENDIX_NAME,APPENDIX_FORMAT,ORIGINAL_NAME,
+	  STORE_PATH,TARGET_GROUP_CODE,REMARK,CREATE_DATE,CREATED_BY,ACTIVITY
+	  )VALUES(
+	  PRO_APPENDIX_INFO_SEQ.NEXTVAL,#APPENDIX_NAME#,#PRODUCT_ID#,#APPENDIX_NAME#,#APPENDIX_FORMAT#,
+	  #ORIGINAL_NAME#,#STORE_PATH#,#TARGET_GROUP_CODE#,#REMARK#,SYSDATE,#CREATED_BY#,1
+	  )
+	]]>
+	</insert>
+	
+	<insert id="uploadCustAppendix" parameterClass="linkMap">
+	<![CDATA[
+	  INSERT INTO CUST_APPENDIX_INFO(
+	  CUST_APPEN_NO,CUST_APPEN_ID,CUST_ID,APPENDIX_NAME,APPENDIX_FORMAT,ORIGINAL_NAME,
+	  STORE_PATH,TARGET_GROUP_CODE,REMARK,CREATE_DATE,CREATED_BY,ACTIVITY
+	  )VALUES(
+	  CUST_APPENDIX_INFO_SEQ.NEXTVAL,#APPENDIX_NAME#,#CUST_ID#,#APPENDIX_NAME#,#APPENDIX_FORMAT#,
+	  #ORIGINAL_NAME#,#STORE_PATH#,#TARGET_GROUP_CODE#,#REMARK#,SYSDATE,#CREATED_BY#,1
+	  )
+	]]>
+	</insert>
+
+	<update id="modifyTmpTable">
+	<![CDATA[
+	  declare 
+	  cursor titleCursor is select title_code, table_name, parent_code, column_code, column_name from tmp_personal_titles ;
+	  type cur_type is ref cursor;
+	  cur cur_type;
+	  str varchar2(500);
+	  sub_Str varchar2(200);
+	  queryStr varchar2(500);
+	  queryRec varchar2(100);
+	  queryEmpid varchar2(20);
+	  begin
+	    for titleObject in titleCursor loop
+		  if not titleObject.table_name = '-1' then
+		    queryStr := 'select empid, '||titleObject.title_code||' from tmp_personal_info ';
+		    sub_Str := 'select '||titleObject.column_code||' from '||titleObject.table_name||' where ';
+		    if not titleObject.parent_code = '-1' then
+		      sub_Str := sub_Str||'parent_code = '''||titleObject.parent_code||''' and ';
+		    end if;
+		    open cur for queryStr;
+		    loop
+		      fetch cur into queryEmpid, queryRec;
+		      exit when cur%notfound;     
+		      str := 'update tmp_personal_info set '||titleObject.title_code||' = ('||sub_Str||titleObject.column_name||' = '''||
+	                  queryRec||''' ) where empid = '||queryEmpid;       
+		      execute immediate str;
+		    end loop; 
+		  end if;
+		end loop;  
+      end;
+	]]>
+	</update>
+
+	<select id="getTitleList" resultClass="linkMap">
+	<![CDATA[
+	SELECT TITLE_CODE, TITLE_NAME FROM TMP_PERSONAL_TITLES	
+	]]>
+	</select>
+
+	<select id="getUpdateList" parameterClass="linkMap" resultClass="linkMap">
+	<![CDATA[
+	SELECT T.*, #ADMIN_ID# UPDATED_BY FROM TMP_PERSONAL_INFO T WHERE FLAG = '修改'
+	]]>
+	</select>
+
+	<select id="getInsertList" parameterClass="linkMap" resultClass="linkMap">
+	<![CDATA[
+	SELECT T.*,#ADMIN_ID# CREATED_BY FROM TMP_PERSONAL_INFO T WHERE FLAG = '新增'
+	]]>
+	</select>
+
+	<!-- comment : 员工录入 -->
+	<insert id="insertHire" parameterClass="linkMap"> 
+		<![CDATA[
+			DECLARE
+				VAR_EMPID VARCHAR2(20):=#EMPID:VARCHAR#;
+			BEGIN
+				INSERT INTO HR_EMPLOYEE
+						  (EMPID,
+						   DEPTID,
+						   CHINESENAME,
+						   CHINESE_PINYIN,
+						   ENGLISHNAME,
+						   POSITION_ID,
+						   DUTY_CODE,
+						   POST_ID,
+						   POST_GRADE_ID,
+						   POST_COEF,
+						   POST_COLUMN_CODE,
+						   POST_GRADE_LEVEL_CODE,
+						   POST_GROUP_ID,
+						   STATUS_CODE,
+						   JOIN_DATE, 
+						   HIRE_DATE,
+						   END_PROBATION_DATE,
+						   JOIN_TYPE_CODE,
+						   EMP_TYPE_CODE,
+						   COSTCENTER,
+						   CREATE_DATE,
+						   CREATED_BY, 
+						   ACTIVITY,
+						   ORDERNO)
+						VALUES
+						  (#EMPID:VARCHAR#,
+						   #DEPTID#,
+						   #CHINESENAME#,
+						   #CHINESE_PINYIN#,
+						   #ENGLISHNAME#,
+						   #POSITION_ID#,
+						   #DUTY_CODE#,
+						   #POST_ID#,
+						   #POST_GRADE_ID#,
+						   #POST_COEF#,
+						   #POST_COLUMN_CODE#,
+						   #POST_GRADE_LEVEL_CODE#,
+						   #POST_GROUP_ID#,
+						   #STATUS_CODE#, 
+						   #JOIN_DATE#,
+						   #HIRE_DATE#,
+						   #END_PROBATION_DATE#,
+						   #JOIN_TYPE_CODE#,
+						   #EMP_TYPE_CODE#,
+						   #COSTCENTER#,
+						   SYSDATE,
+						   #CREATED_BY#,
+						   1,
+						   #EMPID:VARCHAR#);
+ 				INSERT INTO HR_PERSONAL_INFO
+		            (
+						EMPID,
+						DEGREE_CODE,
+						EDU_HIS_CODE,
+						MAJOR_CODE,
+						GENDER_CODE,
+						BIRTHDAY,
+						RELIGION_CODE,
+						NATION_CODE,
+						NATIONALITY_CODE,
+						BORNPLACE_CODE,
+						POLITY_CODE,
+						MEMBERSHIP,
+						MARITAL_STATUS_CODE,
+						WEDDING_DATE,
+						IDCARD_TYPE_CODE,
+						IDCARD_NO,
+						IDCARD_PROVINCE,
+						IDCARD_CITY,
+						IDCARD_AREA,
+						IDCARD_ADDRESS,
+						HOME_PROVINCE,
+						HOME_CITY,
+						HOME_AREA,
+						HOME_ADDRESS,
+						IDCARD_POSTALCODE,
+						HOME_POSTALCODE,
+						P_EMAIL,
+						C_EMAIL,
+						OFFICE_PHONE,
+						HOME_PHONE,
+						CELLPHONE,
+						FAX,
+						FILE_RELATION_CODE,
+						FILE_RELATION_ADDRESS,
+						WORKAGE,
+						PHOTOPATH,
+						ORDERNO,
+						CREATE_DATE,
+						CREATED_BY, 
+						ACTIVITY
+		            )VALUES(
+						#EMPID:VARCHAR#,
+						#DEGREE_CODE#,
+						#EDU_HIS_CODE#,
+						#MAJOR_CODE#,
+						#GENDER_CODE#, 
+						#BIRTHDAY#,
+						#RELIGION_CODE#,
+						#NATION_CODE#,
+						#NATIONALITY_CODE#,
+						#BORNPLACE_CODE#,
+						#POLITY_CODE#,
+						#MEMBERSHIP#,
+						#MARITAL_STATUS_CODE#, 
+						#WEDDING_DATE#,
+						#IDCARD_TYPE_CODE#,
+						#IDCARD_NO#,
+						#IDCARD_PROVINCE#,
+						#IDCARD_CITY#,
+						#IDCARD_AREA#,
+						#IDCARD_ADDRESS#,
+						#HOME_PROVINCE#,
+						#HOME_CITY#,
+						#HOME_AREA#,
+						#HOME_ADDRESS#,
+						#IDCARD_POSTALCODE#,
+						#HOME_POSTALCODE#,
+						#P_EMAIL#,
+						#C_EMAIL#,
+						#OFFICE_PHONE#,
+						#HOME_PHONE#,
+						#CELLPHONE#,
+						#FAX#,
+						#FILE_RELATION_CODE#,
+						#FILE_RELATION_ADDRESS#,
+						#WORKAGE#,
+						#PHOTOPATH#,
+						#ORDERNO#,
+						SYSDATE,
+						#CREATED_BY#, 
+						1
+		       		);
+		       		
+		       		INSERT INTO HR_EMP_INFO( 
+		       			EMPID,SSN,HAFN,SHIFT_CODE,SUPPLIER_CODE,CREATE_DATE,CREATED_BY,ORDERNO,ACTIVITY
+					 )VALUES(
+					 	#EMPID:VARCHAR#,#SSN#,#HAFN#,#SHIFT_CODE#,#SUPPLIER_CODE#,SYSDATE,#CREATED_BY#,#EMPID:VARCHAR#,1
+					 );
+					 
+					 INSERT INTO HR_EMP_PA_INFO( 
+		       			PA_NO,EMPID,CALC_FLAG,CREATE_DATE,CREATED_BY
+					 )VALUES(
+					 	HR_EMP_PA_INFO_SEQ.NEXTVAL,#EMPID:VARCHAR#,'Y',SYSDATE,#CREATED_BY#
+					 );
+			  		 
+		       		INSERT INTO SY_ADMIN(
+		       			ADMINNO, 
+		       			ADMINID, 
+		       			USERNAME, 
+		       			PASSWORD,
+		       			SCREEN_GRANT_ID,
+		       			CREATE_DATE,
+		       			CREATED_BY,
+		       			ACTIVITY,
+		       			SET_APP
+		       		)VALUES(
+		       			SY_ADMIN_NO.NEXTVAL,
+		       			#EMPID:VARCHAR#,
+		       			(SELECT SUBSTR(#C_EMAIL#,
+						              0,
+						              INSTR(#C_EMAIL#, '@', 1, 1) - 1) USERNAME
+						  FROM DUAL),
+		       			'123456',
+		       			'',
+		       			SYSDATE,
+		       			#CREATED_BY#,
+		       			1,
+		       			'no'
+		       		);
+	       		
+	       			INSERT INTO  HR_EXPERIENCE_INSIDE
+	       			(      EXP_INSIDE_NO,
+	       				   TRANS_NO,
+	       				   TRANS_CODE,
+	       			       EMPID,
+						   DEPTID, 
+						   POSITION_ID,
+						   DUTY_CODE,
+						   POST_ID,
+						   POST_GRADE_ID,
+						   POST_COEF,
+						   POST_COLUMN_CODE,
+						   POST_GRADE_LEVEL_CODE,
+						   POST_GROUP_ID,
+						   STATUS_CODE,
+						   START_DATE, 
+						   END_PROBATION_DATE,
+						   JOIN_TYPE_CODE,
+						   EMP_TYPE_CODE, 
+						   REMARK,
+						   CREATE_DATE,
+						   CREATED_BY, 
+						   AFFRIM_FLAG,
+						   ACTIVITY)
+						VALUES
+						  (HR_EXPERIENCE_INSIDE_SEQ.NEXTVAL,
+						   #TRANS_NO#,
+						   'TransCode_100',
+						   #EMPID:VARCHAR#,
+						   #DEPTID#, 
+						   #POSITION_ID#,
+						   #DUTY_CODE#,
+						   #POST_ID#,
+						   #POST_GRADE_ID#,
+						   #POST_COEF#,
+						   #POST_COLUMN_CODE#,
+						   #POST_GRADE_LEVEL_CODE#,
+						   #POST_GROUP_ID#,
+						   #STATUS_CODE#, 
+						   #JOIN_DATE#,
+						   #END_PROBATION_DATE#,
+						   #JOIN_TYPE_CODE#,
+						   #EMP_TYPE_CODE#,
+						   #REMARK#, 
+						   SYSDATE,
+						   #CREATED_BY#,
+						   1,
+						   1);	
+				END;		
+			]]>
+	</insert>
+
+	<!-- 更新员工信息 -->
+	<update id="updateHire" parameterClass="linkMap">
+	<![CDATA[
+	DECLARE
+	  VAR_EMPID VARCHAR2(20):=#EMPID:VARCHAR#;
+	BEGIN
+	UPDATE HR_PERSONAL_INFO SET UPDATE_DATE = SYSDATE, UPDATED_BY = #UPDATED_BY#	
+	]]>
+		<isNotEmpty property="DEGREE_CODE">
+			,DEGREE_CODE = #DEGREE_CODE#
+		</isNotEmpty>
+		<isNotEmpty property="EDU_HIS_CODE">
+			,EDU_HIS_CODE = #EDU_HIS_CODE#
+		</isNotEmpty>
+		<isNotEmpty property="MAJOR_CODE">
+			,MAJOR_CODE = #MAJOR_CODE#
+		</isNotEmpty>
+		<isNotEmpty property="BIRTHDAY">
+			,BIRTHDAY = #BIRTHDAY#
+		</isNotEmpty>
+		<isNotEmpty property="GENDER_CODE">
+			,GENDER_CODE = #GENDER_CODE#
+		</isNotEmpty>
+		<isNotEmpty property="RELIGION_CODE">
+			,RELIGION_CODE = #RELIGION_CODE#
+		</isNotEmpty>
+		<isNotEmpty property="NATION_CODE">
+			,NATION_CODE = #NATION_CODE#
+		</isNotEmpty>
+		<isNotEmpty property="NATIONALITY_CODE">
+			,NATIONALITY_CODE = #NATIONALITY_CODE#
+		</isNotEmpty>
+		<isNotEmpty property="BORNPLACE_CODE">
+			,BORNPLACE_CODE = #BORNPLACE_CODE#
+		</isNotEmpty>
+		<isNotEmpty property="POLITY_CODE">
+			,POLITY_CODE = #POLITY_CODE#
+		</isNotEmpty>
+		<isNotEmpty property="MEMBERSHIP">
+			,MEMBERSHIP = #MEMBERSHIP#
+		</isNotEmpty>
+		<isNotEmpty property="MARITAL_STATUS_CODE">
+			,MARITAL_STATUS_CODE = #MARITAL_STATUS_CODE#
+		</isNotEmpty>
+		<isNotEmpty property="WEDDING_DATE">
+			,WEDDING_DATE = #WEDDING_DATE#
+		</isNotEmpty>
+		<isNotEmpty property="IDCARD_TYPE_CODE">
+			,IDCARD_TYPE_CODE = #IDCARD_TYPE_CODE#
+		</isNotEmpty>
+		<isNotEmpty property="IDCARD_NO">
+			,IDCARD_NO = #IDCARD_NO#
+		</isNotEmpty>
+		<isNotEmpty property="IDCARD_PROVINCE">
+			,IDCARD_PROVINCE = #IDCARD_PROVINCE#
+		</isNotEmpty>
+		<isNotEmpty property="IDCARD_CITY">
+			,IDCARD_CITY = #IDCARD_CITY#
+		</isNotEmpty>
+		<isNotEmpty property="IDCARD_AREA">
+			,IDCARD_AREA = #IDCARD_AREA#
+		</isNotEmpty>
+		<isNotEmpty property="IDCARD_ADDRESS">
+			,IDCARD_ADDRESS = #IDCARD_ADDRESS#
+		</isNotEmpty>
+		<isNotEmpty property="HOME_PROVINCE">
+			,HOME_PROVINCE = #HOME_PROVINCE#
+		</isNotEmpty>
+		<isNotEmpty property="HOME_CITY">
+			,HOME_CITY = #HOME_CITY#
+		</isNotEmpty>
+		<isNotEmpty property="HOME_AREA">
+			,HOME_AREA = #HOME_AREA#
+		</isNotEmpty>
+		<isNotEmpty property="HOME_ADDRESS">
+			,HOME_ADDRESS = #HOME_ADDRESS#
+		</isNotEmpty>
+		<isNotEmpty property="IDCARD_POSTALCODE">
+			,IDCARD_POSTALCODE = #IDCARD_POSTALCODE#
+		</isNotEmpty>
+		<isNotEmpty property="HOME_POSTALCODE">
+			,HOME_POSTALCODE = #HOME_POSTALCODE#
+		</isNotEmpty>
+		<isNotEmpty property="P_EMAIL">
+			,P_EMAIL = #P_EMAIL#
+		</isNotEmpty>
+		<isNotEmpty property="C_EMAIL">
+			,C_EMAIL = #C_EMAIL#
+		</isNotEmpty>
+		<isNotEmpty property="OFFICE_PHONE">
+			,OFFICE_PHONE = #OFFICE_PHONE#
+		</isNotEmpty>
+		<isNotEmpty property="HOME_PHONE">
+			,HOME_PHONE = #HOME_PHONE#
+		</isNotEmpty>
+		<isNotEmpty property="CELLPHONE">
+			,CELLPHONE = #CELLPHONE#
+		</isNotEmpty>
+		<isNotEmpty property="FAX">
+			,FAX = #FAX#
+		</isNotEmpty>
+		<isNotEmpty property="FILE_RELATION_CODE">
+			,FILE_RELATION_CODE = #FILE_RELATION_CODE#
+		</isNotEmpty>
+		<isNotEmpty property="FILE_RELATION_ADDRESS">
+			,FILE_RELATION_ADDRESS = #FILE_RELATION_ADDRESS#
+		</isNotEmpty>
+		<isNotEmpty property="WORKAGE">
+			,WORKAGE = #WORKAGE#
+		</isNotEmpty>
+		<isNotEmpty property="PHOTOPATH">
+			,PHOTOPATH = #PHOTOPATH#
+		</isNotEmpty>
+		<isNotEmpty property="ORDERNO">
+			,ORDERNO = #ORDERNO#
+		</isNotEmpty>
+		WHERE EMPID = VAR_EMPID ;
+		
+		UPDATE SY_ADMIN SET UPDATE_DATE = SYSDATE,
+		                     UPDATED_BY = #UPDATED_BY#
+		<isNotEmpty property="C_EMAIL">
+			,USERNAME =  (SELECT SUBSTR(#C_EMAIL#, 0,
+						              INSTR(#C_EMAIL#, '@', 1, 1) - 1) USERNAME FROM DUAL)
+		</isNotEmpty>                     		       			
+		       		WHERE ADMINID = #EMPID:VARCHAR#;
+			
+	UPDATE HR_EMPLOYEE SET 	UPDATE_DATE = SYSDATE, UPDATED_BY = #UPDATED_BY#
+		<isNotEmpty property="DEPTID">
+			,DEPTID = #DEPTID# 		                                                 
+		</isNotEmpty>
+		<isNotEmpty property="POSITION_ID">
+			,POSITION_ID = #POSITION_ID#
+		</isNotEmpty>
+		<isNotEmpty property="POST_ID">
+			,POST_ID = #POST_ID#
+		</isNotEmpty>
+		<isNotEmpty property="POST_GRADE_ID">
+			,POST_GRADE_ID = #POST_GRADE_ID#
+		</isNotEmpty>
+		<isNotEmpty property="POST_GROUP_ID">
+			,POST_GROUP_ID = #POST_GROUP_ID#
+		</isNotEmpty>
+		<isNotEmpty property="ENGLISHNAME">
+			,ENGLISHNAME = #ENGLISHNAME#
+		</isNotEmpty>
+		<isNotEmpty property="CHINESE_PINYIN">
+			,CHINESE_PINYIN = #CHINESE_PINYIN#
+		</isNotEmpty>
+		<isNotEmpty property="CHINESENAME">
+			,CHINESENAME = #CHINESENAME#
+		</isNotEmpty>	
+		<isNotEmpty property="STATUS_CODE">
+			,STATUS_CODE = #STATUS_CODE#
+		</isNotEmpty>
+		<isNotEmpty property="EMP_TYPE_CODE">
+			,EMP_TYPE_CODE = #EMP_TYPE_CODE#
+		</isNotEmpty>
+		<isNotEmpty property="JOIN_DATE">
+			,JOIN_DATE = #JOIN_DATE#
+		</isNotEmpty>
+		<isNotEmpty property="HIRE_DATE">
+			,HIRE_DATE = #HIRE_DATE#
+		</isNotEmpty>	
+		<isNotEmpty property="END_PROBATION_DATE">
+			,END_PROBATION_DATE = #END_PROBATION_DATE#
+		</isNotEmpty>											
+		WHERE EMPID = VAR_EMPID ;
+		
+	UPDATE HR_EMP_INFO SET 	UPDATE_DATE = SYSDATE, UPDATED_BY = #UPDATED_BY#
+		<isNotEmpty property="SSN">
+			,SSN = #SSN#
+		</isNotEmpty>
+		<isNotEmpty property="HAFN">
+			,HAFN = #HAFN#
+		</isNotEmpty>	
+		<isNotEmpty property="SHIFT_CODE">
+			,SHIFT_CODE = #SHIFT_CODE#
+		</isNotEmpty>
+		<isNotEmpty property="SUPPLIER_CODE">
+			,SUPPLIER_CODE = #SUPPLIER_CODE#
+		</isNotEmpty>					
+		WHERE EMPID = VAR_EMPID ;	
+		
+	UPDATE HR_EXPERIENCE_INSIDE SET UPDATE_DATE = SYSDATE, UPDATED_BY = #UPDATED_BY#
+		<isNotEmpty property="DEPTID">
+			,DEPTID = #DEPTID#
+		</isNotEmpty>
+		<isNotEmpty property="POSITION_ID">
+			,POSITION_ID = #POSITION_ID#
+		</isNotEmpty>	
+		<isNotEmpty property="DUTY_CODE">
+			,DUTY_CODE = #DUTY_CODE#
+		</isNotEmpty>
+		<isNotEmpty property="POST_ID">
+			,POST_ID = #POST_ID#
+		</isNotEmpty>
+		<isNotEmpty property="POST_GRADE_ID">
+			,POST_GRADE_ID = #POST_GRADE_ID#
+		</isNotEmpty>
+		<isNotEmpty property="POST_COLUMN_CODE">
+			,POST_COLUMN_CODE = #POST_COLUMN_CODE#
+		</isNotEmpty>	
+		<isNotEmpty property="POST_GROUP_ID">
+			,POST_GROUP_ID = #POST_GROUP_ID#
+		</isNotEmpty>
+		<isNotEmpty property="STATUS_CODE">
+			,STATUS_CODE = #STATUS_CODE#
+		</isNotEmpty>
+		<isNotEmpty property="END_PROBATION_DATE">
+			,END_PROBATION_DATE = #END_PROBATION_DATE#
+		</isNotEmpty>
+		<isNotEmpty property="JOIN_TYPE_CODE">
+			,JOIN_TYPE_CODE = #JOIN_TYPE_CODE#
+		</isNotEmpty>	
+		<isNotEmpty property="EMP_TYPE_CODE">
+			,EMP_TYPE_CODE = #EMP_TYPE_CODE#
+		</isNotEmpty>
+		<isNotEmpty property="POST_COEF">
+			,POST_COEF = #POST_COEF#
+		</isNotEmpty>	
+		<isNotEmpty property="POST_GRADE_LEVEL_CODE">
+			,POST_GRADE_LEVEL_CODE = #POST_GRADE_LEVEL_CODE#
+		</isNotEmpty>		
+		<isNotEmpty property="TRANS_NO">
+			,TRANS_NO = #TRANS_NO#
+		</isNotEmpty>	
+		<isNotEmpty property="TRANS_CODE">
+			,TRANS_CODE = #TRANS_CODE#
+		</isNotEmpty>								
+		WHERE EMPID = VAR_EMPID ;		
+	<![CDATA[
+	END;
+	]]>
+	</update>	
+
+</sqlMap>

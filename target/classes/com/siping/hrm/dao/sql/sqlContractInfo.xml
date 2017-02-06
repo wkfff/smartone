@@ -1,0 +1,523 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="hrm.contractInfo">
+	 
+	<sql id="seachContractCondition">
+		<isNotEmpty prepend="AND" property="HR_ADMIN_ID" >
+			<![CDATA[
+    		   EXISTS (
+		            SELECT *
+		              FROM SY_ADMIN_DEPTID S1, SY_ADMIN S2
+		             WHERE S2.ADMINNO = S1.ADMIN_NO
+		               AND S1.ADMIN_DEPTID = HRE.DEPTID
+		               AND S2.ADMINID = #HR_ADMIN_ID#
+		       )
+			]]>
+		</isNotEmpty> 
+
+		<isNotEmpty prepend="AND" property="DEPTID">
+			<![CDATA[
+			EXISTS (
+					SELECT HR_DEPARTMENT.DEPTID FROM HR_DEPARTMENT WHERE HR_DEPARTMENT.DEPTID!='00110000'
+					)
+			]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="AND" property="CONTRACT_TYPE_CODE">
+			<![CDATA[
+				bb.CONTRACT_TYPE_CODE = #CONTRACT_TYPE_CODE#
+			]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+			( HRE.EMPID LIKE concat('%', TRIM(#keyWord#) ,'%') 
+				OR HRE.CHINESENAME LIKE concat('%',TRIM(#keyWord#),'%')
+		        OR UPPER(HRE.CHINESE_PINYIN) LIKE concat('%',TRIM(UPPER(#keyWord#)),'%')
+		        OR UPPER(HRE.ENGLISHNAME) LIKE concat('%',TRIM(UPPER(#keyWord#)),'%')) 
+			]]> 
+		</isNotEmpty>
+		
+       <isNotEmpty prepend="AND" property="S_DATE">
+			<![CDATA[
+				bb.END_CONTRACT_DATE >= str_to_date(#S_DATE#,'%Y-%m-%d')
+			]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="AND" property="E_DATE">
+			<![CDATA[
+			 	bb.END_CONTRACT_DATE  <= str_to_date(#E_DATE#,'%Y-%m-%d') 
+			]]>
+		</isNotEmpty>
+ 
+	</sql>
+	
+	<select id="getContractInfoList" parameterClass="linkMap"
+		resultClass="linkMap">
+		<![CDATA[
+		SELECT CONTRACT_NO,
+		  	   HRE.EMPID,
+			   IF(#language#= 'en', HRE.ENGLISHNAME, HRE.CHINESENAME) as chineseName, 
+			   HRE.DEPTID,
+			   IF(#language#= 'en', HRD.DEPT_EN_NAME, HRD.DEPTNAME) as deptName,  
+		  	   bb.TOTAL_PERIOD,
+		  	   CONTRACT_TYPE_CODE,
+			   IF(#language#= 'en', bb.D_CODE_EN_NAME, bb.D_CODE_NAME) as contractType, 
+		  	   bb.CONTRACT_CONT_CODE,
+			   IF(#language#= 'en', bb.E_CODE_EN_NAME, bb.E_CODE_NAME) as contractCont, 
+		  	   bb.CONTRACT_KIND_CODE,
+			   IF(#language#= 'en', bb.F_CODE_EN_NAME, bb.F_CODE_NAME) as contractKind,  
+		  	   date_format(bb.START_CONTRACT_DATE,'%Y-%m-%d')  	contractStartDate,
+		  	   date_format(bb.END_CONTRACT_DATE,'%Y-%m-%d')    	contractEndDate,
+		  	   date_format(bb.FIRST_CONTRACT_DATE,'%Y-%m-%d')  	firstContractDate,
+		  	   date_format(bb.NEXT_CONTRACT_DATE,'%Y-%m-%d')   	nextContractDate,
+		 	   bb.REMARK               						remark,
+		  	   bb.RENEWABLE            						renewable,
+		  	   date_format(bb.CREATE_DATE,'%Y-%m-%d')          createDate,
+		  	   bb.CREATED_BY           						createdBy,
+		  	   date_format(bb.UPDATE_DATE,'%Y-%m-%d')          updateDate,
+		 	   bb.UPDATED_BY           						updatedBy,
+		  	   bb.ORDERNO              						orderNo,
+		  	   bb.ACTIVITY            	 					activity,
+			   date_format(HRE.JOIN_DATE,'%Y-%m-%d')			joinDate,
+			   IF(#language#= 'en', HRP.POST_EN_NAME, HRP.POST_NAME) as post, 
+			   FLOOR((bb.END_CONTRACT_DATE - bb.START_CONTRACT_DATE + 1)/365) contractPeriod,
+			   aa.EDU_HIS_CODE								eduHisCode,
+			   IF(#language#= 'en', aa.G_CODE_EN_NAME, aa.G_CODE_NAME) as eduHisName,
+			   aa.IDCARD_NO idcardNo,
+       		   aa.CELLPHONE cellphone,
+       		   IF(#language#= 'en', aa.H_CODE_EN_NAME, aa.H_CODE_NAME) as province,
+       		   IF(#language#= 'en', aa.I_CODE_EN_NAME, aa.I_CODE_NAME) as city,
+       		   IF(#language#= 'en', aa.J_CODE_EN_NAME, aa.J_CODE_NAME) as area,
+       		   aa.HOME_ADDRESS address
+		 FROM  HR_EMPLOYEE HRE left join HR_POST HRP on HRE.POST_ID = HRP.POST_ID
+		 					   left join (select HRPI.*,G.CODE_EN_NAME G_CODE_EN_NAME, G.CODE_NAME G_CODE_NAME,
+		 					   							H.CODE_EN_NAME H_CODE_EN_NAME, H.CODE_NAME H_CODE_NAME,
+		 					   							I.CODE_EN_NAME I_CODE_EN_NAME, I.CODE_NAME I_CODE_NAME,
+		 					   							J.CODE_EN_NAME J_CODE_EN_NAME, J.CODE_NAME J_CODE_NAME
+		 					   				from HR_PERSONAL_INFO HRPI
+		 					   				left join SY_CODE G on HRPI.EDU_HIS_CODE = G.CODE_ID
+		 					   				left join SY_CODE H on HRPI.HOME_PROVINCE = H.CODE_ID
+		 					   				left join SY_CODE I on HRPI.HOME_CITY = I.CODE_ID
+		 					   				left join SY_CODE J on HRPI.HOME_AREA = J.CODE_ID
+		 					   				)as aa on HRE.EMPID = aa.EMPID
+		 					   right join (select A.*,D.CODE_EN_NAME D_CODE_EN_NAME, D.CODE_NAME D_CODE_NAME,
+		 					   						  E.CODE_EN_NAME E_CODE_EN_NAME, E.CODE_NAME E_CODE_NAME,
+		 					   						  F.CODE_EN_NAME F_CODE_EN_NAME, F.CODE_NAME F_CODE_NAME
+		 					   					from HR_CONTRACT A 
+		 					   					left join SY_CODE D on A.CONTRACT_TYPE_CODE = D.CODE_ID
+		 					   					left join SY_CODE E on A.CONTRACT_CONT_CODE = E.CODE_ID
+		 					   					left join SY_CODE F on A.CONTRACT_KIND_CODE = F.CODE_ID
+		 					   					)as bb on bb.EMPID = HRE.EMPID,
+			 HR_DEPARTMENT HRD
+		WHERE  HRE.DEPTID = HRD.DEPTID  
+		  
+		]]> 
+		 
+		<include refid="seachContractCondition"/>
+		
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		  ORDER BY $sortname$ $sortorder$
+		    ]]>
+		</isNotEmpty>
+		
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY bb.CREATE_DATE DESC
+			]]>
+		</isEmpty> 
+	</select>  
+	
+	<select id="getContractInfoCnt" parameterClass="linkMap"
+		resultClass="int">
+		<![CDATA[
+		SELECT COUNT(0)
+		FROM  HR_EMPLOYEE HRE left join HR_POST HRP on HRE.POST_ID = HRP.POST_ID
+		 					   left join (select HRPI.*,G.CODE_EN_NAME G_CODE_EN_NAME, G.CODE_NAME G_CODE_NAME,
+		 					   							H.CODE_EN_NAME H_CODE_EN_NAME, H.CODE_NAME H_CODE_NAME,
+		 					   							I.CODE_EN_NAME I_CODE_EN_NAME, I.CODE_NAME I_CODE_NAME,
+		 					   							J.CODE_EN_NAME J_CODE_EN_NAME, J.CODE_NAME J_CODE_NAME
+		 					   				from HR_PERSONAL_INFO HRPI
+		 					   				left join SY_CODE G on HRPI.EDU_HIS_CODE = G.CODE_ID
+		 					   				left join SY_CODE H on HRPI.HOME_PROVINCE = H.CODE_ID
+		 					   				left join SY_CODE I on HRPI.HOME_CITY = I.CODE_ID
+		 					   				left join SY_CODE J on HRPI.HOME_AREA = J.CODE_ID
+		 					   				)as aa on HRE.EMPID = aa.EMPID
+		 					   right join (select A.*,D.CODE_EN_NAME D_CODE_EN_NAME, D.CODE_NAME D_CODE_NAME,
+		 					   						  E.CODE_EN_NAME E_CODE_EN_NAME, E.CODE_NAME E_CODE_NAME,
+		 					   						  F.CODE_EN_NAME F_CODE_EN_NAME, F.CODE_NAME F_CODE_NAME
+		 					   					from HR_CONTRACT A 
+		 					   					left join SY_CODE D on A.CONTRACT_TYPE_CODE = D.CODE_ID
+		 					   					left join SY_CODE E on A.CONTRACT_CONT_CODE = E.CODE_ID
+		 					   					left join SY_CODE F on A.CONTRACT_KIND_CODE = F.CODE_ID
+		 					   					)as bb on bb.EMPID = HRE.EMPID,
+			 HR_DEPARTMENT HRD
+		WHERE  HRE.DEPTID = HRD.DEPTID
+	 	]]> 
+<!-- 		<include refid="seachContractCondition"/> -->
+	</select>
+	  <select id="getContractInfo" parameterClass="linkMap"
+		resultClass="linkMap">
+		<![CDATA[
+		SELECT	 IF(#language#= 'en', HRE.ENGLISHNAME, HRE.CHINESENAME) as EMPNAME, 
+		         IF(#language#= 'en', HRD.DEPT_EN_NAME, HRD.DEPTNAME) as DEPTNAME,  
+		         IF(#language#= 'en', bb.CODE_EN_NAME, bb.CODE_NAME) as CONTRACTTYPE,   
+		         date_format(bb.START_CONTRACT_DATE,'%Y-%m-%d')    STARTDATE,
+		         date_format(bb.END_CONTRACT_DATE,'%Y-%m-%d')      ENDDATE,
+		         IF(#language#= 'en', HRP.POST_EN_NAME, HRP.POST_NAME) as POSTNAME, 
+		         IF(#language#= 'en', aa.E_CODE_EN_NAME, aa.E_CODE_NAME) as EDUHISNAME,
+		         aa.IDCARD_NO idcardNo,
+		         aa.CELLPHONE CELLPHONE,
+		         IF(#language#= 'en', aa.F_CODE_EN_NAME, aa.F_CODE_NAME) as PROVINCE,
+		         IF(#language#= 'en', aa.G_CODE_EN_NAME, aa.G_CODE_NAME) as CITY,
+		         IF(#language#= 'en', aa.H_CODE_EN_NAME, aa.H_CODE_NAME) as AREA,
+		         aa.HOME_ADDRESS ADDRESS
+	     FROM HR_EMPLOYEE HRE left join HR_DEPARTMENT HRD on HRE.DEPTID = HRD.DEPTID
+	     					  left join HR_POST HRP on HRE.POST_ID = HRP.POST_ID
+	     					  left join (select HRPI.*,
+	     					  					E.CODE_EN_NAME E_CODE_EN_NAME, E.CODE_NAME E_CODE_NAME,
+	     					  					F.CODE_EN_NAME F_CODE_EN_NAME, F.CODE_NAME F_CODE_NAME,
+	     					  					G.CODE_EN_NAME G_CODE_EN_NAME, G.CODE_NAME G_CODE_NAME,
+	     					  					H.CODE_EN_NAME H_CODE_EN_NAME, H.CODE_NAME H_CODE_NAME
+	     					  				from HR_PERSONAL_INFO HRPI 
+	     					  					left join SY_CODE E on HRPI.EDU_HIS_CODE = E.CODE_ID
+	     					  					left join SY_CODE F on HRPI.HOME_PROVINCE = F.CODE_ID
+	     					  					left join SY_CODE G on HRPI.HOME_CITY = G.CODE_ID
+	     					  					left join SY_CODE H on HRPI.HOME_AREA = H.CODE_ID
+	     					  					) as aa on HRE.EMPID = aa.EMPID
+	     					  right join (select A.*,D.CODE_EN_NAME, D.CODE_NAME 
+	     					  				from HR_CONTRACT A left join SY_CODE D on A.CONTRACT_TYPE_CODE = D.CODE_ID 
+	     					  				where A.CONTRACT_NO = #CONTRACT_NO#)as bb on bb.EMPID = HRE.EMPID
+ 
+	 	]]> 
+	</select>  
+	  <sql id="seachWithoutContractCondition">
+		<isNotEmpty prepend="AND" property="HR_ADMIN_ID" >
+			<![CDATA[
+				EXISTS (
+					SELECT *
+					FROM SY_ADMIN_DEPTID S1, SY_ADMIN S2
+					WHERE S2.ADMINNO = S1.ADMIN_NO
+						AND S1.ADMIN_DEPTID = HRE.DEPTID
+						AND S2.ADMINID = #HR_ADMIN_ID#
+				)
+			]]>
+		</isNotEmpty> 
+
+		<isNotEmpty prepend="AND" property="DEPTID">
+			<![CDATA[
+			EXISTS(
+       			SELECT * FROM HR_DEPARTMENT WHERE HR_DEPARTMENT.DEPTID!='00110000'
+     			 )
+			]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+				( 
+					HRE.EMPID LIKE concat('%', TRIM(#keyWord#) ,'%') 
+					OR HRE.CHINESENAME LIKE concat('%',TRIM(#keyWord#),'%')
+					OR UPPER(HRE.CHINESE_PINYIN) LIKE concat('%',TRIM(UPPER(#keyWord#)),'%')
+					OR UPPER(HRE.ENGLISHNAME) LIKE concat('%',TRIM(UPPER(#keyWord#)),'%')
+				) 
+			]]> 
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="STATUS_CODE">
+			<![CDATA[
+				HRE.STATUS_CODE = #STATUS_CODE#
+			]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="POST_ID">
+			<![CDATA[
+				HRE.POST_ID = #POST_ID#
+			]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="sDate">
+			<![CDATA[
+				HRE.JOIN_DATE >= str_to_date(#sDate#,'%Y-%m-%d')
+			]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="AND" property="eDate">
+			<![CDATA[
+			 	HRE.JOIN_DATE <= str_to_date(#eDate#,'%Y-%m-%d') 
+			]]>
+		</isNotEmpty>
+	</sql>
+	
+	<select id="searchEmpWithoutContract"   parameterClass="linkMap"
+		resultClass="linkMap" remapResults="true">
+		<![CDATA[
+		SELECT  HRE.EMPID                 						empID,
+			   IF(#language#= 'en', HRE.ENGLISHNAME, HRE.CHINESENAME) as chineseName, 
+			   HRE.DEPTID										deptID,
+			   IF(#language#= 'en', HRD.DEPT_EN_NAME, HRD.DEPTNAME) as deptName,  
+			   IF(#language#= 'en', HRPG.POST_GRADE_EN_NAME, HRPG.POST_GRADE_NAME) as postGrade, 
+			   
+			   date_format(HRE.JOIN_DATE,'%Y-%m-%d')			joinDate,
+			   date_format(HRE.JOIN_DATE,'%Y-%m-%d')			startDate,
+			   date_format(date_add(HRE.JOIN_DATE, interval 48 month),'%Y-%m-%d')			endDate,
+			   IF(#language#= 'en', HRP.POST_EN_NAME, HRP.POST_NAME) as post
+		FROM HR_EMPLOYEE HRE
+			  left join HR_POST_GRADE HRPG on HRE.POST_GRADE_ID = HRPG.POST_GRADE_ID
+			  left join HR_POST HRP on HRE.POST_ID = HRP.POST_ID,
+			  HR_DEPARTMENT HRD
+		WHERE HRE.DEPTID = HRD.DEPTID   
+		]]>  
+		
+		<include refid="seachWithoutContractCondition"/>
+		
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		  ORDER BY $sortname$ $sortorder$
+		    ]]>
+		</isNotEmpty>
+		
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY HRE.EMPID
+			]]>
+		</isEmpty>
+	</select>
+	
+	<select id="searchEmpWithoutContractCnt"   parameterClass="linkMap"
+		resultClass="int" remapResults="true">
+		<![CDATA[
+       SELECT COUNT(*)
+         FROM HR_EMPLOYEE HRE 
+			  left join HR_POST_GRADE HRPG on HRE.POST_GRADE_ID = HRPG.POST_GRADE_ID
+			  left join HR_POST HRP on HRE.POST_ID = HRP.POST_ID,
+              HR_DEPARTMENT HRD
+		WHERE HRE.DEPTID = HRD.DEPTID   
+		             	  		  			        
+		]]>  
+		 
+		<include refid="seachWithoutContractCondition"/>
+	</select>
+	
+	<sql id="searchExpiredContractCondition">
+		<isNotEmpty prepend="AND" property="HR_ADMIN_ID" >
+			<![CDATA[
+    		   EXISTS (
+		            SELECT *
+		              FROM SY_ADMIN_DEPTID S1, SY_ADMIN S2
+		             WHERE S2.ADMINNO = S1.ADMIN_NO
+		               AND S1.ADMIN_DEPTID = HRE.DEPTID
+		               AND S2.ADMINID = #HR_ADMIN_ID#
+		       )
+			]]>
+		</isNotEmpty> 
+
+		<isNotEmpty prepend="AND" property="DEPTID">
+			<![CDATA[
+			EXISTS (
+					SELECT * FROM HR_DEPARTMENT WHERE HR_DEPARTMENT.DEPTID!='00110000')
+			]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="AND" property="CONTRACT_TYPE_CODE">
+			<![CDATA[
+				A.CONTRACT_TYPE_CODE = #CONTRACT_TYPE_CODE#
+			]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+			( HRE.EMPID LIKE concat('%', TRIM(#keyWord#) ,'%') 
+				OR HRE.CHINESENAME LIKE concat('%',TRIM(#keyWord#),'%')
+		        OR UPPER(HRE.CHINESE_PINYIN) LIKE concat('%',TRIM(UPPER(#keyWord#)),'%')
+		        OR UPPER(HRE.ENGLISHNAME) LIKE concat('%',TRIM(UPPER(#keyWord#)),'%')) 
+			]]> 
+		</isNotEmpty>
+		
+       <isNotEmpty prepend="AND" property="sDate">
+			<![CDATA[
+				A.END_CONTRACT_DATE >= str_to_date(#sDate#,'%Y-%m-%d')
+			]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="AND" property="eDate">
+			<![CDATA[
+			 	A.END_CONTRACT_DATE <= str_to_date(#eDate#,'%Y-%m-%d') 
+			]]>
+		</isNotEmpty>
+ 
+	</sql>
+	<select id="searchExpiredContract"   parameterClass="linkMap"
+		resultClass="linkMap" remapResults="true">
+		<![CDATA[
+		SELECT CONTRACT_NO,
+		  	   A.EMPID,
+			   IF(#language#= 'en', HRE.ENGLISHNAME, HRE.CHINESENAME) as CHINESENAME, 
+			   HRE.DEPTID,
+			   IF(#language#= 'en', HRD.DEPT_EN_NAME, HRD.DEPTNAME) as DEPTNAME,  
+		  	   A.TOTAL_PERIOD,
+		  	   A.TOTAL_PERIOD+1 NEXT_PERIOD,
+		  	   A.CONTRACT_TYPE_CODE,
+			   IF(#language#= 'en', D.CODE_EN_NAME, D.CODE_NAME) as CONTRACT_TYPE_NAME, 
+		  	   A.CONTRACT_CONT_CODE,
+			   IF(#language#= 'en', E.CODE_EN_NAME, E.CODE_NAME) as CONTRACT_CONT_NAME, 
+		  	   A.CONTRACT_KIND_CODE,
+			   IF(#language#= 'en', F.CODE_EN_NAME, F.CODE_NAME) as CONTRACT_KIND_NAME, 
+		  	   date_format(A.START_CONTRACT_DATE ,'%Y-%m-%d')  	O_STARTDATE,
+		  	   date_format(A.END_CONTRACT_DATE,'%Y-%m-%d')    	O_ENDDATE, 
+		  	   date_format(A.END_CONTRACT_DATE + 1,'%Y-%m-%d')  				STARTDATE,
+		  	   date_format(ADD_MONTHS(A.END_CONTRACT_DATE,36),'%Y-%m-%d')    	ENDDATE,
+		  	   date_format(A.FIRST_CONTRACT_DATE,'%Y-%m-%d')  	FIRSTDATE,
+		  	   date_format(A.NEXT_CONTRACT_DATE,'%Y-%m-%d')   	NEXTDATE,
+		 	   A.REMARK               						remark,
+		  	   A.RENEWABLE            						renewable,
+		  	   date_format(A.CREATE_DATE,'%Y-%m-%d')          createDate,
+		  	   A.CREATED_BY           						createdBy,
+		  	   date_format(A.UPDATE_DATE,'%Y-%m-%d')          updateDate,
+		 	   A.UPDATED_BY           						updatedBy,
+		  	   A.ORDERNO              						orderNo,
+		  	   A.ACTIVITY            	 					activity,
+			   IF(#language#= 'en', HRPG.POST_GRADE_EN_NAME, HRPG.POST_GRADE_NAME) as postGrade, 
+			     
+			   date_format(HRE.JOIN_DATE,'%Y-%m-%d')			joinDate,
+			   IF(#language#= 'en', HRP.POST_EN_NAME, HRP.POST_NAME) as post, 
+			    
+			   FLOOR((A.END_CONTRACT_DATE - A.START_CONTRACT_DATE + 1)/365) contractPeriod
+		 FROM (SELECT P.*
+			          FROM (SELECT O.*,
+			                       ROW_NUMBER() OVER(PARTITION BY O.EMPID ORDER BY O.END_CONTRACT_DATE DESC) ROW_NUMBER
+			                  FROM HR_CONTRACT O) P
+			         WHERE P.ROW_NUMBER = 1) A,
+		 	  HR_EMPLOYEE HRE, 
+			  HR_POST_GRADE HRPG, 
+			  HR_POST HRP,
+              HR_DEPARTMENT HRD,
+			  SY_CODE D,
+			  SY_CODE E,
+			  SY_CODE F
+		WHERE A.EMPID = HRE.EMPID(+)
+          AND HRE.DEPTID = HRD.DEPTID  
+		  AND HRE.POST_GRADE_ID = HRPG.POST_GRADE_ID(+) 
+		  AND HRE.POST_ID = HRP.POST_ID(+)
+	      AND A.CONTRACT_TYPE_CODE = D.CODE_ID(+)
+		  AND A.CONTRACT_CONT_CODE = E.CODE_ID(+)
+		  AND A.CONTRACT_KIND_CODE = F.CODE_ID(+)
+		]]> 
+		  
+		<include refid="searchExpiredContractCondition"/>
+		
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		  ORDER BY $sortname$ $sortorder$
+		    ]]>
+		</isNotEmpty>
+		
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY HRE.EMPID,A.TOTAL_PERIOD
+			]]>
+		</isEmpty> 
+	</select>
+	
+	<select id="searchExpiredContractCnt"   parameterClass="linkMap"
+		resultClass="int" remapResults="true">
+		<![CDATA[
+		SELECT   COUNT(*)
+	        FROM (SELECT P.*
+				          FROM (SELECT O.*,
+				                       ROW_NUMBER() OVER(PARTITION BY O.EMPID ORDER BY O.END_CONTRACT_DATE DESC) ROW_NUMBER
+				                  FROM HR_CONTRACT O) P
+				         WHERE P.ROW_NUMBER = 1) A,
+			 	  HR_EMPLOYEE HRE, 
+				  HR_POST_GRADE HRPG, 
+				  HR_POST HRP,
+	              HR_DEPARTMENT HRD,
+				  SY_CODE D,
+				  SY_CODE E,
+				  SY_CODE F
+			WHERE A.EMPID = HRE.EMPID(+)
+	          AND HRE.DEPTID = HRD.DEPTID  
+			  AND HRE.POST_GRADE_ID = HRPG.POST_GRADE_ID(+) 
+			  AND HRE.POST_ID = HRP.POST_ID(+)
+		      AND A.CONTRACT_TYPE_CODE = D.CODE_ID(+)
+			  AND A.CONTRACT_CONT_CODE = E.CODE_ID(+)
+			  AND A.CONTRACT_KIND_CODE = F.CODE_ID(+)
+		]]> 
+		  
+		<include refid="searchExpiredContractCondition"/>
+	</select>
+	  
+	<insert id="addContractInfo"   parameterClass="linkMap">
+		<![CDATA[
+			insert into HR_CONTRACT
+   			(
+	   			 CONTRACT_NO,
+	   			 EMPID, 
+	   			 CONTRACT_TYPE_CODE, 
+	   			 START_CONTRACT_DATE, 
+	   			 END_CONTRACT_DATE,
+	   			 REMARK,
+	   			 TOTAL_PERIOD,
+	   			 RENEWABLE,
+	   			 CREATE_DATE,
+	   			 CREATED_BY
+   			)values
+ 			(
+ 				HR_CONTRACT_SEQ.NEXTVAL,
+ 				#EMPID#, 
+ 				#CONTRACT_TYPE_CODE#, 
+ 				str_to_date(#STARTDATE:VARCHAR#,'%Y-%m-%d'),
+ 				str_to_date(#ENDDATE:VARCHAR#,'%Y-%m-%d'),
+ 				#REMARK:VARCHAR#,
+ 				#TOTAL_PERIOD:VARCHAR#,
+ 				0,
+ 				SYSDATE,
+ 				#CREATED_BY#
+ 				
+ 			)
+		]]>
+	</insert>
+	<update id="updateContractInfo" parameterClass="linkMap">
+		<![CDATA[
+			   UPDATE HR_CONTRACT A
+			      SET REMARK          = #REMARK#, 
+					  UPDATE_DATE	  = SYSDATE,
+					  UPDATED_BY	  = #UPDATED_BY:VARCHAR#      
+			    WHERE A.CONTRACT_NO = #CONTRACT_NO#
+			  ]]>
+	</update>
+	<delete id="deleteContractInfoInfo" parameterClass="linkMap">
+		<![CDATA[
+			DELETE HR_CONTRACT WHERE CONTRACT_NO = #CONTRACT_NO:NUMERIC#
+		]]>
+	</delete>
+	
+	<insert id="addExpiredContract"   parameterClass="linkMap">
+		<![CDATA[
+			insert into HR_CONTRACT
+   			(
+	   			 CONTRACT_NO,
+	   			 EMPID, 
+	   			 CONTRACT_TYPE_CODE,  
+	   			 START_CONTRACT_DATE, 
+	   			 END_CONTRACT_DATE,
+	   			 REMARK,
+	   			 TOTAL_PERIOD,
+	   			 RENEWABLE
+   			)
+ 			values
+ 			(
+ 				HR_CONTRACT_SEQ.NEXTVAL,
+ 				#EMPID#,
+ 				#NEWCONTRACTTYPE:VARCHAR#,
+ 				str_to_date(#CONTRACTSTARTDATE:DATE#,'%Y-%m-%d'),
+ 				str_to_date(#CONTRACTENDDATE:DATE#,'%Y-%m-%d'),
+ 				#REMARK:VARCHAR#,
+ 				#CONTRACTPERIOD:NUMERIC#,
+ 				1
+ 			)
+		]]>
+	</insert>
+</sqlMap>

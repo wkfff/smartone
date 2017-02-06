@@ -1,0 +1,343 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap
+        PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+        "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="message.messageManage">
+    <resultMap id="messageResultMap" class="com.siping.web.bean.Message">
+        <result property="messageNo" column="MESSAGE_NO"/>
+        <result property="messageId" column="MESSAGE_ID"/>
+        <result property="messageTitle" column="MESSAGE_TITLE"/>
+        <result property="messageContent" column="MESSAGE_CONTENT"/>
+        <result property="messageType.messageTypeNo" column="MESSAGE_TYPE_NO"/>
+        <result property="messageType.messageTypeId" column="MESSAGE_TYPE_ID"/>
+        <result property="messageType.messageTypeName" column="MESSAGE_TYPE_NAME"/>
+        <result property="messageTypeId" column="MESSAGE_TYPE_ID"/>
+        <result property="messageTypeName" column="MESSAGE_TYPE_NAME"/>
+        <result property="createDate" column="CREATE_DATE"/>
+        <result property="createdBy" column="CREATED_BY"/>
+        <result property="updateDate" column="UPDATE_DATE"/>
+        <result property="updatedBy" column="UPDATED_BY"/>
+        <result property="activity" column="ACTIVITY"/>
+        <result property="cpnyId" column="CPNY_ID"/>
+    </resultMap>
+    
+    <sql id="getMessageListCondition">
+        <isNotEmpty prepend="AND" property="OWNER">
+            <![CDATA[
+                SM.CREATED_BY = #OWNER#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+                (    
+                    SM.MESSAGE_TITLE LIKE '%'||TRIM(#keyWord#)||'%'
+                    OR SM.MESSAGE_CONTENT LIKE '%'||TRIM(#keyWord#)||'%'
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="MESSAGE_TYPE_ID">
+            <![CDATA[
+                SM.MESSAGE_TYPE = #MESSAGE_TYPE_ID#
+            ]]>
+        </isNotEmpty>
+    </sql>
+    
+    <select id="getMessageList" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT
+                SM.MESSAGE_NO,
+                SM.MESSAGE_ID,
+                IFNULL(SM.MESSAGE_TITLE,concat(substring(SM.MESSAGE_CONTENT, 0, 10),'......')) MESSAGE_TITLE,
+                SM.MESSAGE_CONTENT,
+                S.CODE_ID MESSAGE_TYPE_ID,
+                S.CODE_NAME MESSAGE_TYPE_NAME,
+                IF(SM.CREATED_BY='system', '系统生成', HE.CHINESENAME) ENAME,
+                date_format(SM.CREATE_DATE,'%Y-%m-%d %T') CREATE_DATE
+
+
+            FROM SY_MESSAGE SM LEFT JOIN SY_CODE S ON SM.MESSAGE_TYPE = S.CODE_ID
+                 LEFT JOIN (SELECT * FROM HR_EMPLOYEE
+                  WHERE ACTIVITY = 1
+                  AND CPNY_ID = #CPNY_ID#) HE ON SM.CREATED_BY = HE.EMPID
+            where SM.ACTIVITY = 1
+            AND SM.CPNY_ID = #CPNY_ID#
+        ]]>
+        <include refid="getMessageListCondition"/>
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY SM.CREATE_DATE DESC
+            ]]>
+        </isEmpty>
+    </select>
+    <select id="getMessageListCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT
+                COUNT(0)
+            FROM SY_MESSAGE SM
+            WHERE SM.ACTIVITY = 1
+            AND SM.CPNY_ID = #CPNY_ID#
+        ]]>
+        <include refid="getMessageListCondition"/>
+    </select>
+    
+    <insert id="addMessageInfo" parameterClass="linkMap">
+        <selectKey resultClass="String" keyProperty="MESSAGE_NO" >
+            <![CDATA[
+                SELECT SY_MESSAGE_SEQ.NEXTVAL AS MESSAGE_NO FROM DUAL
+            ]]>
+        </selectKey>
+        <![CDATA[
+        DECLARE
+        BEGIN
+            INSERT INTO SY_MESSAGE(
+                MESSAGE_NO,
+                MESSAGE_ID,
+                MESSAGE_TITLE,
+                MESSAGE_CONTENT,
+                MESSAGE_TYPE,
+                CREATE_DATE,
+                CREATED_BY,
+                ACTIVITY,
+                CPNY_ID
+            )
+            VALUES(
+                #MESSAGE_NO#,
+                'Message'||#MESSAGE_NO#,
+                #MESSAGE_TITLE#,
+                #MESSAGE_CONTENT#,
+                #MESSAGE_TYPE#,
+                SYSDATE,
+                #CREATED_BY#,
+                1,
+                #CPNY_ID#
+            );
+            
+            MESSAGE_ADD_EMP(#MESSAGE_NO#,#CREATED_BY#,#CPNY_ID#,#DEPTID#,#SCREEN_GRANT_ID#,#MESSAGE_TYPE#);
+        END;
+        ]]>
+    </insert>
+    
+    <insert id="addMessageEmp" parameterClass="linkMap">
+        <![CDATA[
+            INSERT INTO SY_MESSAGE_EMP_DETAIL(
+                MESSAGE_NO,
+                EMPID,
+                IS_READ,
+                CREATE_DATE,
+                CREATED_BY,
+                ACTIVITY,
+                CPNY_ID,
+                DEPTID,
+                SCREEN_GRANT_ID,
+                MESSAGE_TYPE
+            )
+            VALUES(
+                #MESSAGE_NO#,
+                #EMPID#,
+                2,
+                SYSDATE,
+                #CREATED_BY#,
+                1,
+                #CPNY_ID#,
+                #DEPTID#,
+                #SCREEN_GRANT_ID#,
+                #MESSAGE_TYPE#
+            )
+        ]]>
+    </insert>
+    
+    
+    
+    
+    
+    <select id="getMyMessageList" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+        SELECT REL.MESSAGE_NO,
+               REL.MESSAGE_ID,
+               REL.MESSAGE_TITLE,
+               REL.MESSAGE_CONTENT,
+               REL.MESSAGE_TYPE_ID,
+               REL.MESSAGE_TYPE_NAME,
+               REL.CREATE_DATE,
+               date_format(SM.CREATE_DATE,'%Y-%m-%d %T') SEND_DATE,
+               REL.CREATED_BY,
+               IFNULL(HE.CHINESENAME,'系统生成') CHINESENAME
+        FROM(
+            SELECT
+                SM.MESSAGE_NO,
+                SM.MESSAGE_ID,
+                IFNULL(SM.MESSAGE_TITLE,concat(substring(SM.MESSAGE_CONTENT, 0, 10),'......')) MESSAGE_TITLE,
+                SM.MESSAGE_CONTENT,
+                SY.CODE_ID MESSAGE_TYPE_ID,
+                SY.CODE_NAME MESSAGE_TYPE_NAME,
+                SM.CREATE_DATE,
+                SM.CREATED_BY,
+                date_format(SM.CREATE_DATE,'%Y-%m-%d %T') CREATE_DATE_STR
+            FROM SY_MESSAGE SM LEFT JOIN SY_CODE SY ON SM.MESSAGE_TYPE = SY.CODE_ID
+            WHERE  SM.ACTIVITY = 1
+            AND SM.CPNY_ID = #CPNY_ID#
+            AND SM.MESSAGE_TYPE = 'SYSTEMNEW'
+            AND SM.MESSAGE_NO NOT IN(
+                SELECT S.MESSAGE_NO FROM SY_MESSAGE_EMP_DETAIL S
+                WHERE S.IS_READ = #IS_READ#
+                AND S.CPNY_ID = #CPNY_ID#
+                AND S.ACTIVITY = 1
+                AND S.MESSAGE_TYPE = 'SYSTEMNEW'
+                AND S.EMPID = #EMPID#
+            )       
+            UNION
+            SELECT
+                SM.MESSAGE_NO,
+                SM.MESSAGE_ID,
+                IFNULL(SM.MESSAGE_TITLE,concat(substring(SM.MESSAGE_CONTENT, 0, 10),'......')) MESSAGE_TITLE,
+                SM.MESSAGE_CONTENT,
+                SY.CODE_ID MESSAGE_TYPE_ID,
+                SY.CODE_NAME MESSAGE_TYPE_NAME,
+                SM.CREATE_DATE,
+                SM.CREATED_BY,
+                date_format(SM.CREATE_DATE,'%Y-%m-%d %T') CREATE_DATE_STR
+            FROM SY_MESSAGE SM LEFT JOIN SY_CODE SY ON SM.MESSAGE_TYPE = SY.CODE_ID
+                 LEFT JOIN SY_MESSAGE_EMP_DETAIL SED ON SM.MESSAGE_NO = SED.MESSAGE_NO
+            WHERE SM.ACTIVITY = 1
+            AND SM.CPNY_ID = #CPNY_ID#
+            AND SED.EMPID = #EMPID#
+            AND SM.MESSAGE_NO NOT IN(
+                SELECT S.MESSAGE_NO FROM SY_MESSAGE_EMP_DETAIL S
+                WHERE S.IS_READ = #IS_READ#
+                AND S.CPNY_ID = #CPNY_ID#
+                AND S.ACTIVITY = 1
+                AND S.EMPID = #EMPID#
+            )
+        ) REL LEFT JOIN
+        (SELECT EMPID,CHINESENAME FROM HR_EMPLOYEE
+         WHERE ACTIVITY = 1
+         AND CPNY_ID = #CPNY_ID#) HE
+        ON REL.CREATED_BY = HE.EMPID 
+        ]]>
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY REL.CREATE_DATE DESC
+            ]]>
+        </isEmpty>
+    </select>
+    <select id="getMyMessageListCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+        SELECT COUNT(*)
+        FROM (
+            SELECT
+                SM.MESSAGE_NO,
+                SM.MESSAGE_ID,
+                IFNULL(SM.MESSAGE_TITLE,concat(substring(SM.MESSAGE_CONTENT, 0, 10),'......')) MESSAGE_TITLE,
+                SM.MESSAGE_CONTENT,
+                SY.CODE_ID MESSAGE_TYPE_ID,
+                SY.CODE_NAME MESSAGE_TYPE_NAME,
+                SM.CREATE_DATE,
+                SM.CREATED_BY,
+                date_format(SM.CREATE_DATE,'%Y-%m-%d %T') CREATE_DATE_STR
+            FROM SY_MESSAGE SM LEFT JOIN SY_CODE SY ON SM.MESSAGE_TYPE = SY.CODE_ID
+            WHERE SM.ACTIVITY = 1
+            AND SM.CPNY_ID = #CPNY_ID#
+            AND SM.MESSAGE_TYPE = 'SYSTEMNEW'
+            AND SM.MESSAGE_NO NOT IN (
+                SELECT S.MESSAGE_NO FROM SY_MESSAGE_EMP_DETAIL S
+                WHERE S.IS_READ = #IS_READ#
+                AND S.CPNY_ID = #CPNY_ID#
+                AND S.ACTIVITY = 1
+                AND S.MESSAGE_TYPE = 'SYSTEMNEW'
+                AND S.EMPID = #EMPID#
+            )
+            
+            UNION
+            SELECT
+                SM.MESSAGE_NO,
+                SM.MESSAGE_ID,
+                IFNULL(SM.MESSAGE_TITLE,concat(substring(SM.MESSAGE_CONTENT, 0, 10),'......')) MESSAGE_TITLE,
+                SM.MESSAGE_CONTENT,
+                SY.CODE_ID MESSAGE_TYPE_ID,
+                SY.CODE_NAME MESSAGE_TYPE_NAME,
+                SM.CREATE_DATE,
+                SM.CREATED_BY,
+                date_format(SM.CREATE_DATE,'%Y-%m-%d %T') CREATE_DATE_STR
+            FROM SY_MESSAGE SM LEFT JOIN SY_CODE SY ON SM.MESSAGE_TYPE = SY.CODE_ID
+                 LEFT JOIN SY_MESSAGE_EMP_DETAIL SED ON SM.MESSAGE_NO = SED.MESSAGE_NO  
+            WHERE SM.ACTIVITY = 1
+            AND SM.CPNY_ID = #CPNY_ID#
+            AND SED.EMPID = #EMPID#
+            AND SM.MESSAGE_NO NOT IN (
+                SELECT S.MESSAGE_NO FROM SY_MESSAGE_EMP_DETAIL S
+                WHERE S.IS_READ = #IS_READ#
+                AND S.CPNY_ID = #CPNY_ID#
+                AND S.ACTIVITY = 1
+                AND S.EMPID = #EMPID#
+            )
+        ) C
+        WHERE 1=1
+        ]]>
+    </select>
+    
+    <insert id="addReadMessage" parameterClass="linkMap">
+        <![CDATA[
+        DECLARE
+        BEGIN
+            IF '$MESSAGE_TYPE_ID$' = 'SYSTEMNEW' THEN
+                INSERT INTO SY_MESSAGE_EMP_DETAIL(
+                    MESSAGE_NO,
+                    EMPID,
+                    IS_READ,
+                    CREATE_DATE,
+                    CREATED_BY,
+                    ACTIVITY,
+                    CPNY_ID,
+                    MESSAGE_TYPE
+                )
+                VALUES(
+                    #MESSAGE_NO#,
+                    #EMPID#,
+                    1,
+                    SYSDATE,
+                    #CREATED_BY#,
+                    1,
+                    #CPNY_ID#,
+                    #MESSAGE_TYPE_ID#
+                );
+            ELSE
+                UPDATE SY_MESSAGE_EMP_DETAIL SET
+                IS_READ = 1
+                WHERE ACTIVITY = 1
+                AND CPNY_ID = #CPNY_ID#
+                AND MESSAGE_NO = #MESSAGE_NO#
+                AND EMPID = #EMPID#
+                AND MESSAGE_TYPE = #MESSAGE_TYPE_ID#;
+            END IF;
+            
+        END;
+        ]]>
+    </insert>
+    
+    <delete id="deleteMessage" parameterClass="linkMap">
+        <![CDATA[
+            DECLARE
+            BEGIN
+                DELETE FROM SY_MESSAGE SM
+                WHERE SM.MESSAGE_NO = #MESSAGE_NO#
+                AND SM.ACTIVITY = 1
+                AND SM.CPNY_ID = #CPNY_ID#;
+                
+                DELETE FROM SY_MESSAGE_EMP_DETAIL SED
+                WHERE SED.MESSAGE_NO = #MESSAGE_NO#
+                AND SED.ACTIVITY = 1
+                AND SED.CPNY_ID = #CPNY_ID#;
+            END;
+        ]]>
+    </delete>
+</sqlMap>

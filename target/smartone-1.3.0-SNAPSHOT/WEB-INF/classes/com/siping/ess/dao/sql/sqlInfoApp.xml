@@ -1,0 +1,1393 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+    PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+    "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="ess.infoApp">
+    <!-- 删除个人信息 -->
+    <delete id="delEssPersonalInfo" parameterClass="linkMap">
+        <![CDATA[
+            DELETE ESS_PERSONAL_INFO WHERE EMPID=#EMPID#
+        ]]>
+    </delete>
+    <!-- 插入个人信息 -->
+    <insert id="insertEssPersonalInfo" parameterClass="linkMap"> 
+        <![CDATA[
+            INSERT INTO ESS_PERSONAL_INFO
+              (EMPID,
+               CREATE_DATE,
+               CREATED_BY, 
+               ACTIVITY,
+               AFFIRM_FLAG,
+               DEGREE_CODE,
+               EDU_HIS_CODE,
+               MAJOR_CODE,
+               GENDER_CODE,
+               BIRTHDAY,
+               RELIGION_CODE,
+               NATION_CODE,
+               NATIONALITY_CODE,
+               BORNPLACE_CODE,
+               POLITY_CODE,
+               MEMBERSHIP,
+               MARITAL_STATUS_CODE,
+               WEDDING_DATE,
+               IDCARD_TYPE_CODE,
+               IDCARD_NO,
+               IDCARD_PROVINCE,
+               IDCARD_CITY,
+               IDCARD_AREA,
+               IDCARD_ADDRESS,
+               HOME_PROVINCE,
+               HOME_CITY,
+               HOME_AREA,
+               HOME_ADDRESS,
+               IDCARD_POSTALCODE,
+               HOME_POSTALCODE,
+               P_EMAIL,
+               C_EMAIL,
+               OFFICE_PHONE,
+               HOME_PHONE,
+               CELLPHONE,
+               FAX,
+               FILE_RELATION_CODE,
+               FILE_RELATION_ADDRESS,
+               WORKAGE,
+               PHOTOPATH,
+               SSN,
+               HAFN,
+               SHIFT_CODE,
+               SUPPLIER_CODE)
+            VALUES
+              (
+               #EMPID#,
+               now(),
+               #CREATED_BY#,
+               0,
+               0,
+               #DEGREE_CODE#,
+               #EDU_HIS_CODE#,
+               #MAJOR_CODE#,
+               #GENDER_CODE#, 
+               str_to_date(#BIRTHDAY#,'%Y-%m-%d'),
+               #RELIGION_CODE#,
+               #NATION_CODE#,
+               #NATIONALITY_CODE#,
+               #BORNPLACE_CODE#,
+               #POLITY_CODE#,
+               #MEMBERSHIP#,
+               #MARITAL_STATUS_CODE#, 
+               str_to_date(#WEDDING_DATE#,'%Y-%m-%d'),
+               #IDCARD_TYPE_CODE#,
+               #IDCARD_NO#,
+               #IDCARD_PROVINCE#,
+               #IDCARD_CITY#,
+               #IDCARD_AREA#,
+               #IDCARD_ADDRESS#,
+               #HOME_PROVINCE#,
+               #HOME_CITY#,
+               #HOME_AREA#,
+               #HOME_ADDRESS#,
+               #IDCARD_POSTALCODE#,
+               #HOME_POSTALCODE#,
+               #P_EMAIL#,
+               #C_EMAIL#,
+               #OFFICE_PHONE#,
+               #HOME_PHONE#,
+               #CELLPHONE#,
+               #FAX#,
+               #FILE_RELATION_CODE#,
+               #FILE_RELATION_ADDRESS#,
+               #WORKAGE#,
+               #PHOTOPATH#,
+               #SSN#,
+               #HAFN#,
+               #SHIFT_CODE#,
+               #SUPPLIER_CODE#
+              ) 
+        ]]>
+    </insert>
+    <!-- 加班申请 -->
+    <insert id="insertOvertimeApp" parameterClass='linkMap'>
+<!--         <selectKey resultClass="int" keyProperty="APP_NO"> SELECT ESS_APPLY_OT_SEQ.NEXTVAL AS APP_NO FROM DUAL -->
+<!--         </selectKey> -->
+    <![CDATA[
+        INSERT    INTO ESS_APPLY_OT 
+                  (OT_NO, 
+                   EMPID, 
+                   OT_TYPE_CODE, 
+                   OT_FROM_TIME, 
+                   OT_TO_TIME, 
+                   OT_CONTENT,
+                   OT_DEDUCTION, 
+                   CREATE_DATE, 
+                   CREATED_BY,
+                   AFFIRM_FLAG, 
+                   ACTIVITY,
+                   PROCESSID) 
+        VALUES   (#APP_NO#,
+                  #EMPID#,
+                  #OT_TYPE_CODE#,
+                  #OT_FROM_TIME#,
+                  #OT_TO_TIME#,
+                  #OT_CONTENT#,
+                  #OT_DEDUCTION#,
+                  SYSDATE(),
+                  #CREATED_BY#,
+                  0,
+                  1,
+                  #PROCESSID#)
+        ]]>
+    </insert>
+    <!-- 休假申请 -->
+    <insert id="insertLeaveApp" parameterClass='linkMap'>
+        <!-- <selectKey resultClass="int" keyProperty="APP_NO"> SELECT ESS_APPLY_LEAVE_SEQ.NEXTVAL AS APP_NO FROM DUAL
+        </selectKey> -->
+    <![CDATA[
+        INSERT INTO ESS_APPLY_LEAVE 
+            (LEAVE_NO, 
+            EMPID, 
+            LEAVE_TYPE_CODE, 
+            LEAVE_FROM_TIME,
+            LEAVE_TO_TIME, 
+            LEAVE_REASON,
+            LEAVE_WA_EMPID,
+            CREATE_DATE, 
+            CREATED_BY, 
+            AFFIRM_FLAG,
+            ACTIVITY,
+            PROCESSID)
+        VALUES (#APP_NO#, 
+                #EMPID#, 
+                #LEAVE_TYPE_CODE#, 
+                str_to_date(#LEAVE_FROM_TIME#, '%Y-%m-%d %T'), 
+                str_to_date(#LEAVE_TO_TIME#, '%Y-%m-%d %T'), 
+                #LEAVE_REASON#,
+                #LEAVE_WA_EMPID#, 
+                now(), 
+                #CREATED_BY#,
+                0, 
+                1,
+                #PROCESSID#)
+        ]]>
+    </insert>
+    <!-- 出差申请 -->
+    <insert id="insertBTApp" parameterClass='linkMap'>
+        
+    <![CDATA[
+        INSERT INTO ESS_APPLY_BT 
+           (
+            EMPID, 
+            BT_TYPE_CODE, 
+            BT_FROM_TIME,
+            BT_TO_TIME, 
+            BT_REASON, 
+            BT_CONTENT,
+            BT_REMARK,
+            BT_WA_EMPID,
+            TIME_STAMP,
+            BT_PROVINCE,
+            BT_CITY,
+            CREATE_DATE,
+            CREATED_BY,
+            ACTIVITY,
+            PROCESSID)
+        VALUES (
+                #EMPID#, 
+                #BT_TYPE_CODE#, 
+                str_to_date(#BT_FROM_TIME#, '%Y-%m-%d %T'), 
+                str_to_date(#BT_TO_TIME#, '%Y-%m-%d %T'), 
+                #BT_REASON#, 
+                #BT_CONTENT#, 
+                #BT_REMARK#, 
+                #BT_WA_EMPID#, 
+                #TIME_STAMP#,
+                #BT_PROVINCE#,
+                #BT_CITY#,
+                now(),
+                #CREATED_BY#,
+                1,
+                #PROCESSID#)
+        ]]>
+    </insert>
+    <!-- 慰问金申请 -->
+    <!-- <insert id="insertExpApp" parameterClass='linkMap'>
+        <selectKey resultClass="int" keyProperty="APP_NO"> SELECT ESS_APPLY_EXP_SEQ.NEXTVAL AS APP_NO FROM DUAL
+        </selectKey>
+    <![CDATA[
+        INSERT INTO ESS_APPLY_EXP 
+           (EXP_NO,
+            EMPID,
+            EXP_TYPE_CODE,
+            EXP_REMARK,
+            TIME_STAMP,
+            CREATE_DATE,
+            MONEYAMOUNT,
+            CREATED_BY,
+            AFFIRM_FLAG,
+            ACTIVITY,
+            PROCESSID)
+        VALUES (#APP_NO#,
+                #EMPID#,
+                #EXP_TYPE_CODE#,
+                #EXP_REMARK#,
+                now(),
+                now(),
+                #moneyamount#,
+                #CREATED_BY#,
+                0,
+                1,
+                #PROCESSID#)
+        ]]>
+    </insert> -->
+    <!-- aibi更改 -->
+    <insert id="insertExpApp" parameterClass='linkMap'>
+    <![CDATA[
+        INSERT INTO ESS_APPLY_EXP 
+           (EMPID,
+            EXP_TYPE_CODE,
+            EXP_REMARK,
+            TIME_STAMP,
+            CREATE_DATE,
+            MONEYAMOUNT,
+            CREATED_BY,
+            AFFIRM_FLAG,
+            ACTIVITY,
+            PROCESSID)
+        VALUES (#EMPID#,
+                #EXP_TYPE_CODE#,
+                #EXP_REMARK#,
+                NOW(),
+                NOW(),
+                #moneyamount#,
+                #CREATED_BY#,
+                0,
+                1,
+                #PROCESSID#)
+        ]]>
+    </insert>
+    <!-- end -->
+    <insert id="insertExpDetailInfo" parameterClass='linkMap'> 
+    <![CDATA[
+        INSERT INTO ESS_APPLY_EXP_DETAIL 
+           (EXP_NO,  
+            EXP_TYPE_CODE,  
+            EXP_NUMBER,
+            EXP_CURRENCY_UNIT,
+            EXP_EXCHANGE_RATE,
+            EXP_FROM_TIME,
+            EXP_TO_TIME,
+            EXP_REMARK,  
+            CREATE_DATE, 
+            CREATED_BY,
+            EXP_AFFIRM, 
+            ACTIVITY)
+        VALUES (#EXP_NO#,  
+                #EXP_TYPE_CODE#, 
+                #EXP_NUMBER#,
+                #EXP_CURRENCY_UNIT#,
+                #EXP_EXCHANGE_RATE#,
+                str_to_date(#EXP_FROM_TIME#,'%Y-%m-%d'),  
+                str_to_date(#EXP_TO_TIME#,'%Y-%m-%d'),  
+                #EXP_REMARK#,   
+                now(), 
+                #CREATED_BY#, 
+                0,
+                1)
+        ]]>
+    </insert>
+    <!-- 申请 加审核人 -->
+    <insert id="insertEssAffirmInfo" parameterClass='linkMap'>
+    <![CDATA[
+        INSERT  INTO ESS_AFFIRM 
+                (ESS_AFFIRM_NO, 
+                APPLY_NO, 
+                AFFIRM_FLAG, 
+                AFFIRM_LEVEL, 
+                AFFIRMOR_ID, 
+                CREATE_DATE, 
+                CREATED_BY, 
+                ACTIVITY, 
+                APPLY_TYPE) 
+        VALUES (ESS_AFFIRM_SEQ.NEXTVAL,
+                #APP_NO#,
+                0, 
+                #AFFIRM_LEVEL#, 
+                #AFFIRMOR_ID#, 
+                now(), 
+                #CREATED_BY#, 
+                1, 
+                #appType#)
+    ]]>
+    </insert>
+    <!-- 慰问金申请 -->
+    <insert id="insertCardtimeApp" parameterClass='linkMap'>
+    <![CDATA[
+        INSERT INTO ESS_APPLY_CARD
+           (EMPID,
+            CARD_REASON,
+            R_TIME,
+            ATT_DATE,
+            CREATE_DATE,
+            CREATED_BY,
+            AFFIRM_FLAG,
+            ACTIVITY,
+            PROCESSID)
+        VALUES (#EMPID#,
+                #APPLYREASON#,
+                STR_TO_DATE(#ATTENDANCETIME#,'%Y-%m-%d %T'),
+                STR_TO_DATE(#ATTENDANCEDATE#,'%Y-%m-%d %T'),
+                NOW(),
+                #CREATED_BY#,
+                0,
+                1,
+                #PROCESSID#)
+        ]]>
+    </insert>
+    <!-- 获得登陆人当日班次 -->
+    <select id="getEmpShift" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[   
+            SELECT HR.EMPID,
+                  if(#language#='en', HR.ENGLISHNAME, HR.CHINESENAME) CHINESENAME,
+                   AR_SHIFT010.SHIFT_NO,
+                   #OT_DATE# AS  SHIFT_DATE,
+                   if(#language#='en', AR_SHIFT010.SHIFT_EN_NAME, AR_SHIFT010.SHIFT_NAME) SHIFT_NAME,
+                  date_format(str_to_date(concat(#OT_DATE#,
+                                    date_format(AR_SHIFT020.FROM_TIME, '%H:%i:%s')),
+                                  '%Y-%m-%d %H:%i:%s') + AR_SHIFT020.BEGIN_DAY_OFFSET,
+                           '%Y-%m-%d %H:%i:%s') FROM_TIME,
+                   date_format(str_to_date(concat(#OT_DATE#,date_format(AR_SHIFT020.TO_TIME, ' %H:%i:%s')),
+                                   '%Y-%m-%d %H:%i:%s') + AR_SHIFT020.END_DAY_OFFSET,
+                           '%Y-%m-%d %H:%i:%s') TO_TIME
+              FROM AR_SHIFT020, AR_SHIFT010, HR_EMPLOYEE HR
+             WHERE AR_SHIFT010.SHIFT_NO = AR_SHIFT020.SHIFT_NO
+               AND AR_SHIFT010.SHIFT_NO =
+                   AR_GET_SHIFTNO(#EMPID#, REPLACE(#OT_DATE#, '-', '/'))
+               AND HR.EMPID = #EMPID#
+            ]]>
+    </select>
+    <!-- 返回年假 -->
+    <select id="getEmpVacationRema" parameterClass="linkMap" resultClass="string">
+        <![CDATA[   
+            SELECT T.TOT_VAC_CNT - T.DEL_VAC_CNT -
+                   (SELECT NVL(SUM(A.QUANTITY), 0)
+                      FROM AR_DETAIL A
+                     WHERE A.EMPID = T.EMPID
+                       AND A.AR_ITEM_NO = #arItemNo#
+                       AND A.AR_DATE_STR BETWEEN TO_CHAR(T.STRT_DATE, 'YYYY/MM/DD') AND
+                           date_format(T.END_DATE, '%Y-%m-%d'))
+              FROM AR_VAC_EMP T
+             WHERE ACTIVITY = 1 
+        ]]>
+        <isNotEmpty prepend="AND" property="empID">
+            <![CDATA[
+                T.EMPID = #empID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="vacTp">
+            <![CDATA[
+                T.VAC_TP = #vacTp#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="leaveFromTime">
+            <![CDATA[
+               str_to_date(#leaveFromTime#, '%Y-%m-%d %H:%i:%s') BETWEEN
+                   T.STRT_DATE AND T.END_DATE 
+            ]]>
+        </isNotEmpty>
+    </select>
+    <select id="getOTAppAffirmLeve" parameterClass="linkMap" resultClass="int">
+        <![CDATA[   
+            SELECT ifnull(A.AFFIRM_LEVEL, 0)
+              FROM ESS_OT_PARAMETER A
+             WHERE A.OT_TYPE_CODE = #OT_TYPE_CODE#
+        ]]>
+        <isNotEmpty prepend="AND" property="DEPTID">
+            <![CDATA[
+                A.DEPTID = #DEPTID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="POST_ID">
+            <![CDATA[
+                A.POST_ID = #POST_ID#
+            ]]>
+        </isNotEmpty>
+    </select>
+    <select id="getLeaveAppAffirmLeve" parameterClass="linkMap" resultClass="int">
+        <![CDATA[   
+            SELECT ifnull(A.AFFIRM_LEVEL, 0)
+              FROM ESS_LEAVE_PARAMETER A
+             WHERE A.LEAVE_TYPE_CODE = #LEAVE_TYPE_CODE#
+        ]]>
+        <isNotEmpty prepend="AND" property="DEPTID">
+            <![CDATA[
+                A.DEPTID = #DEPTID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="POST_ID">
+            <![CDATA[
+                A.POST_ID = #POST_ID#
+            ]]>
+        </isNotEmpty>
+    </select>
+    <!-- 返回年假 -->
+    <select id="getEmpVacationUsed" parameterClass="linkMap" resultClass="double">
+        <![CDATA[   
+            SELECT ifnull(SUM(A.QUANTITY), 0)
+              FROM AR_DETAIL A
+             WHERE date_format(str_to_date(A.AR_MONTH_STR, '%Y-%m'), '%Y') = date_format(SYSDATE, '%Y')
+        ]]>
+        <isNotEmpty prepend="AND" property="empID">
+            <![CDATA[
+                A.EMPID = #empID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="arItemNo">
+            <![CDATA[
+                A.AR_ITEM_NO = #arItemNo#
+            ]]>
+        </isNotEmpty>
+    </select>
+    <!-- 剩余年假 检查 -->
+    <select id="getEmpVacationNotConfirm" parameterClass="linkMap" resultClass="double">
+        <![CDATA[
+            SELECT ifnull(SUM(ATT_GET_LEAVE_LENGTH_NEW(T.EMPID,
+                                    date_format(T.LEAVE_FROM_TIME,
+                                            '%Y-%m-%d %H:%i:%s'),
+                                     date_format(T.LEAVE_TO_TIME,
+                                            '%Y-%m-%d %H:%i:%s'),
+                                    2)),
+                       0) AS APPLYNOT
+              FROM ESS_APPLY_LEAVE T, AR_VAC_EMP TT
+             WHERE T.EMPID = TT.EMPID
+               AND T.EMPID = #empID#
+               AND T.ACTIVITY = 0
+               AND T.LEAVE_FROM_TIME BETWEEN
+                  str_to_date(date_format(TT.STRT_DATE,'%Y-%m-%d'), '%Y-%m-%d %H:%i:%s') AND
+                   str_to_date(date_format(TT.END_DATE,'%Y-%m-%d'), '%Y-%m-%d %H:%i:%s')
+               AND NOT EXISTS (SELECT EA.AFFIRM_FLAG
+                                  FROM ESS_AFFIRM EA
+                                 WHERE EA.APPLY_NO = T.LEAVE_NO
+                                   AND EA.APPLY_TYPE = 'LeaveApply'
+                                   AND EA.AFFIRM_FLAG = 2)                  
+        ]]>
+        <isNotEmpty prepend="AND" property="leaveTypeCode">
+        <![CDATA[ 
+               T.LEAVE_TYPE_CODE = #leaveTypeCode#
+        ]]>
+        </isNotEmpty>
+    </select>
+    <!-- 根据参数 获取 审核等级 -->
+    <select id="getAffirmorLevelByParam_ot" parameterClass="linkMap" resultClass="int" remapResults="true">
+        <![CDATA[   
+            SELECT NVL(T.AFFIRM_LEVEL,6)
+              FROM ESS_OT_PARAMETER T, HR_EMPLOYEE HR
+             WHERE T.POST_ID = HR.POST_ID 
+             
+        ]]>
+        <isNotEmpty prepend="AND" property="EMPID">
+            <![CDATA[
+                HR.EMPID = #EMPID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="OT_TYPE_CODE">
+            <![CDATA[
+                T.OT_TYPE_CODE = #OT_TYPE_CODE#
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="AND" property="OT_TYPE_CODE">
+            <![CDATA[
+                T.OT_TYPE_CODE = 'WorkingOtType01'
+            ]]>
+        </isEmpty>
+        <isNotEmpty prepend="AND" property="OT_LENGTH">
+            <![CDATA[
+                #OT_LENGTH# BETWEEN T.OT_LENGTH_S AND T.OT_LENGTH_E
+            ]]>
+        </isNotEmpty>
+    </select>
+    <!-- 根据参数 获取 加班时数 -->
+    <select id="getOTlength" parameterClass="linkMap" resultClass="double" remapResults="true">
+        <![CDATA[   
+          SELECT date_format(((str_to_date(concat(date_format(str_to_date(#OT_DATE#, '%Y-%m-%d') + #OT_DATE_E_FLAG#,
+                                 '%Y-%m-%d'), ' ' ,#OT_TO_TIME#),
+                         '%Y-%m-%d %H:%i:%s') -
+                str_to_date(concat(date_format(str_to_date(#OT_DATE#, '%Y-%m-%d') + #OT_DATE_S_FLAG#,
+                                 '%Y-%m-%d') , ' ' , #OT_FROM_TIME#),
+                         '%Y-%m-%d %H:%i:%s'))*24 - #OT_DEDUCTION#),1) OT_LENGTH
+            FROM DUAL T
+        ]]>
+    </select>
+    <!-- 根据参数 获取 时数 -->
+    <select id="getLeavelength" parameterClass="linkMap" resultClass="double" remapResults="true">
+        <![CDATA[   
+          SELECT ATT_GET_LEAVE_LENGTH_NEW(#EMPID#,#LEAVE_FROM_TIME#,#LEAVE_TO_TIME#,'11') LEAVE_LENGTH
+            FROM DUAL T
+        ]]>
+    </select>
+    <!-- 根据参数获取已休的倒修假的时间 -->
+    <select id="getActiveCompensationLeave" parameterClass="linkMap" resultClass="linkMap">
+    <![CDATA[
+    SELECT EMPID, date_format(LEAVE_TO_TIME, '%Y-%m-%d %H:%i:%s') LEAVE_TO_TIME, 
+           date_format(LEAVE_FROM_TIME, '%Y-%m-%d %H:%i:%s') LEAVE_FROM_TIME FROM ESS_APPLY_LEAVE 
+           WHERE (ACTIVITY=1 or ACTIVITY=0) AND LEAVE_TYPE_CODE = 'LeaveType010' AND EMPID = #EMPID#
+    ]]>
+    </select>
+    <!-- 根据参数 获取 审核等级 -->
+    <select id="getAffirmorLevelByParam_leave" parameterClass="linkMap" resultClass="int" remapResults="true">
+        <![CDATA[   
+            SELECT NVL(T.AFFIRM_LEVEL,6)
+              FROM ESS_LEAVE_PARAMETER T, HR_EMPLOYEE HR
+             WHERE T.POST_ID = HR.POST_ID
+               AND T.DEPTID = HR.DEPTID   
+        ]]>
+        <isNotEmpty prepend="AND" property="EMPID">
+            <![CDATA[
+                HR.EMPID = #EMPID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="LEAVE_TYPE_CODE">
+            <![CDATA[
+                T.LEAVE_TYPE_CODE = #LEAVE_TYPE_CODE#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="LEAVE_LENGTH">
+            <![CDATA[
+                #LEAVE_LENGTH# BETWEEN T.LEAVE_LENGTH_S AND T.LEAVE_LENGTH_E
+            ]]>
+        </isNotEmpty>
+    </select>
+    <!-- 根据参数 获取 审核等级 -->
+    <select id="getAffirmorLevelByParam_normal" parameterClass="linkMap" resultClass="int" remapResults="true">
+        <![CDATA[   
+            SELECT MAX(NVL(T.AFFIRM_LEVEL,6))
+              FROM SY_AFFIRM_RELATION T, HR_EMPLOYEE A
+             WHERE T.AFFIRMOR_ID = A.EMPID
+        ]]>
+        <isNotEmpty prepend="AND" property="appType">
+            <![CDATA[
+                T.AFFIRM_TYPE_ID = #appType#
+            ]]>
+        </isNotEmpty>
+    </select>
+    <!-- 查询审批人 -->
+    <select id="getAffirmorList" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[   
+            SELECT A.AFFIRMOR_ID,
+                   if(#language#='en', 
+                          HR_AFFIRMOR.ENGLISHNAME, 
+                          HR_AFFIRMOR.CHINESENAME) AFFIRMOR_NAME, 
+                   A.AFFIRM_LEVEL
+              FROM SY_AFFIRM_RELATION A, 
+                   HR_EMPLOYEE HR, 
+                   HR_EMPLOYEE HR_AFFIRMOR
+             WHERE HR.EMPID = #EMPID#
+               AND A.AFFIRMOR_ID = HR_AFFIRMOR.EMPID
+               AND A.AFFIRM_TYPE_ID = #appType#
+        ]]>
+        <isNotEmpty prepend="AND" property="BYEMPID">
+            <![CDATA[
+                A.AFFIRM_OBJECT = HR_EMPLOYEE.EMPID
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="BYDEPTID">
+            <![CDATA[
+                A.AFFIRM_OBJECT = HR_EMPLOYEE.DEPTID
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY AFFIRM_LEVEL
+            ]]>
+        </isEmpty>
+    </select>
+    <!-- 根据申请人EMPID查询审批人 -->
+    <select id="getAffirmorListByEmpID" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[   
+            SELECT A.AFFIRMOR_ID,
+                  if(#language#='en', 
+                          HR_AFFIRMOR.ENGLISHNAME, 
+                          HR_AFFIRMOR.CHINESENAME) AFFIRMOR_NAME,  
+                   A.AFFIRM_LEVEL
+              FROM SY_AFFIRM_RELATION A, 
+                   HR_EMPLOYEE HR, 
+                   HR_EMPLOYEE HR_AFFIRMOR
+             WHERE A.AFFIRM_OBJECT = HR.EMPID
+               AND A.AFFIRMOR_ID = HR_AFFIRMOR.EMPID 
+        ]]>
+        <isNotEmpty prepend="AND" property="EMPID">
+            <![CDATA[
+                 HR.EMPID = #EMPID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="affirmLevel">
+            <![CDATA[
+                 A.AFFIRM_LEVEL <= #affirmLevel#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="appType">
+            <![CDATA[
+                 A.AFFIRM_TYPE_ID = #appType#
+            ]]>
+        </isNotEmpty>
+        <isEqual prepend="AND" property="containsOwner" compareValue="false">
+            <![CDATA[
+                 A.AFFIRMOR_ID <> #EMPID#
+            ]]>
+        </isEqual> 
+            <![CDATA[
+                ORDER BY AFFIRM_LEVEL
+            ]]>
+    </select>
+    <!-- 根据申请人部门ID查询审批人 -->
+    <select id="getAffirmorListByDeptID" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[   
+            SELECT A.AFFIRMOR_ID, 
+               if(#language#='en', 
+                          HR_AFFIRMOR.ENGLISHNAME, 
+                          HR_AFFIRMOR.CHINESENAME) AFFIRMOR_NAME, 
+                   A.AFFIRM_LEVEL
+              FROM SY_AFFIRM_RELATION A,
+                   HR_DEPARTMENT      HRD,
+                   HR_EMPLOYEE        HR_AFFIRMOR,
+                   HR_EMPLOYEE        HR
+             WHERE A.AFFIRM_OBJECT = HRD.DEPTID 
+               AND A.AFFIRMOR_ID = HR_AFFIRMOR.EMPID 
+               AND HRD.DEPTID = HR.DEPTID 
+        ]]>
+        <isNotEmpty prepend="AND" property="EMPID">
+            <![CDATA[
+                 HR.EMPID = #EMPID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="affirmLevel">
+            <![CDATA[
+                 A.AFFIRM_LEVEL <= #affirmLevel#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="appType">
+            <![CDATA[
+                 A.AFFIRM_TYPE_ID = #appType#
+            ]]>
+        </isNotEmpty>
+        <isEqual prepend="AND" property="containsOwner" compareValue="false">
+            <![CDATA[
+                 A.AFFIRMOR_ID <> #EMPID#
+            ]]>
+        </isEqual> 
+            <![CDATA[
+                ORDER BY AFFIRM_LEVEL
+            ]]>
+    </select>
+    <!-- 无特殊设置查询审批人 -->
+    <select id="getAffirmorListByNormal" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[   
+            SELECT T.AFFIRM_LEVEL,
+                   T.POST_ID,
+                   ESS_GET_AFFIRMER_BY_POST(#EMPID#, T.POST_ID) AS AFFIRMOR_ID,
+                   HRP.POST_NAME POSITIONNAME,
+                   HR_GET_NAME(ESS_GET_AFFIRMER_BY_POST(#EMPID#, T.POST_ID)) AS AFFIRMOR_NAME
+              FROM ESS_LEAVE_PARAMETER T, HR_POST HRP
+             WHERE T.POST_ID = HRP.POST_ID(+)
+               AND T.LEAVE_TYPE_CODE = #appType# 
+               AND #length# BETWEEN T.LEAVE_LENGTH_S AND T.LEAVE_LENGTH_E
+             ORDER BY AFFIRM_LEVEL
+        ]]>
+    </select>
+    <!-- 当前申请人 申请的休假长度 -->
+    <select id="retrieveApplyLeaveLength" parameterClass="linkMap" resultClass="string"> 
+        <![CDATA[
+                  SELECT ATT_GET_LEAVE_LENGTH_NEW(#EMPID#,#STARTDATE#,#ENDDATE#,'11') AS LEAVE_LENGTH
+                    FROM DUAL
+        ]]>
+    </select>
+    <!-- 根据申请人部门ID查询审批人 -->
+    <select id="setLastAffirmor" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[   
+            SELECT HR.EMPID AS AFFIRMOR_ID, 
+                  if(#language#='en', 
+                          HR.ENGLISHNAME, 
+                          HR.CHINESENAME) AS AFFIRMOR_NAME, 
+                   #affirmLevel# + 1 AS AFFIRM_LEVEL
+              FROM HR_EMPLOYEE HR
+             WHERE HR.EMPID = #transLastAffirmor#
+        ]]>
+    </select>
+   <!-- 添加报工信息时预先判断该报工人天是否超额 by shanzhi-->
+   <select id="getPreLegalForSave" parameterClass='linkMap' resultClass="string">
+        <![CDATA[
+            select (SUM(EAW.WORK_HOUR)+CAST(#WORK_HOUR# AS SIGNED INTEGER))<=(EPE.QUANTITY*8.0) as result
+            from ess_apply_wh EAW,ess_project_emp EPE 
+            where EAW.EMPID=#EMPID# and EAW.PRO_NO=#PRO_NO#
+                 and EPE.EMPID=#EMPID# and EPE.PRO_NO=#PRO_NO#
+                 and str_to_date(#START_DATE#,'%Y-%m-%d') BETWEEN EPE.START_DATE and EPE.END_DATE
+    
+        ]]>
+    </select>
+    <!-- 修改报工信息时判断所修改的报工人天是否超额 by shanzhi-->
+    <select id="getPreLegalForUpdate" parameterClass='linkMap' resultClass="string">
+        <![CDATA[
+            select (SUM(EAW.WORK_HOUR)+CAST(#WORK_HOUR# AS SIGNED INTEGER))<=(EPE.QUANTITY*8.0) as result
+            from ess_apply_wh EAW,ess_project_emp EPE 
+            where EAW.EMPID=#EMPID# and EAW.PRO_NO=#PRO_NO#
+                 and EPE.EMPID=#EMPID# and EPE.PRO_NO=#PRO_NO#
+                 and str_to_date(#START_DATE#,'%Y-%m-%d') BETWEEN EPE.START_DATE and EPE.END_DATE
+    
+        ]]>
+    </select>
+    <update id="updateWorkingHoursByWHNO" parameterClass="linkMap">
+        <![CDATA[
+               UPDATE ESS_APPLY_WH 
+               SET WORK_HOUR = 0
+               WHERE WH_NO = #WH_NO#
+        ]]>
+        
+    </update>
+   
+    <insert id="saveWorkingHoursInfo" parameterClass='linkMap'>
+        <![CDATA[
+            INSERT  INTO ESS_APPLY_WH
+                    (WH_NO,
+                    EMPID,
+                    PRO_NO,
+                    START_DATE,
+                    END_DATE,
+                    WORK_CONTENT,
+                    REMARK,
+                    WORK_HOUR,
+                    CREATE_DATE,
+                    CREATED_BY,
+                    ACTIVITY)
+            VALUES (null,
+                    #EMPID#,
+                    #PRO_NO#,
+                    str_to_date(#START_DATE#,'%Y-%m-%d'),
+                    str_to_date(#END_DATE#,'%Y-%m-%d'),
+                    #WORK_CONTENT#,
+                    #REMARK#,
+                    #WORK_HOUR#,
+                    now(),
+                    #CREATED_BY#,
+                    0);
+    
+        ]]>
+    </insert>
+    <insert id="saveWorkingHoursInfoOther" parameterClass='linkMap'>
+        <![CDATA[
+        DECLARE
+            VAR_SDATE DATE;
+            VAR_EDATE DATE;
+            VAR_WHRESCOURCE NUMBER(10,2);
+            VAR_WHRESCOURCE_USED NUMBER(10,2);
+            VAR_QUANTITY NUMBER(10,3);
+        BEGIN
+            SELECT EP.START_DATE INTO VAR_SDATE FROM ESS_PROJECT EP,ESS_PRODUCTION_ORDER EPOD WHERE EP.PRO_NO = EPOD.PRO_NO(+) AND EPOD.PROD_NO = #PROD_NO#;
+            SELECT EP.END_DATE INTO VAR_EDATE FROM ESS_PROJECT EP,ESS_PRODUCTION_ORDER EPOD WHERE EP.PRO_NO = EPOD.PRO_NO(+) AND EPOD.PROD_NO = #PROD_NO#;
+            
+            SELECT EPOD.QUANTITY INTO VAR_WHRESCOURCE FROM ESS_PRODUCTION_ORDER EPOD WHERE EPOD.PROD_NO = #PROD_NO#;
+            SELECT NVL(SUM(EA.WORK_HOUR),0) INTO VAR_WHRESCOURCE_USED FROM ESS_APPLY_WH EA WHERE EA.PROD_NO = #PROD_NO# AND EA.ACTIVITY = 1;
+            
+            SELECT UNIT_PRICE*TO_NUMBER(#LENGTH#) INTO VAR_QUANTITY FROM ESS_SLICE_TYPE_DETAIL WHERE PARAMETER_NO = #PARAMETER_NO# AND #THICKNESS# >= MIN_THICKNESS AND #THICKNESS# <= MAX_THICKNESS;
+            
+            IF str_to_date(#START_DATE#,'%Y-%m-%d')>VAR_EDATE OR str_to_date(#START_DATE#,'%Y-%m-%d')<VAR_SDATE THEN
+                RAISE_APPLICATION_ERROR(-20001,'报工日期无效');
+            END IF;
+            
+            IF VAR_WHRESCOURCE_USED+VAR_QUANTITY > VAR_WHRESCOURCE THEN
+                RAISE_APPLICATION_ERROR(-20002,'剩余报工金额不足');
+            END IF;
+            
+            INSERT  INTO ESS_APPLY_WH
+                    (WH_NO, 
+                    EMPID, 
+                    PROD_NO, 
+                    START_DATE, 
+                    END_DATE, 
+                    WORK_CONTENT, 
+                    REMARK, 
+                    WORK_HOUR,
+                    CREATE_DATE, 
+                    CREATED_BY, 
+                    ACTIVITY
+                  
+            VALUES (ESS_APPLY_WH_SEQ.NEXTVAL, 
+                    #EMPID#, 
+                    #PROD_NO#, 
+                    str_to_date(#START_DATE#,'%Y-%m-%d'),
+                    str_to_date(#END_DATE#,'%Y-%m-%d'),
+                    #WORK_CONTENT#, 
+                    #REMARK#, 
+                    VAR_QUANTITY,  
+                    now(), 
+                    #CREATED_BY#, 
+                    1;
+                   
+        END;
+        ]]>
+    </insert>
+   <update id="updateWorkingHoursInfo" parameterClass="linkMap">
+        <![CDATA[
+     
+               UPDATE ESS_APPLY_WH EAW
+               SET EAW.WORK_CONTENT = #WORK_CONTENT#,
+                   EAW.REMARK = #REMARK#,
+                   EAW.PRO_NO = #PRO_NO#,
+                   EAW.WORK_HOUR = #WORK_HOUR#,
+                   EAW.START_DATE = str_to_date(#START_DATE#,'%Y-%m-%d'),
+                   EAW.END_DATE = str_to_date(#END_DATE#,'%Y-%m-%d'),
+                   EAW.UPDATE_DATE   = now(),
+                   EAW.UPDATED_BY    = #UPDATED_BY#
+             WHERE EAW.WH_NO = #WH_NO#
+        ]]>
+        
+    </update>
+    <insert id="addProInfo" parameterClass='linkMap'>
+        <selectKey resultClass="int" keyProperty="PRO_NO"> 
+            SELECT Auto_increment AS PRO_NO
+				FROM information_schema.`TABLES`
+				WHERE Table_Schema='smartone_v1'
+				AND table_name = 'ess_project'
+        </selectKey>
+        <![CDATA[
+            INSERT INTO ESS_PROJECT
+                    (PRO_NO,
+                    PRO_NAME,
+                    PRO_EN_NAME,
+                    PRO_MODULE,
+                    TYPE_CODE,
+                    QUANTITY,
+                    START_DATE,
+                    END_DATE,
+                    DESCRIPTION,
+                    REMARK,
+                    CREATE_DATE,
+                    CREATED_BY,
+                    ACTIVITY,
+                    CPNY_ID)
+            VALUES (#PRO_NO#,
+                    #PRO_NAME#,
+                    #PRO_EN_NAME#,
+                    #PRO_MODULE#,
+                    #TYPE_CODE#,
+                    #QUANTITY#,
+                    str_to_date(#START_DATE#,'%Y-%m-%d'),
+                    str_to_date(#END_DATE#,'%Y-%m-%d'),
+                    #DESCRIPTION#,
+                    #REMARK#,
+                    now(),
+                    #CREATED_BY#,
+                    1,
+                    #CPNY_ID#)
+        ]]>
+    </insert>
+    <insert id="addProMemberInfo" parameterClass="linkMap">
+        <![CDATA[
+     
+            INSERT  INTO ESS_PROJECT_EMP
+                    (PRO_NO,
+                    EMPID,
+                    START_DATE,
+                    END_DATE,
+                    QUANTITY,
+                    REMARK,
+                    CREATE_DATE,
+                    CREATED_BY,
+                    ACTIVITY)
+            VALUES (#PRO_NO#,
+                    #EMPID#,
+                    str_to_date(#START_DATE#,'%Y-%m-%d'),
+                    str_to_date(#END_DATE#,'%Y-%m-%d'),
+                    #QUANTITY#,
+                    #REMARK#,
+                    now(),
+                    #CREATED_BY#,
+                    1)
+       
+        ]]>
+    </insert>
+    <insert id="updateProMemberInfo" parameterClass='linkMap'>
+    <![CDATA[
+    
+        UPDATE ESS_PROJECT_EMP
+           SET QUANTITY =  CAST(#QUANTITY# AS SIGNED INTEGER),
+               START_DATE = str_to_date(#START_DATE#,'%Y-%m-%d'),
+               END_DATE = str_to_date(#END_DATE#,'%Y-%m-%d'), 
+               REMARK = #REMARK#,
+               UPDATE_DATE = now(),
+               UPDATED_BY = #UPDATED_BY#
+         WHERE PRO_NO = #PRO_NO# and EMPID = #EMPID#;
+         
+   
+    ]]>
+    </insert>
+    <!-- 申请 加审核人 -->
+    <insert id="updateProInfo" parameterClass='linkMap'>
+    <![CDATA[ 
+        UPDATE ESS_PROJECT
+           SET PRO_NAME = #PRO_NAME#, 
+               PRO_EN_NAME = #PRO_EN_NAME#,
+               PRO_MODULE = #PRO_MODULE#,
+               TYPE_CODE = #TYPE_CODE#,
+               QUANTITY =  #QUANTITY#,
+               START_DATE = str_to_date(#START_DATE#,'%Y-%m-%d'),
+               END_DATE = str_to_date(#END_DATE#,'%Y-%m-%d'),
+               DESCRIPTION = #DESCRIPTION#,
+               REMARK = #REMARK#,
+               UPDATE_DATE = now(),
+               UPDATED_BY = #UPDATED_BY#
+         WHERE PRO_NO = #PRO_NO#  
+    ]]>
+    </insert>
+    <select id="isWhManager" parameterClass="linkMap" resultClass="string" remapResults="true">
+    <![CDATA[ 
+       SELECT IF(COUNT(0)=0,'false',IF(COUNT(0)=1,'true','false'))
+          FROM SY_ADMIN T
+         WHERE T.SCREEN_GRANT_ID LIKE CONCAT('%',#SCREEN_GRANT_ID#,'%')
+           AND T.ADMINID = #ADMINID#
+    ]]>
+    </select>
+    <select id="getEmpWhTotalInfo" parameterClass="linkMap" resultClass="double" remapResults="true">
+        <![CDATA[   
+            SELECT IFULL(SUM(EAW.WORK_HOUR), 0)
+              FROM ESS_APPLY_WH EAW
+             WHERE 1=1
+        ]]>
+        <isNotEmpty prepend="AND" property="DDATE_STR">
+            <![CDATA[
+                EAW.START_DATE = str_to_date(#DDATE_STR#,'%Y-%m-%d')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="EMPID">
+            <![CDATA[
+                EAW.EMPID = #EMPID#
+            ]]>
+        </isNotEmpty>
+    </select>
+    <select id="getEmpWhItemInfo" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[    
+       SELECT A.CODE_NAME WH_ITEM,IFNULL(SUM(EAW.WORK_HOUR), 0) WH_CNT
+         FROM ESS_APPLY_WH EAW left join ESS_PROJECT EP on EAW.PRO_NO = EP.PRO_NO
+         
+          left join SY_CODE A on EP.TYPE_CODE = A.CODE_ID
+        where 2=2
+        ]]>
+        <isNotEmpty prepend="AND" property="DDATE_STR">
+            <![CDATA[
+                EAW.START_DATE = str_to_date(#DDATE_STR#,'%Y-%m-%d')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="EMPID">
+            <![CDATA[
+                EAW.EMPID = #EMPID#
+            ]]>
+        </isNotEmpty>
+            <![CDATA[
+                GROUP BY A.CODE_NAME
+            ]]>
+    </select>
+    <select id="getEmpLeavlInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[   
+            SELECT T.EMPID,
+                   date_format(T.LEAVE_FROM_TIME, '%Y-%m-%d %T') LEAVE_FROM_TIME,
+                   date_format(T.LEAVE_TO_TIME, '%Y-%m-%d %T') LEAVE_TO_TIME
+              FROM ESS_APPLY_LEAVE T
+             WHERE T.EMPID = #EMPID#
+               AND str_to_date(#DDATE_STR#,'%Y-%m-%d') BETWEEN str_to_date(date_format(T.LEAVE_FROM_TIME, '%Y-%m-%d'),'%Y-%m-%d') AND
+                   str_to_date(date_format(T.LEAVE_TO_TIME, '%Y-%m-%d'),'%Y-%m-%d') 
+        ]]>
+    </select>
+    <!-- 物品申请 -->
+    <insert id="insertToolApp" parameterClass='linkMap'>
+    <![CDATA[
+        INSERT    INTO ESS_APPLY_TOOL
+                  (ASSET_NO,
+                   EMPID,
+                   TOOL_TYPE_CODE,
+                   BORROW_DATE,
+                   RETURN_DATE,
+                   TOOL_CONTENT,
+                   TOOL_REMARK,
+                   CREATE_DATE,
+                   CREATED_BY,
+                   ACTIVITY,
+                   PROCESSID)
+        VALUES   (#ASSET_NO#,
+                  #EMPID#,
+                  #TOOL_TYPE_CODE#,
+                  STR_TO_DATE(#BORROW_DATE#, '%Y-%m-%d %T'),
+                  STR_TO_DATE(#RETURN_DATE#, '%Y-%m-%d %T'),
+                  #TOOL_CONTENT#,
+                  #TOOL_REMARK#,
+                  NOW(),
+                  #CREATED_BY#,
+                  1,
+                  #PROCESSID#)
+        ]]>
+    </insert>
+    <!-- 物品申请 -->
+    <insert id="insertToolAppAss" parameterClass='linkMap'>
+    <![CDATA[
+        INSERT    INTO ESS_APPLY_TOOL
+                  (ASSET_NO,
+                   EMPID,
+                   TOOL_TYPE_CODE,
+                   BORROW_DATE,
+                   RETURN_DATE,
+                   TOOL_CONTENT,
+                   TOOL_REMARK,
+                   CREATE_DATE,
+                   CREATED_BY,
+                   ACTIVITY,
+                   AFFIRM_FLAG)
+        VALUES   (#ASSET_NO#,
+                  #EMPID#,
+                  #TOOL_TYPE_CODE#,
+                  STR_TO_DATE(#BORROW_DATE#, '%Y-%m-%d %T'),
+                  STR_TO_DATE(#RETURN_DATE#, '%Y-%m-%d %T'),
+                  #TOOL_CONTENT#,
+                  #TOOL_REMARK#,
+                  NOW(),
+                  #CREATED_BY#,
+                  1,
+                  1)
+        ]]>
+    </insert>
+    <select id="getToolLoan" parameterClass="linkMap" resultClass="linkMap">
+    <![CDATA[
+            SELECT B.CODE_NAME CODE_NAME, date_format(EAT.BORROW_DATE,'%Y-%m-%d %T') BORROW_DATE, date_format(EAT.RETURN_DATE,'%Y-%m-%d %T') RETURN_DATE 
+            FROM ESS_APPLY_TOOL EAT, SY_CODE B  
+            WHERE EAT.RETURN_DATE>=now() AND EAT.TOOL_TYPE_CODE= #TOOL_TYPE_CODE# AND EAT.TOOL_TYPE_CODE = B.CODE_ID AND EAT.ACTIVITY=1           
+    ]]>
+    </select>
+    <!-- 添加邮件信息 -->
+    <insert id="insertEmailInfo" parameterClass='linkMap'>
+    <![CDATA[
+    DECLARE
+     CURSOR ADDRESS_LIST_CURSOR IS  
+     SELECT ADDRESS  
+     FROM SY_APPLY_NOTIFY_LIST  
+     WHERE ADDRESS_TYPE_CODE='AddressType001' AND APPLY_TYPE_CODE=#APP_TYPE# AND ACTIVITY=1;
+     ADDRESS_LIST_NODE ADDRESS_LIST_CURSOR%ROWTYPE;
+     APP_NO NUMBER(10);
+    BEGIN
+        OPEN ADDRESS_LIST_CURSOR;
+        LOOP   
+         Fetch ADDRESS_LIST_CURSOR INTO ADDRESS_LIST_NODE;  
+         EXIT WHEN ADDRESS_LIST_CURSOR%NOTFOUND;      
+
+        SELECT EMAIL_SND_SEQ.NEXTVAL INTO APP_NO FROM DUAL;
+        INSERT INTO SY_EMAIL_SND 
+            (EMAIL_SND_SEQ,  
+            EMAIL_TITLE, 
+            EMAIL_CONTNT,
+            EMAIL_TP, 
+            TO_EMAIL_ADDR,  
+            SND_STAT, 
+            CREATE_DATE, 
+            CREATED_BY,  
+            APPLY_NO)
+        VALUES (APP_NO,  
+                #EMAIL_TITLE#, 
+                #EMAIL_CONTNT#,  
+                #EMAIL_TP#, 
+                ADDRESS_LIST_NODE.ADDRESS, 
+                0, 
+                SYSDATE(), 
+                #CREATED_BY#,
+                #APPLY_NO#);                
+
+        END LOOP;
+        EXCEPTION   
+        WHEN OTHERS THEN  
+            CLOSE ADDRESS_LIST_CURSOR;  
+            DBMS_OUTPUT.PUT_LINE(SQLERRM);
+
+        IF ADDRESS_LIST_CURSOR%ISOPEN THEN      
+              CLOSE ADDRESS_LIST_CURSOR;  
+        END IF;
+    END;            
+        ]]>
+    </insert>
+    <!-- 获取休日和节日加班的总时数 -->
+    <select id="getVocationOTLength" parameterClass="linkMap" resultClass="double">
+    <![CDATA[
+    SELECT ifnull(SUM(QUANTITY),0) TOTAL_QUANTITY FROM AR_DETAIL WHERE EMPID = #EMPID# AND (AR_ITEM_NO = 4 OR AR_ITEM_NO = 5)
+    ]]>
+    </select>
+    <select id="getDeptLeaderId" parameterClass="string" resultClass="string"> 
+        <![CDATA[
+            select hd.manager_emp_id
+            from hr_department hd 
+            where hd.deptid = (select he.deptid from hr_employee he where he.empid = #empid#)
+        ]]>
+    </select>
+    <select id="getUpperDeptLeaderId" parameterClass="string" resultClass="string">
+        <![CDATA[
+            select dept.manager_emp_id 
+            from hr_department dept 
+            where dept.deptid = 
+                (select hd.parent_dept_id from hr_department hd 
+                    where hd.deptid = (select he.deptid from hr_employee he where he.empid = #empid#)
+                )
+        ]]>
+    </select>
+    <!-- 获取员工姓名 -->
+    <select id="getChineseNameById" parameterClass="string" resultClass="string">
+        <![CDATA[
+            select chinesename from hr_employee where empid = #empid#
+        ]]>
+    </select>
+    <!-- 获取出差目的地 -->
+    <!-- <select id="getBusiTripDestination" parameterClass="string" resultClass="string">
+        <![CDATA[
+            SELECT c1.code_name||c2.code_name destination 
+            FROM SY_CODE c1,SY_CODE c2 
+            WHERE c1.code_id(+)=c2.parent_code AND c2.code_id = #code_id#
+        ]]>
+    </select> -->
+    <!-- aibi更改 -->
+    <select id="getBusiTripDestination" parameterClass="string" resultClass="string">
+        <![CDATA[
+            SELECT c1.code_name||c2.code_name destination 
+            FROM SY_CODE c1 right join SY_CODE c2 on c1.code_id=c2.parent_code
+            WHERE c2.code_id = #code_id#
+        ]]>
+    </select>
+    <!-- 获取物品名称 -->
+    <select id="getToolName" parameterClass="string" resultClass="string">
+        <![CDATA[
+            select asset_name from ASS_ASSET_INFO where asset_id = #asset_id#
+        ]]>
+    </select>
+    <!-- 获取codeName -->
+    <select id="getCodeNameByCodeId" parameterClass="string" resultClass="string">
+        <![CDATA[
+            select code_name from sy_code where code_id = #code_id#
+        ]]>
+    </select>
+    <!-- 获取position -->
+    <select id="getPositionByCodeId" parameterClass="string" resultClass="string">
+        <![CDATA[
+            select post_name from HR_POST where post_id = #post_id#
+        ]]>
+    </select>
+    <!-- 获取deptName -->
+    <select id="getdeptNameByCodeId" parameterClass="string" resultClass="string">
+        <![CDATA[
+            SELECT DEPTNAME FROM HR_DEPARTMENT WHERE DEPTID = #DEPTID#
+        ]]>
+    </select>
+    <!-- 导入Excel，增加生产订单 -->
+    <insert id="addProductionOrderInfo" parameterClass='linkMap'>
+        <![CDATA[
+            INSERT  INTO ESS_PRODUCTION_ORDER
+                  (PROD_NO, 
+                  PROD_ID, 
+                  PRO_NO, 
+                  DRAWING_NO,
+                  WEIGHT,
+                  CREATE_DATE, 
+                  CREATED_BY, 
+                  ACTIVITY, 
+                  CPNY_ID) 
+              VALUES 
+              (   ESS_PRODUCTION_ORDER_SEQ.NEXTVAL, 
+                  #PROD_ID#, 
+                  #PRO_NO#, 
+                  #DRAWING_NO#, 
+                  #WEIGHT#,
+                  now(), 
+                  #CREATED_BY#, 
+                  1, 
+                  #CPNY_ID#)
+    ]]>
+    </insert>
+    <!-- 页面中增加生产订单 -->
+    <insert id="addProductionOrder" parameterClass='linkMap'>
+        <![CDATA[
+            INSERT  INTO ESS_PRODUCTION_ORDER
+                  (PROD_NO, 
+                  PROD_ID, 
+                  PRO_NO, 
+                  DRAWING_NO,
+                  WEIGHT,
+                  UNIT_PRICE,
+                  QUANTITY,
+                  CREATE_DATE, 
+                  CREATED_BY, 
+                  ACTIVITY, 
+                  CPNY_ID) 
+              VALUES 
+              (   ESS_PRODUCTION_ORDER_SEQ.NEXTVAL, 
+                  #PROD_ID#, 
+                  #PRO_NO#, 
+                  #DRAWING_NO#, 
+                  #WEIGHT#,
+                  #UNIT_PRICE#,
+                  #QUANTITY#,
+                  now(), 
+                  #CREATED_BY#, 
+                  1, 
+                  #CPNY_ID#)
+    ]]>
+    </insert>
+    <!-- 修改项目的生产订单 -->
+    <insert id="updateProductionOrderInfo" parameterClass='linkMap'>
+        <![CDATA[ 
+            UPDATE ESS_PRODUCTION_ORDER
+            SET    PROD_ID = #PROD_ID#,
+                   DRAWING_NO = #DRAWING_NO#,
+                   WEIGHT = #WEIGHT#,
+                   UNIT_PRICE = #UNIT_PRICE#,
+                   REMARK = #REMARK#,
+                   QUANTITY = #QUANTITY#,
+                   UPDATE_DATE = now(),
+                   UPDATED_BY = #UPDATED_BY#
+            WHERE  PROD_NO = #PROD_NO#
+        ]]>
+    </insert>
+    <!-- 删除项目的生产订单 -->
+    <insert id="deleteProductionOrderInfo" parameterClass='linkMap'>
+        <![CDATA[ 
+            DELETE FROM ESS_PRODUCTION_ORDER WHERE PROD_NO = #PROD_NO#
+        ]]>
+    </insert>
+    <select id="getWhConclusionListCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+        SELECT COUNT(0)
+        FROM ESS_WH_CONCLUSION EWC,
+             HR_EMPLOYEE HRE
+             WHERE EWC.EMPID = HRE.EMPID
+               AND EWC.MONTH = #MONTH#
+               AND HRE.LEFT_DATE>= str_to_date(#MONTH#, '%Y%m%d') OR HRE.LEFT_DATE IS NULL
+        ]]>
+    </select>
+    <select id="getWhConclusionList" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+        SELECT EWC.EMPID,
+               EWC.MONTH,
+               HRE.CHINESENAME,
+               EWC.TOTAL_WH,
+               EWC.TOTAL_WD,
+               EWC.WEI_1_HOUR,
+               EWC.WEI_1_DAY,
+               EWC.WEI_2_HOUR,
+               EWC.WEI_2_DAY,
+               EWC.WEI_3_HOUR,
+               EWC.WEI_3_DAY,
+               EWC.WEI_4_HOUR,
+               EWC.WEI_4_DAY,
+               EWC.WEI_5_HOUR,
+               EWC.WEI_5_DAY,
+               EWC.WEI_6_HOUR,
+               EWC.WEI_6_DAY
+        FROM ESS_WH_CONCLUSION EWC,
+             HR_EMPLOYEE HRE
+             WHERE EWC.EMPID = HRE.EMPID
+               AND EWC.MONTH = #MONTH#
+          
+               and EWC.TOTAL_WH>0
+        ]]>
+    </select>
+    <insert id="addWhConclusion" parameterClass="linkMap">
+        <![CDATA[
+        DECLARE
+        BEGIN
+        DELETE FROM ESS_WH_CONCLUSION WHERE EMPID=#EMPID# AND MONTH = #MONTH#;
+        INSERT INTO ESS_WH_CONCLUSION(WH_CONCLUSION_NO,EMPID,MONTH,TOTAL_WH,TOTAL_WD,
+            WEI_1_HOUR,WEI_1_DAY,
+            WEI_2_HOUR,WEI_2_DAY,
+            WEI_3_HOUR,WEI_3_DAY,
+            WEI_4_HOUR,WEI_4_DAY,
+            WEI_5_HOUR,WEI_5_DAY,
+            WEI_6_HOUR,WEI_6_DAY,
+            WEI_7_HOUR,WEI_7_DAY,
+            CREATE_DATE,CREATED_BY,ACTIVITY)
+        VALUES(ESS_WH_CONCLUSION_SEQ.NEXTVAL,#EMPID#,#MONTH#,#TOTAL_WH#,#TOTAL_WD#,
+                #WEI_1_HOUR#,#WEI_1_DAY#,
+                #WEI_2_HOUR#,#WEI_2_DAY#,
+                #WEI_3_HOUR#,#WEI_3_DAY#,
+                #WEI_4_HOUR#,#WEI_4_DAY#,
+                #WEI_5_HOUR#,#WEI_5_DAY#,
+                #WEI_6_HOUR#,#WEI_6_DAY#,
+                #WEI_7_HOUR#,#WEI_7_DAY#,
+                now(),#CREATED_BY#,1);
+        END;
+        ]]>
+    </insert>
+    <select id="getPersonHwConclusionList" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+        SELECT C.WEI_NAME,
+               C.WEI_NO,
+               AVG(C.WEI_VALUE) WEI_VALUE,
+               SUM(A.WORK_HOUR) WORK_HOUR,
+               (SELECT NVL(SUM(EAW1.WORK_HOUR),0)
+               FROM ESS_APPLY_WH EAW1,
+                    ESS_PROJECT EP1
+               WHERE EAW1.EMPID = #EMPID#
+               AND   EAW1.START_DATE >= str_to_date(#MONTH#, '%Y%m')
+               AND   EAW1.START_DATE <= LAST_DAY(str_to_date(#MONTH#,'%Y%m'))
+               AND   EAW1.PRO_NO = EP1.PRO_NO(+)
+               and   EP1.TYPE_CODE = 'projectTypeCode01') EXTERNAL_WORK_HOUR,
+               (SELECT NVL(SUM(EAW2.WORK_HOUR),0)
+               FROM ESS_APPLY_WH EAW2,
+                    ESS_PROJECT EP2
+               WHERE EAW2.EMPID = #EMPID#
+               AND   EAW2.START_DATE >= str_to_date(#MONTH#, '%Y%m')
+               AND   EAW2.START_DATE <= LAST_DAY(str_to_date(#MONTH#,'%Y%m'))
+               AND   EAW2.PRO_NO = EP2.PRO_NO(+)
+               and   EP2.TYPE_CODE in ('projectTypeCode02','projectTypeCode04','projectTypeCode09')) INTERNAL_WORK_HOUR
+        FROM ESS_APPLY_WH A,
+             ESS_PROJECT_TYPE_MATCH B,
+             ESS_PROJECT_WEIGHING C,
+             ESS_PROJECT D
+        WHERE A.EMPID = #EMPID#
+          AND A.PRO_NO = D.PRO_NO
+          AND D.TYPE_CODE = B.PROJECT_TYPE_CODE
+          AND B.WEI_NO = C.WEI_NO
+          AND A.START_DATE>=str_to_date(#MONTH#,'%Y%m')
+          AND A.START_DATE<=LAST_DAY(str_to_date(#MONTH#,'%Y%m'))GROUP BY C.WEI_NO, C.WEI_NAME
+        ]]>
+    </select>
+    <!-- WH CONCLUSION -->
+    <select id="getAllEmpidList" parameterClass="linkMap" resultClass="string">
+        <![CDATA[
+        SELECT EMPID FROM HR_EMPLOYEE
+        ]]>
+    </select>
+    <select id="getWhConclusionListSum" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+        SELECT EWC.EMPID,
+               MAX(#START_MONTH#) START_MONTH,
+               MAX(#END_MONTH#) END_MONTH,
+               MAX(HRE.CHINESENAME) CHINESENAME,
+               SUM(NVL(EWC.TOTAL_WH,0)) TOTAL_WH,
+               SUM(NVL(EWC.TOTAL_WD,0)) TOTAL_WD,
+               SUM(NVL(EWC.WEI_1_HOUR,0)) WEI_1_HOUR,
+               SUM(NVL(EWC.WEI_1_DAY,0)) WEI_1_DAY,
+               SUM(NVL(EWC.WEI_2_HOUR,0)) WEI_2_HOUR,
+               SUM(NVL(EWC.WEI_2_DAY,0)) WEI_2_DAY,
+               SUM(NVL(EWC.WEI_3_HOUR,0)) WEI_3_HOUR,
+               SUM(NVL(EWC.WEI_3_DAY,0)) WEI_3_DAY,
+               SUM(NVL(EWC.WEI_4_HOUR,0)) WEI_4_HOUR,
+               SUM(NVL(EWC.WEI_4_DAY,0)) WEI_4_DAY,
+               SUM(NVL(EWC.WEI_5_DAY,0)) WEI_5_DAY,
+               SUM(NVL(EWC.WEI_6_DAY,0)) WEI_6_DAY
+        FROM ESS_WH_CONCLUSION EWC,
+             HR_EMPLOYEE HRE
+             WHERE EWC.EMPID = HRE.EMPID
+               AND EWC.MONTH >= #START_MONTH#
+               AND EWC.MONTH <= #END_MONTH#
+               AND (HRE.LEFT_DATE >= str_to_date(#END_MONTH#, '%Y%m') OR HRE.LEFT_DATE IS NULL)
+               GROUP BY EWC.EMPID
+        ]]>
+    </select>
+    <select id="getStartAndEndDate" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+        SELECT 
+               date_format(MIN(EPE.START_DATE),'%Y-%m-%d') START_DATE,
+               date_format(MAX(EPE.END_DATE),'%Y-%m-%d') END_DATE
+        FROM ESS_PROJECT_EMP EPE
+        WHERE EPE.PRO_NO = #PRO_NO#
+        ]]>
+    </select>
+</sqlMap>

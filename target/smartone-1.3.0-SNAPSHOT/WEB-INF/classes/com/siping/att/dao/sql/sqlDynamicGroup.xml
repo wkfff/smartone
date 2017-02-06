@@ -1,0 +1,472 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="att.dynamicGroup">
+
+	<select id="getDynamicGroupSelectionList" parameterClass="linkMap" 
+	resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT 'constant' ID, '默认组' NAME, 'Default Group' EN_NAME
+			  FROM DUAL
+			UNION
+			SELECT T.GROUP_NO || '' ID, T.GROUP_NAME NAME, T.GROUP_EN_NAME EN_NAME
+			  FROM AR_DYNAMIC_GROUP T, HR_COMPANY A
+			 WHERE T.CPNY_ID = A.CPNY_ID(+)
+			   AND T.ACTIVITY = 1
+			   AND T.CPNY_ID = #CPNY_ID#
+		]]>     
+	</select>
+	
+	<select id="getDynamicGroupInfo" parameterClass="linkMap" 
+	resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT T.GROUP_NO,
+			       T.GROUP_NAME,
+			       T.GROUP_EN_NAME, 
+			       T.GROUP_NO ID,
+			       T.GROUP_NAME NAME,
+			       T.GROUP_EN_NAME EN_NAME,
+			       T.GROUP_TYPE,
+			       T.DESCRIPTION,
+			       T.ACTIVITY STATUS_ID,
+			       IF(T.ACTIVITY='1',
+			              IF(#language#='en', 'Available', '可用'),
+			              IF(#language#='en', 'Unavailable', '不可用')) STATUS,
+			       T.CPNY_ID,
+			       IF(#language#='en', A.CPNY_EN_NAME, A.CPNY_NAME) CPNY_NAME
+			  FROM AR_DYNAMIC_GROUP T,HR_COMPANY A
+			  WHERE T.CPNY_ID = A.CPNY_ID(+)
+			 
+		]]> 
+		<isNotEmpty prepend="AND" property="GROUP_NO">
+			<![CDATA[
+		 		  T.GROUP_NO = #GROUP_NO:NUMERIC#
+		    ]]>
+		</isNotEmpty> 
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+		 		  T.CPNY_ID = #CPNY_ID#
+		    ]]>
+		</isNotEmpty> 
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+		 		  (UPPER(replace(HR.CHINESENAME,' ',''))  LIKE CONCAT('%',UPPER(replace(#keyWord:VARCHAR#,' ','')),'%')
+		 		   OR UPPER(replace(HR.ENGLISHNAME,' ','')) LIKE CONCAT('%',UPPER(replace(#keyWord:VARCHAR#,' ','')),'%')
+		 		   OR UPPER(replace(HR.EMPID,' ','')) LIKE CONCAT('%',UPPER(replace(#keyWord:VARCHAR#,' ','')),'%')
+		 		  )
+		    ]]>
+		</isNotEmpty>  
+		<isNotEmpty prepend="AND" property="DEPTID">
+			<![CDATA[
+		 		 EXISTS (
+						SELECT  B1.DEPTID
+		                     	FROM HR_DEPARTMENT B1
+		                     	WHERE B1.DEPTID=T.DEPTID
+		                 	START WITH B1.DEPTID = #DEPTID#
+		                 	CONNECT BY PRIOR B1.DEPTID = B1.PARENT_DEPT_ID
+		                )
+		    ]]>
+		</isNotEmpty>  
+		
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		  ORDER BY $sortname$ $sortorder$
+		    ]]>
+		</isNotEmpty>
+		
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY T.GROUP_NO
+			]]>
+		</isEmpty>
+		 
+	</select>
+	
+	<select id="getDynamicGroupInfoCnt" parameterClass="linkMap" 
+	resultClass="int">
+		<![CDATA[
+			SELECT COUNT(*)
+			  FROM AR_DYNAMIC_GROUP T,HR_COMPANY A
+			  WHERE T.CPNY_ID = A.CPNY_ID(+)
+			 
+		]]> 
+		<isNotEmpty prepend="AND" property="GROUP_NO">
+			<![CDATA[
+		 		  T.GROUP_NO = #GROUP_NO:NUMERIC#
+		    ]]>
+		</isNotEmpty> 
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+		 		  T.CPNY_ID = #CPNY_ID#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+		 		  (UPPER(replace(T.GROUP_NO,' ','')) LIKE CONCAT('%',UPPER(replace(#keyWord:VARCHAR#,' ','')),'%')
+		 		   OR UPPER(replace(T.GROUP_NAME,' ','')) LIKE CONCAT('%',UPPER(replace(#keyWord:VARCHAR#,' ','')),'%') 
+		 		   OR UPPER(replace(T.GROUP_EN_NAME,' ','')) LIKE CONCAT('%',UPPER(replace(#keyWord:VARCHAR#,' ','')),'%')
+		 		  )
+		    ]]>
+		</isNotEmpty>  
+		<isNotEmpty prepend="AND" property="DEPTID">
+			<![CDATA[
+		 		 EXISTS (
+						SELECT  B1.DEPTID
+		                     	FROM HR_DEPARTMENT B1
+		                     	WHERE B1.DEPTID=T.DEPTID
+		                 	START WITH B1.DEPTID = #DEPTID#
+		                 	CONNECT BY PRIOR B1.DEPTID = B1.PARENT_DEPT_ID
+		                )
+		    ]]>
+		</isNotEmpty>
+		 
+	</select>
+ 
+	<select id="getDynamicGroupEmpInfo" parameterClass="linkMap" 
+	resultClass="linkMap" remapResults="true">
+		<![CDATA[
+				SELECT HR.EMPID, 
+				       IF(#language#='en', HR.ENGLISHNAME, HR.CHINESENAME) CHINESENAME,
+				       HRD.DEPTID,
+				       IF(#language#='en', HRD.DEPT_EN_NAME, HRD.DEPTNAME) DEPTNAME,
+				       HR.STATUS_CODE,
+				       IF(#language#='en', A.CODE_EN_NAME, A.CODE_NAME) STATUS_NAME
+				 FROM  AR_DYNAMIC_GROUP_EMP AR left join  HR_EMPLOYEE HR on AR.EMPID = HR.EMPID 
+      left join HR_DEPARTMENT HRD on HR.DEPTID = HRD.DEPTID 
+      left join SY_CODE A on HR.STATUS_CODE = A.CODE_ID
+		]]>	 
+		<isNotEmpty prepend="AND" property="GROUP_NO">
+			<![CDATA[
+		 		  AR.GROUP_NO = #GROUP_NO:NUMERIC#
+		    ]]>
+		</isNotEmpty> 
+		<isNotEmpty prepend="AND" property="STATUS_CODE">
+			<![CDATA[
+		 		  HR.STATUS_CODE = #STATUS_CODE:NUMERIC#
+		    ]]>
+		</isNotEmpty> 
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+		 		  (UPPER(replace(HR.CHINESENAME,' ','')) LIKE CONCAT('%',UPPER(replace(#keyWord:VARCHAR#,' ','')),'%') 
+		 		   OR UPPER(replace(HR.ENGLISHNAME,' ','')) LIKE CONCAT('%',UPPER(replace(#keyWord:VARCHAR#,' ','')),'%')
+		 		   OR UPPER(replace(HR.EMPID,' ','')) LIKE CONCAT('%',UPPER(replace(#keyWord:VARCHAR#,' ','')),'%')
+		 		  )
+		    ]]>
+		</isNotEmpty>  
+		<isNotEmpty prepend="AND" property="DEPTID">
+			<![CDATA[
+		 		 EXISTS (
+						SELECT  B1.DEPTID
+		                     	FROM HR_DEPARTMENT B1
+		                     	WHERE B1.DEPTID=HR.DEPTID
+		                 	START WITH B1.DEPTID = #DEPTID#
+		                 	CONNECT BY PRIOR B1.DEPTID = B1.PARENT_DEPT_ID
+		                )
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		  ORDER BY $sortname$ $sortorder$
+		    ]]>
+		</isNotEmpty>
+		
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		   ORDER BY HR.DEPTID
+			]]>
+		</isEmpty>  
+	</select>
+
+	<select id="getDynamicGroupEmpInfoCnt" parameterClass="linkMap" 
+	resultClass="int">
+		<![CDATA[
+			SELECT COUNT(0) AS CNT
+			 FROM HR_EMPLOYEE HR LEFT JOIN HR_DEPARTMENT A ON HR.DEPTID = A.DEPTID
+            LEFT JOIN SY_CODE C ON HR.STATUS_CODE = C.CODE_ID
+            LEFT JOIN HR_COMPANY B ON A.CPNY_ID = B.CPNY_ID
+			 
+		]]> 
+		<isNotEmpty prepend="AND" property="GROUP_NO">
+			<![CDATA[
+		 		  AR.GROUP_NO = #GROUP_NO:NUMERIC#
+		    ]]>
+		</isNotEmpty> 
+		<isNotEmpty prepend="AND" property="STATUS_CODE">
+			<![CDATA[
+		 		  HR.STATUS_CODE = #STATUS_CODE:NUMERIC#
+		    ]]>
+		</isNotEmpty> 
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+		 		  (UPPER(replace(HR.CHINESENAME,' ','')) LIKE CONCAT('%',UPPER(replace(#keyWord:VARCHAR#,' ','')),'%')
+		 		   OR UPPER(replace(HR.ENGLISHNAME,' ','')) LIKE CONCAT('%',UPPER(replace(#keyWord:VARCHAR#,' ','')),'%')
+		 		   OR UPPER(replace(HR.EMPID,' ','')) LIKE CONCAT('%',UPPER(replace(#keyWord:VARCHAR#,' ','')),'%')
+		 		  )
+		    ]]>
+		</isNotEmpty>  
+		<isNotEmpty prepend="AND" property="DEPTID">
+			<![CDATA[
+		 		 EXISTS (
+						SELECT  B1.DEPTID
+		                     	FROM HR_DEPARTMENT B1
+		                     	WHERE B1.DEPTID=HR.DEPTID
+		                 	START WITH B1.DEPTID = #DEPTID#
+		                 	CONNECT BY PRIOR B1.DEPTID = B1.PARENT_DEPT_ID
+		                )
+		    ]]>
+		</isNotEmpty> 
+		 
+	</select>
+
+	<insert id="addDynamicGroupInfo" parameterClass="linkMap" >
+		<![CDATA[
+			INSERT INTO AR_DYNAMIC_GROUP (
+					 GROUP_NO,
+					 GROUP_NAME,
+			         GROUP_EN_NAME,
+			         DESCRIPTION,
+			         ACTIVITY,
+			         CPNY_ID, 
+			         CREATE_DATE,
+			         CREATED_BY 
+				)
+				VALUES(
+					AR_DYNAMIC_GROUP_SEQ.NEXTVAL ,
+					#GROUP_NAME:VARCHAR#,
+					#GROUP_EN_NAME:VARCHAR#, 
+					#DESCRIPTION:VARCAHR#,
+					#STATUS_ID#,
+					#CPNY_ID#,
+					SYSDATE,
+					#CREATED_BY:VARCAHR#
+				)
+		]]>
+	</insert>
+	
+	<update id="updateDynamicGroupInfo" parameterClass="linkMap" >
+		<![CDATA[
+			UPDATE AR_DYNAMIC_GROUP SET
+					 GROUP_NAME = #GROUP_NAME:VARCHAR#,
+			         GROUP_EN_NAME = #GROUP_EN_NAME:VARCHAR#,
+			         DESCRIPTION = #DESCRIPTION:VARCAHR#,
+			         ACTIVITY = #STATUS_ID#,
+			         CPNY_ID = #CPNY_ID#,
+			         UPDATED_BY = #UPDATED_BY#,
+                     UPDATE_DATE=SYSDATE
+			WHERE GROUP_NO = #GROUP_NO# 
+		]]>
+	</update>
+	
+	<delete id="deleteDynamicGroupInfo" parameterClass="linkMap">
+		<![CDATA[
+			DELETE AR_DYNAMIC_GROUP WHERE GROUP_NO = #GROUP_NO:NUMERIC#
+		]]>
+	</delete>
+	<delete id="deleteDynamicGroupInfoPerson" parameterClass="linkMap">
+		<![CDATA[
+			DELETE AR_DYNAMIC_GROUP_EMP WHERE GROUP_NO = #GROUP_NO:NUMERIC#
+		]]>
+	</delete>
+	
+	<insert id="addDynamicGroupEmpInfo" parameterClass="linkMap" >
+		<![CDATA[ 
+		
+		INSERT INTO AR_DYNAMIC_GROUP_EMP (EMPID,GROUP_NO) VALUES ( #EMPID#, #GROUP_NO#)
+		
+			]]>
+	</insert>
+	<select id="checkDynamicGroupEmpInfo" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+		  SELECT  COUNT(AR.EMPID)
+		   FROM   AR_DYNAMIC_GROUP_EMP AR
+		   WHERE  AR.EMPID=#EMPID#
+		        AND AR.GROUP_NO=#GROUP_NO#
+		       
+			 
+		]]>	 
+		 
+	</select>
+	<delete id="deleteDynamicGroupEmpInfo" parameterClass="linkMap">
+		<![CDATA[
+		  DELETE   FROM   AR_DYNAMIC_GROUP_EMP AR
+		   WHERE  AR.EMPID=#EMPID#
+		        AND AR.GROUP_NO=#GROUP_NO#
+           ]]>	 
+   </delete>
+	
+	<select id="getNonDynamicGroupEmpInfo" parameterClass="linkMap"
+		resultClass="linkMap" remapResults="true">
+		<![CDATA[
+					SELECT HR.EMPID,
+			       HR.DEPTID,
+       			   IF(#language#='en', A.DEPT_EN_NAME, A.DEPTNAME) DEPTNAME,
+			       HR.CHINESENAME,
+			       HR.CHINESE_PINYIN,
+			       HR.ENGLISHNAME,
+			       HR.STATUS_CODE,
+			       IF(#language#='en', C.CODE_EN_NAME, C.CODE_NAME) STATUS_NAME,
+			       A.CPNY_ID,
+			       IF(#language#='en', B.CPNY_EN_NAME, B.CPNY_NAME) CPNY_NAME
+			  FROM HR_EMPLOYEE HR LEFT JOIN HR_DEPARTMENT A ON  HR.DEPTID = A.DEPTID 
+             LEFT JOIN SY_CODE C ON HR.STATUS_CODE = C.CODE_ID
+             LEFT JOIN HR_COMPANY B ON A.CPNY_ID = B.CPNY_ID
+		]]>
+		<isNotEmpty prepend="AND" property="keyWord">
+		<![CDATA[
+			( 
+				HR.EMPID LIKE CONCAT('%',TRIM(#keyWord#),'%')
+				OR	HR.CHINESENAME LIKE CONCAT('%',TRIM(#keyWord#),'%')
+				OR	HR.CHINESE_PINYIN LIKE CONCAT('%',TRIM(#keyWord#),'%')
+				OR	HR.ENGLISHNAME LIKE CONCAT('%',TRIM(#keyWord#),'%')
+			)
+		    ]]>
+		</isNotEmpty>	
+		
+		<isNotEmpty prepend="AND" property="STATUS_CODE">
+			<![CDATA[
+		 		  HR.STATUS_CODE = #STATUS_CODE:NUMERIC#
+		    ]]>
+		</isNotEmpty> 
+				
+		<isNotEmpty prepend="AND" property="DEPTID">
+		<![CDATA[
+			EXISTS (SELECT * FROM HR_DEPARTMENT HRD
+						WHERE HR.DEPTID=HRD.DEPTID 
+							START WITH HRD.DEPTID =#DEPTID# 
+							CONNECT BY PRIOR HRD.DEPTID = HRD.PARENT_DEPT_ID )
+		    ]]>
+		</isNotEmpty>
+		  
+		<isNotEmpty prepend="AND" property="ADMINID">
+		<![CDATA[
+			EXISTS (
+		            SELECT *
+		              FROM SY_ADMIN_DEPTID S1, SY_ADMIN S2
+		             WHERE S2.ADMINNO = S1.ADMIN_NO
+		               AND S1.ADMIN_DEPTID = HR.DEPTID
+		               AND S2.ADMINID = #ADMINID#
+		       )
+		    ]]>
+		</isNotEmpty>
+		<!--
+		<isNotEmpty prepend="AND" property="AR_ADMIN_ID">
+			<![CDATA[
+		 		  EXISTS(
+		 		  	SELECT *
+					  FROM AR_SUPERVISOR_INFO
+					 WHERE AR_SUPERVISOR_INFO.SUPERVISED_DEPTID = HR.DEPTID
+					   AND AR_SUPERVISOR_ID = #AR_ADMIN_ID:VARCHAR#
+		 		  )
+		    ]]>
+		</isNotEmpty>
+		-->
+		<isNotEmpty prepend="AND" property="GROUP_NO">
+			<![CDATA[
+			  NOT EXISTS(
+		 		  	SELECT *
+					  FROM AR_DYNAMIC_GROUP_EMP
+					 WHERE AR_DYNAMIC_GROUP_EMP.EMPID = HR.EMPID
+					   AND AR_DYNAMIC_GROUP_EMP.GROUP_NO = #GROUP_NO:VARCHAR#
+		 		  )
+		    ]]>
+		</isNotEmpty>
+		  
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+		 		  A.CPNY_ID = #CPNY_ID:VARCHAR#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		  	ORDER BY $sortname$ $sortorder$
+		    ]]>
+		</isNotEmpty>
+		
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+					ORDER BY HR.DEPTID, HR.EMPID
+			]]>
+		</isEmpty>
+	</select>
+	
+	<select id="getNonDynamicGroupEmpInfoCnt" parameterClass="linkMap"
+		resultClass="int">
+		<![CDATA[
+		     SELECT COUNT(0) AS CNT
+			 FROM HR_EMPLOYEE HR left join HR_DEPARTMENT A on HR.DEPTID = A.DEPTID
+             left join SY_CODE C on HR.STATUS_CODE = C.CODE_ID
+             left join HR_COMPANY B on A.CPNY_ID = B.CPNY_ID
+   	   	]]>
+		<isNotEmpty prepend="AND" property="keyWord">
+		<![CDATA[
+			(   
+			 
+				HR.EMPID LIKE CONCAT('%',TRIM(#keyWord#),'%')
+				OR	HR.CHINESENAME LIKE CONCAT('%',TRIM(#keyWord#),'%')
+				OR	HR.CHINESE_PINYIN LIKE CONCAT('%',TRIM(#keyWord#),'%')
+				OR	HR.ENGLISHNAME LIKE CONCAT('%',TRIM(#keyWord#),'%')
+			)
+		    ]]>
+		</isNotEmpty>
+	
+		<isNotEmpty prepend="AND" property="STATUS_CODE">
+			<![CDATA[
+		 		  HR.STATUS_CODE = #STATUS_CODE:NUMERIC#
+		    ]]>
+		</isNotEmpty> 
+   	   	
+		<isNotEmpty prepend="AND" property="DEPTID">
+		<![CDATA[
+			EXISTS (SELECT * FROM HR_DEPARTMENT HRD
+						WHERE HR.DEPTID=HRD.DEPTID 
+							START WITH HRD.DEPTID =#DEPTID# 
+							CONNECT BY PRIOR HRD.DEPTID = HRD.PARENT_DEPT_ID )
+		    ]]>
+		</isNotEmpty>
+		  
+		<isNotEmpty prepend="AND" property="ADMINID">
+		<![CDATA[
+			EXISTS (
+		            SELECT *
+		              FROM SY_ADMIN_DEPTID S1, SY_ADMIN S2
+		             WHERE S2.ADMINNO = S1.ADMIN_NO
+		               AND S1.ADMIN_DEPTID = HR.DEPTID
+		               AND S2.ADMINID = #ADMINID#
+		       )
+		    ]]>
+		</isNotEmpty>
+		<!--
+		<isNotEmpty prepend="AND" property="AR_ADMIN_ID">
+			<![CDATA[
+		 		  EXISTS(
+		 		  	SELECT *
+					  FROM AR_SUPERVISOR_INFO
+					 WHERE AR_SUPERVISOR_INFO.SUPERVISED_DEPTID = HR.DEPTID
+					   AND AR_SUPERVISOR_ID = #AR_ADMIN_ID:VARCHAR#
+		 		  )
+		    ]]>
+		</isNotEmpty>
+		-->
+		<isNotEmpty prepend="AND" property="GROUP_NO">
+			<![CDATA[
+			  NOT EXISTS(
+		 		  	SELECT *
+					  FROM AR_DYNAMIC_GROUP_EMP
+					 WHERE AR_DYNAMIC_GROUP_EMP.EMPID = HR.EMPID
+					   AND AR_DYNAMIC_GROUP_EMP.GROUP_NO = #GROUP_NO:VARCHAR#
+		 		  )
+		    ]]>
+		</isNotEmpty>
+		  
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+		 		  A.CPNY_ID = #CPNY_ID:VARCHAR#
+		    ]]>
+		</isNotEmpty>
+	</select>      
+	
+</sqlMap>

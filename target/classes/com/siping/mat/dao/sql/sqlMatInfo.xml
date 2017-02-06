@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap
+    PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+    "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="mat.matInfo">
+    <sql id="MatMaterialCondition">
+        <isNotEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+                (
+                    MI.MAT_ID                       LIKE '%'||TRIM(#keyWord#)||'%'
+                    OR MI.MAT_NAME                  LIKE '%'||TRIM(#keyWord#)||'%'
+                    OR MI.BP_NAME                   LIKE '%'||TRIM(#keyWord#)||'%'
+                    OR MI.OLD_NAME                  LIKE '%'||TRIM(#keyWord#)||'%'
+                    OR MI.MAT_DESCRIPTION           LIKE '%'||TRIM(#keyWord#)||'%'
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="MAT_TYPE_NO">
+            <![CDATA[
+                PRI.TYPE_NO = #MAT_TYPE_NO#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="MAT_STATUS_NO">
+            <![CDATA[
+                PRI.STATE_NO = #MAT_STATUS_NO#
+            ]]>
+        </isNotEmpty>
+    </sql>
+
+    <resultMap class="material" id="materialMap">
+        <result property="no" column="MAT_NO"/>
+        <result property="id" column="MAT_ID"/>
+        <result property="name" column="MAT_NAME"/>
+        <result property="bpName" column="BP_NAME"/>
+        <result property="oldName" column="OLD_NAME"/>
+        <result property="description" column="MAT_DESCRIPTION"/>
+        <result property="unit.id" column="MAT_UNIT_CODE"/>
+        <result property="unit.name" column="MAT_UNIT_NAME"/>
+        <result property="processRunning.state.no" column="MAT_STATUS_NO"/>
+        <result property="processRunning.state.name" column="MAT_STATUS_NAME"/>
+        <result property="processRunning.type.no" column="MAT_TYPE_NO"/>
+        <result property="processRunning.type.name" column="MAT_TYPE_NAME"/>
+    </resultMap>
+
+    <select id="getMaterialList" parameterClass="linkMap" resultMap="materialMap">
+        <![CDATA[
+            SELECT MI.MAT_NO                MAT_NO,
+                   MI.MAT_ID                MAT_ID,
+                   MI.MAT_NAME              MAT_NAME,
+                   MI.OLD_NAME              OLD_NAME,
+                   MI.BP_NAME               BP_NAME,
+                   PRI.TYPE_NO              MAT_TYPE_NO,
+                   PRI.STATE_NO             MAT_STATUS_NO,
+                   POTI.OBJECT_TYPE_NAME    MAT_TYPE_NAME,
+                   PSI.STATUS_NAME          MAT_STATUS_NAME,
+                   SC.CODE_NAME             MAT_UNIT_NAME,
+                   MI.MAT_UNIT_CODE         MAT_UNIT_CODE,
+                   MI.MAT_DESCRIPTION       MAT_DESCRIPTION
+            FROM    MAT_INFO                     MI,
+                    PROCESS_RUNNING_INFO         PRI,
+                    PROCESS_OBJECT_TYPE_INFO     POTI,
+                    PROCESS_STATUS_INFO          PSI,
+                    SY_CODE                      SC
+            WHERE MI.RUNNING_NO = PRI.RUNNING_NO(+)
+            AND PRI.TYPE_NO = POTI.OBJECT_TYPE_NO(+)
+            AND PRI.STATE_NO = PSI.STATUS_NO(+)
+            AND MI.MAT_UNIT_CODE = SC.CODE_ID(+)
+            AND MI.ACTIVITY = 1
+            AND MI.CPNY_ID = #metaData.company.companyId#
+        ]]>
+        <include refid="MatMaterialCondition" />
+    </select>
+
+    <select id="getMaterialListCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(0)
+            FROM MAT_INFO       MI,
+               PROCESS_OBJECT_TYPE_INFO     POTI,
+               PROCESS_RUNNING_INFO         PRI,
+               PROCESS_STATUS_INFO          PSI,
+               SY_CODE                      SC
+            WHERE MI.ACTIVITY = 1
+            AND PRI.TYPE_NO = POTI.OBJECT_TYPE_NO(+)
+            AND PRI.STATE_NO = PSI.STATUS_NO(+)
+            AND MI.MAT_UNIT_CODE = SC.CODE_ID(+)
+            AND MI.CPNY_ID = #metaData.company.companyId#
+        ]]>
+        <include refid="MatMaterialCondition" />
+    </select>
+
+    <resultMap class="material" id="materialDetailMap">
+        <result property="no" column="MAT_NO"/>
+        <result property="id" column="MAT_ID"/>
+        <result property="name" column="MAT_NAME"/>
+        <result property="bpName" column="BP_NAME"/>
+        <result property="oldName" column="OLD_NAME"/>
+        <result property="description" column="MAT_DESCRIPTION"/>
+
+        <result property="length" column="LENGTH"/>
+        <result property="width" column="WIDTH"/>
+        <result property="height" column="HEIGHT"/>
+        <result property="roughWeight" column="ROUGH_WEIGHT"/>
+        <result property="netWeight" column="NET_WEIGHT"/>
+        <result property="separated" column="IS_SEPARATED"/>
+        <result property="photoPath" column="PHOTOPATH"/>
+        <result property="lengthUnit.id" column="LENGTH_UNIT_CODE"/>
+        <result property="lengthUnit.name" column="WEIGHT_UNIT"/>
+        <result property="weightUnit.id" column="WEIGHT_UNIT_CODE"/>
+        <result property="weightUnit.name" column="WEIGHT_UNIT"/>
+
+        <result property="unit.id" column="MAT_UNIT_CODE"/>
+        <result property="unit.name" column="MAT_UNIT_NAME"/>
+        <result property="processRunning.no" column="RUNNING_NO"/>
+        <result property="metaData.company.companyId" column="CPNY_ID"/>
+    </resultMap>
+
+    <select id="getMaterialDetail" parameterClass="material" resultMap="materialDetailMap" >
+        <![CDATA[
+            SELECT MI.MAT_NO                    MAT_NO,
+               MI.MAT_ID                        MAT_ID,
+               MI.MAT_NAME                      MAT_NAME,
+               MI.OLD_NAME                      OLD_NAME,
+               MI.BP_NAME                       BP_NAME,
+               MI.LENGTH                        LENGTH,
+               MI.WIDTH                         WIDTH,
+               MI.HEIGHT                        HEIGHT,
+               MI.ROUGH_WEIGHT                  ROUGH_WEIGHT,
+               MI.NET_WEIGHT                    NET_WEIGHT,
+               MI.MAT_DESCRIPTION               MAT_DESCRIPTION,
+               MI.IS_SEPARATED                  IS_SEPARATED,
+               MI.MAT_UNIT_CODE                 MAT_UNIT_CODE,
+               MI.WEIGHT_UNIT_CODE              WEIGHT_UNIT_CODE,
+               MI.LENGTH_UNIT_CODE              LENGTH_UNIT_CODE,
+               MI.PHOTOPATH                     PHOTOPATH,
+               B.CODE_NAME                      MAT_UNIT_NAME,
+               C.CODE_NAME                      WEIGHT_UNIT,
+               D.CODE_NAME                      LENGTH_UNIT,
+               MI.RUNNING_NO                    RUNNING_NO,
+               MI.CPNY_ID                       CPNY_ID
+            FROM MAT_INFO       MI,
+               SY_CODE B,
+               SY_CODE C,
+               SY_CODE D
+            WHERE MI.CPNY_ID = #metaData.company.companyId#
+            AND MI.MAT_UNIT_CODE = B.CODE_ID(+)
+            AND MI.WEIGHT_UNIT_CODE = C.CODE_ID(+)
+            AND MI.LENGTH_UNIT_CODE = D.CODE_ID(+)
+            AND MI.MAT_NO = #no#
+        ]]>
+    </select>
+
+
+    <select id="getMaterialDetailById" parameterClass="material" resultMap="materialDetailMap" >
+        <![CDATA[
+            SELECT MI.MAT_NO                    MAT_NO,
+               MI.MAT_ID                        MAT_ID,
+               MI.MAT_NAME                      MAT_NAME,
+               MI.OLD_NAME                      OLD_NAME,
+               MI.BP_NAME                       BP_NAME,
+               MI.LENGTH                        LENGTH,
+               MI.WIDTH                         WIDTH,
+               MI.HEIGHT                        HEIGHT,
+               MI.ROUGH_WEIGHT                  ROUGH_WEIGHT,
+               MI.NET_WEIGHT                    NET_WEIGHT,
+               MI.MAT_DESCRIPTION               MAT_DESCRIPTION,
+               MI.IS_SEPARATED                  IS_SEPARATED,
+               MI.MAT_UNIT_CODE                 MAT_UNIT_CODE,
+               MI.WEIGHT_UNIT_CODE              WEIGHT_UNIT_CODE,
+               MI.LENGTH_UNIT_CODE              LENGTH_UNIT_CODE,
+               MI.PHOTOPATH                     PHOTOPATH,
+               B.CODE_NAME                      MAT_UNIT_NAME,
+               C.CODE_NAME                      WEIGHT_UNIT,
+               D.CODE_NAME                      LENGTH_UNIT,
+               MI.RUNNING_NO                    RUNNING_NO,
+               MI.CPNY_ID                       CPNY_ID
+          FROM MAT_INFO       MI,
+               SY_CODE B,
+               SY_CODE C,
+               SY_CODE D
+         WHERE MI.MAT_UNIT_CODE = B.CODE_ID(+)
+           AND MI.WEIGHT_UNIT_CODE = C.CODE_ID(+)
+           AND MI.LENGTH_UNIT_CODE = D.CODE_ID(+)
+           AND MI.CPNY_ID = #metaData.company.companyId#
+           AND MI.MAT_ID = #id#
+        ]]>
+    </select>
+</sqlMap>

@@ -1,0 +1,529 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="process.processManage">
+
+	
+	<!-- 申请 加审核人 -->
+	<insert id="insertObjectAffirmInfo" parameterClass='linkMap'>
+	<![CDATA[
+		INSERT  INTO PROCESS_AFFIRM 
+				(PROCESS_AFFIRM_NO, 
+				OBJECT_ID, 
+				AFFIRM_FLAG, 
+				OBJECT_STATUS_ID, 
+				AFFIRMOR_ID, 
+				CREATE_DATE, 
+				CREATED_BY, 
+				ACTIVITY, 
+				CPNY_ID,
+				AFFIRM_OBJECT) 
+		VALUES (PROCESS_AFFIRM_SEQ.NEXTVAL,
+				#OBJECT_ID#,
+				0, 
+				#OBJECT_STATUS_ID#, 
+				#AFFIRMOR_ID#, 
+				SYSDATE, 
+				#CREATED_BY#, 
+				1, 
+				#CPNY_ID#,
+				#AFFIRM_OBJECT#)
+	]]>
+	</insert>
+	
+	
+	<!-- 查询审批人 -->
+	<select id="getAffirmorList" parameterClass="linkMap"
+		resultClass="linkMap" remapResults="true">
+		<![CDATA[	
+			SELECT A.AFFIRMOR_ID,
+			       DECODE(#language#, 
+			       		  'en', 
+			       		  HR_AFFIRMOR.ENGLISHNAME, 
+			       		  HR_AFFIRMOR.CHINESENAME) AFFIRMOR_NAME, 
+			       A.OBJECT_STATUS_ID
+			  FROM PROCESS_AFFIRM_RELATION A, 
+			  	   HR_EMPLOYEE HR, 
+			  	   HR_EMPLOYEE HR_AFFIRMOR
+			 WHERE HR.EMPID = #EMPID#
+			   AND A.AFFIRMOR_ID = HR_AFFIRMOR.EMPID
+   		]]>
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY OBJECT_STATUS_ID
+			]]>
+		</isEmpty>
+	</select>
+	
+	<!-- 根据ObjectID查询审批人 -->
+	<select id="getAffirmorListByObjectID" parameterClass="linkMap"
+		resultClass="linkMap" remapResults="true">
+		<![CDATA[	
+			
+   		]]>
+	</select>
+	
+	<!-- 根据ObjectType查询审批人 -->
+	<select id="getAffirmorListByObjectType" parameterClass="linkMap"
+		resultClass="linkMap" remapResults="true">
+		<![CDATA[	
+			SELECT A.AFFIRMOR_ID, 
+			       DECODE(#language#, 
+			       		  'en', 
+			       		  HR_AFFIRMOR.ENGLISHNAME, 
+			       		  HR_AFFIRMOR.CHINESENAME) AFFIRMOR_NAME, 
+				   A.OBJECT_STATUS_ID
+			  FROM PROCESS_AFFIRM_RELATION A,
+			       HR_EMPLOYEE        HR_AFFIRMOR
+			 WHERE A.AFFIRMOR_ID = HR_AFFIRMOR.EMPID 
+			   AND A.ACTIVITY = 1 
+			   AND A.OBJECT_TYPE_ID = #OBJECT_TYPE_ID# 
+   		]]>
+		<isNotEmpty prepend="AND" property="OBJECT_STATUS_ID">
+			<![CDATA[
+			     A.OBJECT_STATUS_ID IN( SELECT STATUS_ID FROM PROCESS_ITEM_INFO 
+			                             START WITH STATUS_ID = #OBJECT_STATUS_ID#
+			                             CONNECT BY PRIOR STATUS_ID = SUC_STATUS_ID)
+			                             
+			]]>
+		</isNotEmpty> 
+	</select>
+	
+	<!-- 无特殊设置查询审批人 -->
+	<select id="getAffirmorListByNormal" parameterClass="linkMap"
+		resultClass="linkMap" remapResults="true">
+		<![CDATA[	
+			
+   		]]>
+	</select>
+	
+	
+	<sql id="sqlGetObjectTypeById" >
+		<isEqual property="AFFIRM_OBJECT" compareValue="DOC">
+		<![CDATA[
+		SELECT DOC_TYPE_ID FROM DOC_INFO WHERE DOC_ID = #OBJECT_ID#
+		]]>
+		</isEqual>
+		<isEqual property="AFFIRM_OBJECT" compareValue="MAT">
+		<![CDATA[
+		SELECT MAT_TYPE_ID FROM MAT_INFO WHERE MAT_ID = #OBJECT_ID#
+		]]>
+		</isEqual>
+		<isEqual property="AFFIRM_OBJECT" compareValue="CN">
+		<![CDATA[
+		SELECT CHANGE_TYPE_ID FROM ECM_CHANGE_NO_INFO WHERE CHANGE_NO = #OBJECT_ID#
+		]]>
+		</isEqual>
+		<isEqual property="AFFIRM_OBJECT" compareValue="BOM">
+		<![CDATA[
+		SELECT BOM_TYPE_ID FROM BOM_HEADER_INFO WHERE BOM_ID = #OBJECT_ID#
+		]]>
+		</isEqual>
+	</sql>
+	
+	<select id="getObjectTypeById" parameterClass="linkMap" resultClass="string">
+		<include refid="sqlGetObjectTypeById"></include>
+	</select>
+	
+	
+	<!-- 添加邮件信息 -->
+	<insert id="insertEmailInfo" parameterClass='linkMap'>
+
+	</insert>
+	
+	<!-- 判断上一状态是否全部审核通过-->
+	<sql id="sqlGetPreAffirmSituation">
+		<![CDATA[
+		AND
+		(SELECT COUNT(0) 
+		 FROM PROCESS_AFFIRM PRE_PA, PROCESS_ITEM_INFO PRII 
+		 WHERE PRII.SUC_STATUS_ID = PA.OBJECT_STATUS_ID 
+		   AND PRII.STATUS_ID = PRE_PA.OBJECT_STATUS_ID
+		   AND PRE_PA.OBJECT_ID = PA.OBJECT_ID 
+		   AND PRE_PA.AFFIRM_FLAG <> 1
+           AND PRE_PA.ACTIVITY = 1) = 0
+		]]>
+	</sql>
+	<!-- 获取可以审核的对象列表 -->
+	<sql id="sqlGetDocAffirmInfo" >
+		<![CDATA[
+		SELECT PA.AFFIRM_FLAG, 
+		       PA.OBJECT_STATUS_ID,
+		       PRSI.STATUS_NAME OBJECT_STATUS_NAME,
+		       PA.PROCESS_AFFIRM_NO,
+		       PA.APP_REMARK,
+		       PA.OBJECT_ID,
+		       PA.AFFIRM_OBJECT,
+		       PA.CREATE_DATE,
+		       DI.DOC_NAME   OBJECT_NAME,
+		       DECODE(#language#,'en',HE.ENGLISHNAME, HE.CHINESENAME) AFFIRMOR_NAME
+		  FROM PROCESS_AFFIRM PA, DOC_INFO DI, HR_EMPLOYEE HE, PROCESS_STATUS_INFO PRSI 
+		 WHERE PA.OBJECT_ID = DI.DOC_ID
+		   AND PA.CPNY_ID = #CPNY_ID#
+		   AND PA.AFFIRMOR_ID = #AFFIRMOR_ID# 
+		   AND PA.OBJECT_STATUS_ID = PRSI.STATUS_ID
+		   AND PA.AFFIRMOR_ID = HE.EMPID 
+		   AND PA.AFFIRM_OBJECT = 'DOC'
+		   AND PA.ACTIVITY = 1
+		]]>
+		<include refid="sqlGetPreAffirmSituation"/>
+	</sql>
+	<sql id="sqlGetMatAffirmInfo" >
+		<![CDATA[
+		SELECT PA.AFFIRM_FLAG, 
+		       PA.OBJECT_STATUS_ID,
+		       PRSI.STATUS_NAME OBJECT_STATUS_NAME,
+		       PA.PROCESS_AFFIRM_NO,
+		       PA.APP_REMARK,
+		       PA.OBJECT_ID,
+		       PA.AFFIRM_OBJECT,
+		       PA.CREATE_DATE,
+		       MI.MAT_NAME OBJECT_NAME,
+		       DECODE(#language#,'en',HE.ENGLISHNAME, HE.CHINESENAME) AFFIRMOR_NAME
+		  FROM PROCESS_AFFIRM PA, MAT_INFO MI, HR_EMPLOYEE HE, PROCESS_STATUS_INFO PRSI 
+		 WHERE PA.OBJECT_ID = MI.MAT_ID
+		   AND PA.CPNY_ID = #CPNY_ID#
+		   AND PA.AFFIRMOR_ID = #AFFIRMOR_ID# 
+		   AND PA.OBJECT_STATUS_ID = PRSI.STATUS_ID
+		   AND PA.AFFIRMOR_ID = HE.EMPID 
+		   AND PA.AFFIRM_OBJECT = 'MAT'
+		   AND PA.ACTIVITY = 1
+		]]>
+		<include refid="sqlGetPreAffirmSituation"/>
+	</sql>
+	<sql id="sqlGetBomAffirmInfo" >
+		<![CDATA[
+		SELECT PA.AFFIRM_FLAG, 
+		       PA.OBJECT_STATUS_ID,
+		       PRSI.STATUS_NAME OBJECT_STATUS_NAME,
+		       PA.PROCESS_AFFIRM_NO,
+		       PA.APP_REMARK,
+		       PA.OBJECT_ID,
+		       PA.AFFIRM_OBJECT,
+		       PA.CREATE_DATE,
+		       BHI.BOM_NAME OBJECT_NAME,
+		       DECODE(#language#,'en',HE.ENGLISHNAME, HE.CHINESENAME) AFFIRMOR_NAME
+		  FROM PROCESS_AFFIRM PA, BOM_HEADER_INFO BHI, HR_EMPLOYEE HE, PROCESS_STATUS_INFO PRSI
+		 WHERE PA.OBJECT_ID = BHI.BOM_ID
+		   AND PA.CPNY_ID = #CPNY_ID#
+		   AND PA.AFFIRMOR_ID = #AFFIRMOR_ID# 
+		   AND PA.OBJECT_STATUS_ID = PRSI.STATUS_ID
+		   AND PA.AFFIRMOR_ID = HE.EMPID 
+		   AND PA.AFFIRM_OBJECT = 'BOM'
+		   AND PA.ACTIVITY = 1
+		]]>
+		<include refid="sqlGetPreAffirmSituation"/>
+	</sql>
+	<sql id="sqlGetCNAffirmInfo" >
+		<![CDATA[
+		SELECT PA.AFFIRM_FLAG, 
+		       PA.OBJECT_STATUS_ID,
+		       PRSI.STATUS_NAME OBJECT_STATUS_NAME,
+		       PA.PROCESS_AFFIRM_NO,
+		       PA.APP_REMARK,
+		       PA.OBJECT_ID,
+		       PA.AFFIRM_OBJECT,
+		       PA.CREATE_DATE,
+		       ECNI.CHANGE_NO OBJECT_NAME,
+		       DECODE(#language#,'en',HE.ENGLISHNAME, HE.CHINESENAME) AFFIRMOR_NAME
+		  FROM PROCESS_AFFIRM PA, ECM_CHANGE_NO_INFO ECNI, HR_EMPLOYEE HE, PROCESS_STATUS_INFO PRSI 
+		 WHERE PA.OBJECT_ID = ECNI.CHANGE_NO
+		   AND PA.CPNY_ID = #CPNY_ID#
+		   AND PA.AFFIRMOR_ID = #AFFIRMOR_ID# 
+		   AND PA.OBJECT_STATUS_ID = PRSI.STATUS_ID
+		   AND PA.AFFIRMOR_ID = HE.EMPID 
+		   AND PA.AFFIRM_OBJECT = 'CN'
+		   AND PA.ACTIVITY = 1
+		]]>
+		<include refid="sqlGetPreAffirmSituation"/>
+	</sql>
+	
+	<sql id="sqlGetAffirmObjectCondition" >
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+				(	
+						PA.OBJECT_ID           LIKE '%'||TRIM(#keyWord#)||'%'
+						OR PA.APP_REMARK       LIKE '%'||TRIM(#keyWord#)||'%'
+				)
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="AFFIRMOR_ID">
+			<![CDATA[
+				PA.AFFIRMOR_ID =  #AFFIRMOR_ID#
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="PARENT_TYPE_ID">
+			<![CDATA[
+				PA.OBJECT_TYPE_ID IN 
+				(SELECT OBJECT_TYPE_ID FROM PROCESS_OBJECT_TYPE_INFO 
+					START WITH OBJECT_TYPE_ID = #PARENT_TYPE_ID# CONNECT BY PARENT_TYPE_ID = PRIOR OBJECT_TYPE_ID
+				)
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="E_DATE" >
+			<![CDATA[
+    		   PA.CREATE_DATE <= TO_DATE(#E_DATE#,'YYYY-MM-DD')
+			]]>
+		</isNotEmpty>
+		<isEmpty prepend="AND" property="E_DATE" >
+			<![CDATA[
+    		   PA.CREATE_DATE <= SYSDATE+1
+			]]>
+		</isEmpty>
+		<isNotEmpty prepend="AND" property="S_DATE" >
+			<![CDATA[
+    		   PA.CREATE_DATE >= TO_DATE(#S_DATE#,'YYYY-MM-DD')
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="S_DATE" >
+			<![CDATA[
+    		   PA.CREATE_DATE >= SYSDATE-30
+			]]>
+		</isNotEmpty>
+		<![CDATA[
+			ORDER BY CREATE_DATE DESC
+		]]>
+	</sql>
+	
+	<select id="getAffirmObjectInfo" parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[
+		     SELECT PA.AFFIRM_FLAG             AFFIRM_FLAG, 
+		           PA.OBJECT_STATUS_ID        OBJECT_STATUS_ID,
+		           PA.OBJECT_TYPE_ID          OBJECT_TYPE_ID,
+		           DECODE(#language#,'en',PRSI.STATUS_EN_NAME,PRSI.STATUS_NAME) OBJECT_STATUS,
+		           DECODE(#language#,'en',POTI.OBJECT_TYPE_EN_NAME,POTI.OBJECT_TYPE_NAME) OBJECT_TYPE,
+		           PA.PROCESS_AFFIRM_NO       PROCESS_NO,
+		           PA.APP_REMARK              APP_REMARK,
+		           PA.OBJECT_ID               OBJECT_ID,
+		           PA.CREATE_DATE             CREATE_DATE,
+		           DECODE(#language#,'en',HE.ENGLISHNAME, HE.CHINESENAME) AFFIRMOR_NAME
+		     FROM PROCESS_AFFIRM PA, 
+		           HR_EMPLOYEE HE, 
+		           PROCESS_STATUS_INFO PRSI,
+		           PROCESS_OBJECT_TYPE_INFO POTI
+		     WHERE PA.CPNY_ID = #CPNY_ID#
+		     AND PA.AFFIRMOR_ID = #adminID#
+		     AND PA.OBJECT_STATUS_ID = PRSI.STATUS_ID(+)
+		     AND PA.AFFIRMOR_ID = HE.EMPID(+)
+		     AND PA.OBJECT_TYPE_ID = POTI.OBJECT_TYPE_ID(+)
+		     AND PA.ACTIVITY = 1
+		]]>
+		<include refid="sqlGetAffirmObjectCondition"/>
+		<!-- 
+		<isEmpty property="AFFIRM_OBJECT">
+			<include refid="sqlGetCNAffirmInfo" />
+			<![CDATA[ UNION ALL ]]>
+			<include refid="sqlGetBomAffirmInfo" />
+			<![CDATA[ UNION All ]]>
+			<include refid="sqlGetMatAffirmInfo" />
+			<![CDATA[ UNION ALL ]]>
+			<include refid="sqlGetDocAffirmInfo" />
+		</isEmpty>
+		<isEqual property="AFFIRM_OBJECT" compareValue="BOM">			
+			<include refid="sqlGetBomAffirmInfo" />			
+		</isEqual>
+		<isEqual property="AFFIRM_OBJECT" compareValue="MAT">			
+			<include refid="sqlGetMatAffirmInfo" />			
+		</isEqual>
+		<isEqual property="AFFIRM_OBJECT" compareValue="CN">			
+			<include refid="sqlGetCNAffirmInfo" />			
+		</isEqual>
+		<isEqual property="AFFIRM_OBJECT" compareValue="DOC">			
+			<include refid="sqlGetDocAffirmInfo" />			
+		</isEqual>
+		 -->
+	</select>
+	
+	<update id="updateDoAffirm" parameterClass="linkMap">
+		<![CDATA[
+			UPDATE PROCESS_AFFIRM PA
+			SET    PA.AFFIRM_FLAG = #AFFIRM_FLAG#,
+			       PA.APP_REMARK  = #APP_REMARK#,
+			       PA.UPDATE_DATE = SYSDATE,
+			       PA.UPDATED_BY = #UPDATED_BY#
+			WHERE  PA.PROCESS_AFFIRM_NO = #PROCESS_NO#
+			AND    PA.AFFIRMOR_ID = #AFFIRMOR_ID#
+			AND    PA.OBJECT_ID   = #OBJECT_ID#
+			AND    PA.AFFIRM_FLAG = 0
+		]]>
+	</update>
+	
+	<sql id="sqlGetObjectStatus">
+		<isEmpty property="PRE_OBJECT_STATUS_ID">
+			<![CDATA[
+			(SELECT T.SUC_STATUS_ID FROM PROCESS_ITEM_INFO T WHERE T.STATUS_ID = #OBJECT_STATUS_ID# 
+			                                                   AND T.OBJECT_TYPE_ID = (  ]]>
+			                                                   <include refid="sqlGetObjectTypeById"></include>
+			                                                   <![CDATA[  ) 
+			                                                   AND T.CPNY_ID = #CPNY_ID# )
+			]]>
+		</isEmpty>
+		<isNotEmpty property="PRE_OBJECT_STATUS_ID">
+			<![CDATA[
+			#PRE_OBJECT_STATUS_ID#
+			]]>
+		</isNotEmpty>
+	</sql>
+	
+	<sql id="sqlUpdateDocStatus">
+		<![CDATA[
+			UPDATE DOC_INFO SET DOC_STATUS_ID = 
+		]]>
+		<include refid="sqlGetObjectStatus"></include>
+		<![CDATA[
+			WHERE DOC_ID = #OBJECT_ID#
+		]]>
+	</sql>
+	<sql id="sqlUpdateMatStatus">
+		<![CDATA[
+			UPDATE MAT_INFO SET MAT_STATUS_ID = 
+		]]>
+		<include refid="sqlGetObjectStatus"></include>
+		<![CDATA[
+			WHERE MAT_ID = #OBJECT_ID#
+		]]>
+	</sql>
+	<sql id="sqlUpdateBomStatus">
+		<![CDATA[
+			UPDATE BOM_HEADER_INFO SET BOM_STATUS_ID = 
+		]]>
+		<include refid="sqlGetObjectStatus"></include>
+		<![CDATA[
+			WHERE BOM_ID = #OBJECT_ID#
+		]]>
+	</sql>
+	<sql id="sqlUpdateCNStatus">
+		<![CDATA[
+			UPDATE ECM_CHANGE_NO_INFO SET CN_STATUS_ID = 
+		]]>
+		<include refid="sqlGetObjectStatus"></include>
+		<![CDATA[
+			WHERE CHANGE_NO = #OBJECT_ID#
+		]]>
+	</sql>
+	
+	<update id="updateObjectStatus" parameterClass="linkMap">
+		<isEqual property="AFFIRM_OBJECT" compareValue="BOM">			
+			<include refid="sqlUpdateBomStatus" />			
+		</isEqual>
+		<isEqual property="AFFIRM_OBJECT" compareValue="MAT">			
+			<include refid="sqlUpdateMatStatus" />			
+		</isEqual>
+		<isEqual property="AFFIRM_OBJECT" compareValue="CN">			
+			<include refid="sqlUpdateCNStatus" />			
+		</isEqual>
+		<isEqual property="AFFIRM_OBJECT" compareValue="DOC">			
+			<include refid="sqlUpdateDocStatus" />			
+		</isEqual>
+	</update>
+	
+	<select id="getAllAffirmorCnt" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+		SELECT COUNT(0) FROM PROCESS_AFFIRM WHERE OBJECT_ID = #OBJECT_ID# 
+		                                      AND OBJECT_STATUS_ID = #OBJECT_STATUS_ID#
+		                                      AND ACTIVITY = 1
+		                                      AND CPNY_ID = #CPNY_ID#
+		]]>
+	</select>
+	<select id="getApproveAffirmorCnt" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+		SELECT COUNT(0) FROM PROCESS_AFFIRM WHERE OBJECT_ID = #OBJECT_ID# 
+		                                      AND OBJECT_STATUS_ID = #OBJECT_STATUS_ID# 
+		                                      AND AFFIRM_FLAG = '1'
+		                                      AND ACTIVITY = 1
+		                                      AND CPNY_ID = #CPNY_ID#
+		]]>
+	</select>
+	<select id="getRejectAffirmorCnt" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+		SELECT COUNT(0) FROM PROCESS_AFFIRM WHERE OBJECT_ID = #OBJECT_ID# 
+		                                      AND OBJECT_STATUS_ID = #OBJECT_STATUS_ID# 
+		                                      AND AFFIRM_FLAG = '2'
+		                                      AND ACTIVITY = 1
+		                                      AND CPNY_ID = #CPNY_ID#
+		]]>
+	</select>
+	
+	<update id="invalidObjectApp" parameterClass="linkMap">
+		<![CDATA[
+		UPDATE PROCESS_AFFIRM SET ACTIVITY = 0 WHERE OBJECT_ID = #OBJECT_ID#
+		]]>
+	</update>
+	
+	<select id="getAffirmorResultList" parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[
+		SELECT PA.AFFIRM_FLAG,
+		       DECODE(#language#,'en',HRE.ENGLISHNAME, HRE.CHINESENAME) AFFIRMOR_NAME,
+		       DECODE(#language#,'en',PSI.STATUS_EN_NAME, PSI.STATUS_NAME) STATUS_NAME
+		  FROM PROCESS_AFFIRM      PA,
+		       HR_EMPLOYEE         HRE,
+		       PROCESS_STATUS_INFO PSI
+		 WHERE PA.AFFIRMOR_ID = HRE.EMPID
+		   AND PA.OBJECT_STATUS_ID = PSI.STATUS_ID
+		   AND PA.OBJECT_ID = #OBJECT_ID#
+		   AND PA.CPNY_ID = #CPNY_ID#   
+		   AND PA.ACTIVITY = 1
+		   ORDER BY PROCESS_AFFIRM_NO   
+		]]>
+	</select>
+	
+	<sql id="sqlGetObjectStatusById" >
+		<isEqual property="AFFIRM_OBJECT" compareValue="DOC">
+		<![CDATA[
+		SELECT DOC_STATUS_ID FROM DOC_INFO WHERE DOC_ID = #OBJECT_ID#
+		]]>
+		</isEqual>
+		<isEqual property="AFFIRM_OBJECT" compareValue="MAT">
+		<![CDATA[
+		SELECT MAT_STATUS_ID FROM MAT_INFO WHERE MAT_ID = #OBJECT_ID#
+		]]>
+		</isEqual>
+		<isEqual property="AFFIRM_OBJECT" compareValue="CN">
+		<![CDATA[
+		SELECT CHANGE_STATUS_ID FROM ECM_CHANGE_NO_INFO WHERE CHANGE_NO = #OBJECT_ID#
+		]]>
+		</isEqual>
+		<isEqual property="AFFIRM_OBJECT" compareValue="BOM">
+		<![CDATA[
+		SELECT BOM_STATUS_ID FROM BOM_HEADER_INFO WHERE DOC_ID = #OBJECT_ID#
+		]]>
+		</isEqual>
+	</sql>
+		
+	<select id="getRejectedStatus" parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[
+		SELECT DECODE(#language#, 'en', PSI.STATUS_EN_NAME, PSI.STATUS_NAME)  STATUS_NAME, 
+		       PSI.STATUS_ID
+		  FROM PROCESS_ITEM_INFO PII,
+		       PROCESS_STATUS_INFO PSI
+		 WHERE (PSI.STATUS_ID = PII.PRE_STATUS_ID1
+		        OR PSI.STATUS_ID = PII.PRE_STATUS_ID2
+		        OR PSI.STATUS_ID = PII.PRE_STATUS_ID3)
+		   AND PII.OBJECT_TYPE_ID = (
+		]]>
+		<include refid="sqlGetObjectTypeById"></include>
+		<![CDATA[
+		 )
+		   AND PII.STATUS_ID = (		       
+		]]>
+		<include refid="sqlGetObjectStatusById"></include>
+		<![CDATA[
+		)
+		]]>
+	</select>
+	
+	<!-- cmx idea -->
+	<procedure id="getObjectProcessNO" parameterClass="linkMap">
+		<![CDATA[
+			{CALL PROCESS_GET_PROCESSNO(#OBJECT_ID#,#OBJECT_TYPE_ID#,#OBJECT_STATUS_ID#,#CPNY_ID#,#PROCESS_NO,jdbcType=VARCHAR,mode=OUT#)}
+		]]>
+	</procedure>
+	
+	<select id="getProcessResult" parameterClass="linkMap">
+		<![CDATA[
+			SELECT PROCESS_GET_PROCESS_RESULT(#PROCESS_NO#,#CPNY_ID#) AS PROCESS_RESULT FROM DUAL
+		]]>
+	</select>
+	
+</sqlMap>

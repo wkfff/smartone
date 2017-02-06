@@ -1,0 +1,1565 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="ess.affirmApp">
+    <!-- 加班 --> 
+    <sql id="essOtAffirmCondition" > 
+        <isEqual prepend="AND" property="qryType" compareValue="1"> 
+			<![CDATA[
+			    EA.AFFIRM_FLAG = 1 
+			    AND NOT EXISTS (
+					      SELECT *
+	                     	FROM ESS_AFFIRM B1
+	                     	WHERE B1.APPLY_NO = EAO.OT_NO 
+					              AND APPLY_TYPE = 'OtApply'  
+					              AND AFFIRM_FLAG = 2
+	                ) 
+			]]>
+		</isEqual>
+		<isEqual prepend="AND" property="qryType" compareValue="2"> 
+			<![CDATA[
+			    EA.AFFIRM_FLAG = 2
+			 ]]>
+		</isEqual>
+		<isEqual prepend="AND" property="qryType" compareValue="0"> 
+			<![CDATA[
+			    EA.AFFIRM_FLAG = 0 
+			    AND NOT EXISTS (
+					      SELECT *
+	                     	FROM ESS_AFFIRM B1
+	                     	WHERE B1.APPLY_NO = EAO.OT_NO 
+					              AND APPLY_TYPE = 'OtApply'  
+					              AND AFFIRM_FLAG = 2
+	                ) 
+			]]>
+		</isEqual>
+        <isNotEmpty
+            prepend="AND"
+            property="OT_TYPE_CODE" >
+            <![CDATA[
+			    EAO.OT_TYPE_CODE = #OT_TYPE_CODE#
+			]]>
+        </isNotEmpty>
+
+        <isNotEmpty
+            prepend="AND"
+            property="keyWord" >
+            <![CDATA[
+			  (
+					HRE.CHINESENAME 		LIKE concat('%',TRIM(#keyWord#),'%')
+					OR HRE.EMPID 			LIKE concat('%',TRIM(#keyWord#),'%')
+					OR HRD.DEPTNAME 		LIKE concat('%',TRIM(#keyWord#),'%') 
+					OR upper(HRD.DEPT_EN_NAME) LIKE concat('%',TRIM(upper(#keyWord#)),'%')
+					OR upper(HRE.CHINESE_PINYIN) LIKE concat('%',TRIM(upper(#keyWord#)),'%')
+					OR upper(HRE.ENGLISHNAME) LIKE concat('%',TRIM(upper(#keyWord#)),'%')
+			  ) 
+			]]>
+        </isNotEmpty>
+
+        <isNotEmpty
+            prepend="AND"
+            property="S_DATE" >
+            <![CDATA[
+    		   TO_DATE(TO_CHAR(EAO.OT_DATE + EAO.OT_DATE_S_FLAG, 'YYYY-MM-DD ') || EAO.OT_FROM_TIME,'YYYY-MM-DD HH24:MI:SS') >= TO_DATE(#S_DATE#,'YYYY-MM-DD HH24:MI:SS')
+			]]>
+        </isNotEmpty>
+
+        <isNotEmpty
+            prepend="AND"
+            property="E_DATE" >
+            <![CDATA[
+    		   TO_DATE(TO_CHAR(EAO.OT_DATE + EAO.OT_DATE_E_FLAG, 'YYYY-MM-DD ') || EAO.OT_TO_TIME,'YYYY-MM-DD HH24:MI:SS') <= TO_DATE(#E_DATE#,'YYYY-MM-DD HH24:MI:SS')
+			]]>
+        </isNotEmpty>
+
+        <isNotEmpty
+            prepend="AND"
+            property="DEPTID" >
+            <![CDATA[
+				EXISTS (
+					SELECT     *
+	                     	FROM HR_DEPARTMENT B1
+	                     	WHERE B1.DEPTID=HRE.DEPTID
+	                 	START WITH B1.DEPTID = #DEPTID#
+	                 	CONNECT BY PRIOR B1.DEPTID = B1.PARENT_DEPT_ID
+	                )
+             ]]>
+        </isNotEmpty>
+
+        <isNotEmpty
+            prepend="AND"
+            property="AR_ADMIN_ID" >
+            <![CDATA[
+		 	HRE.EMPID IN(
+		 		  	SELECT HRE.EMPID AR_SUPERVISOR_ID
+					  FROM AR_SUPERVISOR_INFO
+					 WHERE AR_SUPERVISOR_INFO.SUPERVISED_DEPTID = HRE.DEPTID
+					   AND AR_SUPERVISOR_ID = #AR_ADMIN_ID:VARCHAR#
+						UNION 
+					SELECT #AR_ADMIN_ID:VARCHAR# AR_SUPERVISOR_ID
+					  FROM DUAL 
+		 		  )
+		    ]]>
+        </isNotEmpty>
+        
+        <isNotEmpty
+            prepend="AND"
+            property="affirmID" >
+            <![CDATA[
+		 		   EA.AFFIRMOR_ID = #affirmID#
+		    ]]>
+        </isNotEmpty>
+
+        <isNotEmpty
+            prepend="AND"
+            property="ACTIVITY" >
+            <![CDATA[
+				EAO.ACTIVITY=#ACTIVITY#
+			]]>
+        </isNotEmpty>
+    </sql>
+    <!-- 休假 -->
+
+    <sql id="essLeaveAffirmCondition" > 
+        <isEqual prepend="AND" property="qryType" compareValue="1"> 
+			<![CDATA[
+			    EA.AFFIRM_FLAG = 1 
+			    AND NOT EXISTS (
+					      SELECT *
+	                     	FROM ESS_AFFIRM B1
+	                     	WHERE B1.APPLY_NO = EAL.LEAVE_NO 
+					              AND APPLY_TYPE = 'LeaveApply'  
+					              AND AFFIRM_FLAG = 2
+	                ) 
+			]]>
+		</isEqual>
+		<isEqual prepend="AND" property="qryType" compareValue="2"> 
+			<![CDATA[
+			    EA.AFFIRM_FLAG = 2
+			 ]]>
+		</isEqual>
+		<isEqual prepend="AND" property="qryType" compareValue="0"> 
+			<![CDATA[
+			    EA.AFFIRM_FLAG = 0 
+			    AND NOT EXISTS (
+					      SELECT *
+	                     	FROM ESS_AFFIRM B1
+	                     	WHERE B1.APPLY_NO = EAL.LEAVE_NO 
+					              AND APPLY_TYPE = 'LeaveApply'  
+					              AND AFFIRM_FLAG = 2
+	                ) 
+			]]>
+		</isEqual>
+        <isNotEmpty prepend="AND" property="LEAVE_TYPE_CODE"> 
+			<![CDATA[
+			  EAL.LEAVE_TYPE_CODE =#LEAVE_TYPE_CODE# 
+			]]>
+		</isNotEmpty>
+			 
+		<isNotEmpty prepend="AND" property="keyWord"> 
+			<![CDATA[
+			   (
+					HRE.CHINESENAME 		LIKE concat('%',TRIM(#keyWord#),'%')
+					OR HRE.EMPID 			LIKE concat('%',TRIM(#keyWord#),'%')
+					OR HRD.DEPTNAME 		LIKE concat('%',TRIM(#keyWord#),'%') 
+					OR upper(HRD.DEPT_EN_NAME) LIKE concat('%',TRIM(upper(#keyWord#)),'%')
+					OR upper(HRE.CHINESE_PINYIN) LIKE concat('%',TRIM(upper(#keyWord#)),'%')
+					OR upper(HRE.ENGLISHNAME) LIKE concat('%',TRIM(upper(#keyWord#)),'%')
+			    ) 
+			]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="S_DATE" >
+			<![CDATA[
+    		   EAL.LEAVE_FROM_TIME >= TO_DATE(#S_DATE#,'YYYY-MM-DD HH24:MI:SS')
+			]]>
+		</isNotEmpty>
+		 
+		<isNotEmpty prepend="AND" property="E_DATE" >
+			<![CDATA[
+    		   EAL.LEAVE_TO_TIME <= TO_DATE(#S_DATE#,'YYYY-MM-DD HH24:MI:SS')
+			]]>
+		</isNotEmpty>
+
+        <isNotEmpty
+            prepend="AND"
+            property="DEPTID" >
+            <![CDATA[
+				EXISTS (
+					SELECT     *
+	                     	FROM HR_DEPARTMENT B1
+	                     	WHERE B1.DEPTID=HRE.DEPTID
+	                 	START WITH B1.DEPTID = #DEPTID#
+	                 	CONNECT BY PRIOR B1.DEPTID = B1.PARENT_DEPT_ID
+	                )
+             ]]>
+        </isNotEmpty>
+
+        <isNotEmpty
+            prepend="AND"
+            property="AR_ADMIN_ID" >
+            <![CDATA[
+		 	HRE.EMPID IN(
+		 		  	SELECT HRE.EMPID AR_SUPERVISOR_ID
+					  FROM AR_SUPERVISOR_INFO
+					 WHERE AR_SUPERVISOR_INFO.SUPERVISED_DEPTID = HRE.DEPTID
+					   AND AR_SUPERVISOR_ID = #AR_ADMIN_ID:VARCHAR#
+						UNION 
+					SELECT #AR_ADMIN_ID:VARCHAR# AR_SUPERVISOR_ID
+					  FROM DUAL 
+		 		  )
+		    ]]>
+        </isNotEmpty>
+        
+        <isNotEmpty
+            prepend="AND"
+            property="affirmID" >
+            <![CDATA[
+		 		   EA.AFFIRMOR_ID = #affirmID#
+		    ]]>
+        </isNotEmpty>
+
+        <isNotEmpty
+            prepend="AND"
+            property="ACTIVITY" >
+            <![CDATA[
+				EAL.ACTIVITY=#ACTIVITY#
+			]]>
+        </isNotEmpty>
+    </sql>
+    <!-- 费用 --> 
+    <sql id="essExpAffirmCondition" >
+
+        <isEqual prepend="AND" property="qryType" compareValue="1"> 
+			<![CDATA[
+			    EA.AFFIRM_FLAG = 1 
+			    AND NOT EXISTS (
+					      SELECT *
+	                     	FROM ESS_AFFIRM B1
+	                     	WHERE B1.APPLY_NO = EAE.EXP_NO 
+					              AND APPLY_TYPE = 'ExpApply'  
+					              AND AFFIRM_FLAG = 2
+	                ) 
+			]]>
+		</isEqual>
+		<isEqual prepend="AND" property="qryType" compareValue="2"> 
+			<![CDATA[
+			    EA.AFFIRM_FLAG = 2
+			 ]]>
+		</isEqual>
+		<isEqual prepend="AND" property="qryType" compareValue="0"> 
+			<![CDATA[
+			    EA.AFFIRM_FLAG = 0 
+			    AND NOT EXISTS (
+					      SELECT *
+	                     	FROM ESS_AFFIRM B1
+	                     	WHERE B1.APPLY_NO = EAE.LEAVE_NO 
+					              AND APPLY_TYPE = 'ExpApply'  
+					              AND AFFIRM_FLAG = 2
+	                ) 
+			]]>
+		</isEqual>
+		<isNotEmpty prepend="AND" property="EXP_TYPE_CODE"> 
+			<![CDATA[
+			  EAE.EXP_TYPE_CODE =#EXP_TYPE_CODE# 
+			]]>
+		</isNotEmpty>
+			 
+		<isNotEmpty prepend="AND" property="keyWord"> 
+			<![CDATA[
+			   (
+					HRE.CHINESENAME 		LIKE concat('%',TRIM(#keyWord#),'%')
+					OR HRE.EMPID 			LIKE concat('%',TRIM(#keyWord#),'%')
+					OR HRD.DEPTNAME 		LIKE concat('%',TRIM(#keyWord#),'%')
+					OR upper(HRD.DEPT_EN_NAME) LIKE concat('%',TRIM(upper(#keyWord#)),'%')
+					OR upper(HRE.CHINESE_PINYIN) LIKE concat('%',TRIM(upper(#keyWord#)),'%')
+					OR upper(HRE.ENGLISHNAME) LIKE concat('%',TRIM(upper(#keyWord#)),'%')
+			    ) 
+			]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="S_DATE" >
+			<![CDATA[
+    		   EAE.CREATE_DATE >= TO_DATE(#S_DATE#,'YYYY-MM-DD')
+			]]>
+		</isNotEmpty>
+		 
+		<isNotEmpty prepend="AND" property="E_DATE" >
+			<![CDATA[
+    		   EAE.CREATE_DATE <= TO_DATE(#E_DATE#,'YYYY-MM-DD')
+			]]>
+		</isNotEmpty>
+
+        <isNotEmpty
+            prepend="AND"
+            property="DEPTID" >
+            <![CDATA[
+				EXISTS (
+					SELECT     *
+	                     	FROM HR_DEPARTMENT B1
+	                     	WHERE B1.DEPTID=HRE.DEPTID
+	                 	START WITH B1.DEPTID = #DEPTID#
+	                 	CONNECT BY PRIOR B1.DEPTID = B1.PARENT_DEPT_ID
+	                )
+             ]]>
+        </isNotEmpty>
+
+        <isNotEmpty
+            prepend="AND"
+            property="AR_ADMIN_ID" >
+            <![CDATA[
+		 	HRE.EMPID IN(
+		 		  	SELECT HRE.EMPID AR_SUPERVISOR_ID
+					  FROM AR_SUPERVISOR_INFO
+					 WHERE AR_SUPERVISOR_INFO.SUPERVISED_DEPTID = HRE.DEPTID
+					   AND AR_SUPERVISOR_ID = #AR_ADMIN_ID:VARCHAR#
+						UNION 
+					SELECT #AR_ADMIN_ID:VARCHAR# AR_SUPERVISOR_ID
+					  FROM DUAL 
+		 		  )
+		    ]]>
+        </isNotEmpty>
+        
+        <isNotEmpty
+            prepend="AND"
+            property="affirmID" >
+            <![CDATA[
+		 		   EA.AFFIRMOR_ID = #affirmID#
+		    ]]>
+        </isNotEmpty>
+
+        <isNotEmpty
+            prepend="AND"
+            property="ACTIVITY" >
+            <![CDATA[
+				EAE.ACTIVITY=#ACTIVITY#
+			]]>
+        </isNotEmpty>
+    </sql>
+    <!-- 漏卡 -->
+
+    <sql id="essCardtimeAffirmCondition" >
+
+        <isEqual prepend="AND" property="qryType" compareValue="1"> 
+			<![CDATA[
+			    EA.AFFIRM_FLAG = 1 
+			    AND NOT EXISTS (
+					      SELECT *
+	                     	FROM ESS_AFFIRM B1
+	                     	WHERE B1.APPLY_NO = EAC.CARD_NO 
+					              AND APPLY_TYPE = 'CardtimeApply'  
+					              AND AFFIRM_FLAG = 2
+	                ) 
+			]]>
+		</isEqual>
+		<isEqual prepend="AND" property="qryType" compareValue="2"> 
+			<![CDATA[
+			    EA.AFFIRM_FLAG = 2
+			 ]]>
+		</isEqual>
+		<isEqual prepend="AND" property="qryType" compareValue="0"> 
+			<![CDATA[
+			    EA.AFFIRM_FLAG = 0 
+			    AND NOT EXISTS (
+					      SELECT *
+	                     	FROM ESS_AFFIRM B1
+	                     	WHERE B1.APPLY_NO = EAC.CARD_NO 
+					              AND APPLY_TYPE = 'CardtimeApply'  
+					              AND AFFIRM_FLAG = 2
+	                ) 
+			]]>
+		</isEqual>
+		
+		<isNotEmpty prepend="AND" property="CARD_REASON_CODE"> 
+			<![CDATA[
+			  EAC.CARD_REASON_CODE =#CARD_REASON_CODE# 
+			]]>
+		</isNotEmpty>
+        <isNotEmpty prepend="AND" property="CARD_DOOR_TYPE_CODE"> 
+			<![CDATA[
+			  EAC.CARD_DOOR_TYPE =#CARD_DOOR_TYPE_CODE# 
+			]]>
+		</isNotEmpty>
+			 
+		<isNotEmpty prepend="AND" property="keyWord"> 
+			<![CDATA[
+			   (
+					HRE.CHINESENAME 		LIKE concat('%',TRIM(#keyWord#),'%')
+					OR HRE.EMPID 			LIKE concat('%',TRIM(#keyWord#),'%')
+					OR HRD.DEPTNAME 		LIKE concat('%',TRIM(#keyWord#),'%') 
+					OR upper(HRD.DEPT_EN_NAME) LIKE concat('%',TRIM(upper(#keyWord#)),'%')
+					OR upper(HRE.CHINESE_PINYIN) LIKE concat('%',TRIM(upper(#keyWord#)),'%')
+					OR upper(HRE.ENGLISHNAME) LIKE concat('%',TRIM(upper(#keyWord#)),'%')
+			    ) 
+			]]>
+		</isNotEmpty>
+		 
+		<isNotEmpty prepend="AND" property="S_DATE" >
+			<![CDATA[
+    		   EAC.ATT_DATE >= TO_DATE(#S_DATE#,'YYYY-MM-DD')
+			]]>
+		</isNotEmpty>
+		 
+		<isNotEmpty prepend="AND" property="E_DATE" >
+			<![CDATA[
+    		   EAC.ATT_DATE <= TO_DATE(#E_DATE#,'YYYY-MM-DD')
+			]]>
+		</isNotEmpty>
+
+        <isNotEmpty
+            prepend="AND"
+            property="DEPTID" >
+            <![CDATA[
+				EXISTS (
+					SELECT     *
+	                     	FROM HR_DEPARTMENT B1
+	                     	WHERE B1.DEPTID=HRE.DEPTID
+	                 	START WITH B1.DEPTID = #DEPTID#
+	                 	CONNECT BY PRIOR B1.DEPTID = B1.PARENT_DEPT_ID
+	                )
+             ]]>
+        </isNotEmpty>
+
+        <isNotEmpty
+            prepend="AND"
+            property="AR_ADMIN_ID" >
+            <![CDATA[
+		 	HRE.EMPID IN(
+		 		  	SELECT HRE.EMPID AR_SUPERVISOR_ID
+					  FROM AR_SUPERVISOR_INFO
+					 WHERE AR_SUPERVISOR_INFO.SUPERVISED_DEPTID = HRE.DEPTID
+					   AND AR_SUPERVISOR_ID = #AR_ADMIN_ID:VARCHAR#
+						UNION 
+					SELECT #AR_ADMIN_ID:VARCHAR# AR_SUPERVISOR_ID
+					  FROM DUAL 
+		 		  )
+		    ]]>
+        </isNotEmpty>
+        
+        <isNotEmpty
+            prepend="AND"
+            property="affirmID" >
+            <![CDATA[
+		 		   EA.AFFIRMOR_ID = #affirmID#
+		    ]]>
+        </isNotEmpty>
+
+        <isNotEmpty
+            prepend="AND"
+            property="ACTIVITY" >
+            <![CDATA[
+				EAC.ACTIVITY=#ACTIVITY#
+			]]>
+        </isNotEmpty>
+    </sql>
+   <!-- 出差 -->
+
+    <sql id="essBTAffirmCondition" >
+
+		<isNotEmpty prepend="AND" property="EMPID"> 
+			<![CDATA[
+			  HRE.EMPID=#EMPID#
+			]]>
+		</isNotEmpty>
+		
+        <isEqual prepend="AND" property="qryType" compareValue="1"> 
+			<![CDATA[
+			    EA.AFFIRM_FLAG = 1 
+			    AND NOT EXISTS (
+					      SELECT *
+	                     	FROM ESS_AFFIRM B1
+	                     	WHERE B1.APPLY_NO = EABT.BT_NO 
+					              AND APPLY_TYPE = 'BTApply'  
+					              AND AFFIRM_FLAG = 2
+	                ) 
+			]]>
+		</isEqual>
+		<isEqual prepend="AND" property="qryType" compareValue="2"> 
+			<![CDATA[
+			    EA.AFFIRM_FLAG = 2
+			 ]]>
+		</isEqual>
+		<isEqual prepend="AND" property="qryType" compareValue="0"> 
+			<![CDATA[
+			    EA.AFFIRM_FLAG = 0 
+			    AND NOT EXISTS (
+					      SELECT *
+	                     	FROM ESS_AFFIRM B1
+	                     	WHERE B1.APPLY_NO = EABT.BT_NO 
+					              AND APPLY_TYPE = 'BTApply'  
+					              AND AFFIRM_FLAG = 2
+	                ) 
+			]]>
+		</isEqual>
+        <isNotEmpty prepend="AND" property="BT_TYPE_CODE"> 
+			<![CDATA[
+			  EABT.BT_TYPE_CODE =#BT_TYPE_CODE# 
+			]]>
+		</isNotEmpty>
+			 
+		<isNotEmpty prepend="AND" property="keyWord"> 
+			<![CDATA[
+			   (
+					HRE.CHINESENAME 		LIKE caoncat('%',TRIM(#keyWord#),'%')
+					OR HRE.EMPID 			LIKE concat('%',TRIM(#keyWord#),'%')
+					OR HRD.DEPTNAME 		LIKE concat('%',TRIM(#keyWord#),'%') 
+					OR upper(HRD.DEPT_EN_NAME) LIKE concat('%',TRIM(upper(#keyWord#)),'%')
+					OR upper(HRE.CHINESE_PINYIN) LIKE concat('%',TRIM(upper(#keyWord#)),'%')
+					OR upper(HRE.ENGLISHNAME) LIKE concat('%',TRIM(upper(#keyWord#)),'%')
+			    ) 
+			]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="S_DATE" >
+			<![CDATA[
+    		   EABT.BT_FROM_TIME >= TO_DATE(#S_DATE#,'YYYY-MM-DD HH24:MI:SS')
+			]]>
+		</isNotEmpty>
+		 
+		<isNotEmpty prepend="AND" property="E_DATE" >
+			<![CDATA[
+    		   EABT.BT_TO_TIME <= TO_DATE(#E_DATE#,'YYYY-MM-DD HH24:MI:SS')
+			]]>
+		</isNotEmpty>
+
+        <isNotEmpty
+            prepend="AND"
+            property="DEPTID" >
+            <![CDATA[
+				EXISTS (
+					SELECT     *
+	                     	FROM HR_DEPARTMENT B1
+	                     	WHERE B1.DEPTID=HRE.DEPTID
+	                 	START WITH B1.DEPTID = #DEPTID#
+	                 	CONNECT BY PRIOR B1.DEPTID = B1.PARENT_DEPT_ID
+	                )
+             ]]>
+        </isNotEmpty>
+
+        <isNotEmpty
+            prepend="AND"
+            property="AR_ADMIN_ID" >
+            <![CDATA[
+		 	HRE.EMPID IN(
+		 		  	SELECT HRE.EMPID AR_SUPERVISOR_ID
+					  FROM AR_SUPERVISOR_INFO
+					 WHERE AR_SUPERVISOR_INFO.SUPERVISED_DEPTID = HRE.DEPTID
+					   AND AR_SUPERVISOR_ID = #AR_ADMIN_ID:VARCHAR#
+						UNION 
+					SELECT #AR_ADMIN_ID:VARCHAR# AR_SUPERVISOR_ID
+					  FROM DUAL 
+		 		  )
+		    ]]>
+        </isNotEmpty>
+        
+        <isNotEmpty
+            prepend="AND"
+            property="affirmID" >
+            <![CDATA[
+		 		   EA.AFFIRMOR_ID = #affirmID#
+		    ]]>
+        </isNotEmpty>
+
+        <isNotEmpty
+            prepend="AND"
+            property="ACTIVITY" >
+            <![CDATA[
+				EABT.ACTIVITY=#ACTIVITY#
+			]]>
+        </isNotEmpty>
+		<isNotEmpty prepend="AND" property="BT_NO">
+			<![CDATA[
+				EABT.BT_NO=#BT_NO#
+			]]>
+		</isNotEmpty> 
+    </sql>
+    <!-- 取出当前登录者可以进行决裁的所有加班记录 -->
+    <select
+        id="getOtAffirmInfo"
+        parameterClass="linkMap"
+        resultClass="linkMap" >
+        <![CDATA[
+        SELECT HRE.EMPID,
+		       IF(#language#='en', HRE.ENGLISHNAME, HRE.CHINESENAME) CHINESENAME,
+		        
+		       HRE.DEPTID,
+		       IF(#language#='en', HRD.DEPT_EN_NAME, HRD.DEPTNAME) DEPTNAME,
+		       HRE.DUTY_CODE,
+		       IF(#language#='en', J.CODE_EN_NAME, J.CODE_NAME) DUTY_NAME,
+		       HRE.POSITION_ID,
+		       IF(#language#='en', HRPO.POSITION_EN_NAME, HRPO.POSITION_NAME) POSITION_NAME,
+		       HRE.POST_ID,
+		       IF(#language#='en', HRP.POST_EN_NAME, HRP.POST_NAME) POST_NAME,
+		       HRE.POST_GRADE_ID,
+		       IF(#language#,
+		              'en',
+		              HRPGR.POST_GRADE_EN_NAME,
+		              HRPGR.POST_GRADE_NAME) POST_GRADE_NAME,
+		       HRE.POST_COEF,
+		       HRE.POST_COLUMN_CODE,
+		       IF(#language#,
+		              'en',
+		              HRPC.POST_COLUMN_EN_NAME,
+		              HRPC.POST_COLUMN_NAME) POST_COLUMN_NAME,
+		       HRE.POST_GRADE_LEVEL_CODE,
+		       IF(#language#,
+		              'en',
+		              HRPGRL.POST_GRADE_LEVEL_EN_NAME,
+		              HRPGRL.POST_GRADE_LEVEL_NAME) POST_GRADE_LEVEL_NAME,
+		       HRE.POST_GROUP_ID,
+		       IF(#language#,
+		              'en',
+		              HRPG.POST_GROUP_EN_NAME,
+		              HRPG.POST_GROUP_NAME) POST_GROUP_NAME,
+		       HRE.STATUS_CODE,
+		       IF(#language#='en', M.CODE_EN_NAME, M.CODE_NAME) STATUS_NAME,
+		       HRE.JOIN_TYPE_CODE,
+		       N.CODE_NAME JOIN_TYPE_NAME, 
+		       
+		       TO_CHAR(HRE.JOIN_DATE, 'YYYY-MM-DD') JOIN_DATE,
+		       TO_CHAR(HRE.HIRE_DATE, 'YYYY-MM-DD') HIRE_DATE,
+		       TO_CHAR(HRE.END_PROBATION_DATE, 'YYYY-MM-DD') END_PROBATION_DATE,
+		       TO_CHAR(HRE.LEFT_DATE, 'YYYY-MM-DD') LEFT_DATE,  
+		       HRE.COSTCENTER,
+		       HRE.EMP_TYPE_CODE,
+		       IF(#language#='en', A.CODE_EN_NAME, A.CODE_NAME) EMP_TYPE_NAME, 
+		        
+		       EAO.ACTIVITY CON_STATUS_ID, 
+		       IF(EAO.ACTIVITY,
+		              '1',
+		              IF(#language#='en', '<p style="color: green;">Approved</p>', '<p style="color: green;">已通过</p>'),
+		              '2',
+		              IF(#language#='en', '<p style="color: red;">Rejected</p>', '<p style="color: red;">已否决</p>'),
+		              '0',
+		              IF(#language#='en', '<p style="color: purple;">Pending</p>', '<p style="color: purple;">未确认</p>'),
+		              '3',
+		              IF(#language#='en', '<p style="color: gray;">Cancelled</p>', '<p style="color: gray;">已取消</p>'),
+		              IF(#language#='en', 'Unknown', '未知状态')) CON_STATUS,
+		       IF(EA.AFFIRM_LEVEL, 6, 5, 5, 4, 4, 3, 3, 2, 2, 1, 1, 0) PRE_AFFIRM_LEVEL,
+		       EA.APPLY_TYPE,
+		       EA.AFFIRMOR_ID,
+		       EA.APP_REMARK,
+		       EA.ESS_AFFIRM_NO,
+		       EA.AFFIRM_FLAG APP_STATUS_ID, 
+		       IF(EA.AFFIRM_FLAG,
+		              '1',
+		              IF(#language#='en', '<p style="color: green;">Approved</p>', '<p style="color: green;">已通过</p>'),
+		              '2',
+		              IF(#language#='en', '<p style="color: red;">Rejected</p>', '<p style="color: red;">已否决</p>'),
+		              '0',
+		              IF(#language#='en', '<p style="color: purple;">Pending</p>', '<p style="color: purple;">未审核</p>'),
+		              IF(#language#='en', 'Unknown', '未知状态')) APP_STATUS,
+		       TO_CHAR(EAO.OT_DATE + EAO.OT_DATE_S_FLAG, 'YYYY-MM-DD') OT_DATE,
+		       TO_CHAR(EAO.OT_DATE + EAO.OT_DATE_S_FLAG, 'YYYY-MM-DD ') || EAO.OT_FROM_TIME OT_FROM_TIME, 
+               TO_CHAR(EAO.OT_DATE + EAO.OT_DATE_E_FLAG, 'YYYY-MM-DD ') || EAO.OT_TO_TIME OT_TO_TIME, 
+               EAO.OT_TYPE_CODE,
+		       IF(#language#='en', B.CODE_EN_NAME, B.CODE_NAME) OT_TYPE_NAME, 
+		       EAO.OT_NO APPLY_NO, 
+               EAO.CON_REMARK,
+               EAO.OT_CONTENT,
+               EAO.OT_DEDUCTION,
+               EAO.OT_DATE_S_FLAG,
+               EAO.OT_DATE_E_FLAG,
+               EAO.CANCEL_REMARK
+               
+		  FROM HR_EMPLOYEE         HRE,
+		       ESS_APPLY_OT        EAO,
+		       ESS_AFFIRM		   EA,
+		       HR_DEPARTMENT       HRD,
+		       HR_POSITION         HRPO,
+		       HR_POST             HRP,
+		       HR_POST_COLUMN      HRPC,
+		       HR_POST_GROUP       HRPG,
+		       HR_POST_GRADE_LEVEL HRPGRL,
+		       HR_POST_GRADE       HRPGR,  
+		       SY_CODE             J, 
+		       SY_CODE             M,
+		       SY_CODE             N,
+		       SY_CODE             A,
+		       SY_CODE             B
+		 WHERE HRE.EMPID = EAO.EMPID
+		   AND EAO.OT_NO = EA.APPLY_NO(+)
+		   AND HRE.DEPTID = HRD.DEPTID(+)
+		   AND HRE.POST_ID = HRP.POST_ID(+)
+		   AND HRE.POST_GROUP_ID = HRPG.POST_GROUP_ID(+)
+		   AND HRE.POSITION_ID = HRPO.POSITION_ID(+)
+		   AND HRE.POST_GRADE_ID = HRPGR.POST_GRADE_ID(+)
+		   AND HRE.POST_COLUMN_CODE = HRPC.POST_COLUMN_ID(+)
+		   AND HRE.POST_GRADE_LEVEL_CODE = HRPGRL.POST_GRADE_LEVEL_ID(+)
+		   AND HRE.DUTY_CODE = J.CODE_ID(+)
+		   AND HRE.STATUS_CODE = M.CODE_ID(+)
+		   AND HRE.JOIN_TYPE_CODE = N.CODE_ID(+)
+		   AND HRE.EMP_TYPE_CODE = A.CODE_ID(+) 
+		   AND EAO.OT_TYPE_CODE = B.CODE_ID(+) 
+	]]>
+
+        <include refid="essOtAffirmCondition" />
+
+        <isNotEmpty
+            prepend=""
+            property="sortname" >
+            <![CDATA[
+	 		  ORDER BY $sortname$ $sortorder$
+	    ]]>
+        </isNotEmpty>
+
+        <isEmpty
+            prepend=""
+            property="sortname" >
+            <![CDATA[
+				ORDER BY IF(EAO.ACTIVITY,0,EAO.ACTIVITY) ASC,OT_TO_TIME DESC,HRE.DEPTID,HRE.EMPID  
+		 ]]>
+        </isEmpty>
+    </select>
+
+    <select
+        id="getOtAffirmInfoCnt"
+        parameterClass="linkMap"
+        resultClass="int" >
+        <![CDATA[
+        SELECT COUNT(*)  
+          FROM HR_EMPLOYEE         HRE,
+		       ESS_APPLY_OT        EAO,
+		       ESS_AFFIRM		   EA,
+		       HR_DEPARTMENT       HRD,
+		       HR_POSITION         HRPO,
+		       HR_POST             HRP,
+		       HR_POST_COLUMN      HRPC,
+		       HR_POST_GROUP       HRPG,
+		       HR_POST_GRADE_LEVEL HRPGRL,
+		       HR_POST_GRADE       HRPGR,  
+		       SY_CODE             J, 
+		       SY_CODE             M,
+		       SY_CODE             N,
+		       SY_CODE             A,
+		       SY_CODE             B
+		 WHERE HRE.EMPID = EAO.EMPID
+		   AND EAO.OT_NO = EA.APPLY_NO(+)
+		   AND HRE.DEPTID = HRD.DEPTID(+)
+		   AND HRE.POST_ID = HRP.POST_ID(+)
+		   AND HRE.POST_GROUP_ID = HRPG.POST_GROUP_ID(+)
+		   AND HRE.POSITION_ID = HRPO.POSITION_ID(+)
+		   AND HRE.POST_GRADE_ID = HRPGR.POST_GRADE_ID(+)
+		   AND HRE.POST_COLUMN_CODE = HRPC.POST_COLUMN_ID(+)
+		   AND HRE.POST_GRADE_LEVEL_CODE = HRPGRL.POST_GRADE_LEVEL_ID(+)
+		   AND HRE.DUTY_CODE = J.CODE_ID(+)
+		   AND HRE.STATUS_CODE = M.CODE_ID(+)
+		   AND HRE.JOIN_TYPE_CODE = N.CODE_ID(+)
+		   AND HRE.EMP_TYPE_CODE = A.CODE_ID(+) 
+		   AND EAO.OT_TYPE_CODE = B.CODE_ID(+)  
+	]]>
+
+        <include refid="essOtAffirmCondition" />
+    </select>
+    <!-- 取出当前登录者可以进行决裁的所有休假记录 -->
+
+    <select
+        id="getLeaveAffirmInfo"
+        parameterClass="linkMap"
+        resultClass="linkMap" >
+        <![CDATA[
+        SELECT HRE.EMPID,
+		       IF(#language#='en', HRE.ENGLISHNAME, HRE.CHINESENAME) CHINESENAME,
+		        
+		       HRE.DEPTID,
+		       IF(#language#='en', HRD.DEPT_EN_NAME, HRD.DEPTNAME) DEPTNAME,
+		       HRE.DUTY_CODE,
+		       IF(#language#='en', J.CODE_EN_NAME, J.CODE_NAME) DUTY_NAME,
+		       HRE.POSITION_ID,
+		       IF(#language#='en', HRPO.POSITION_EN_NAME, HRPO.POSITION_NAME) POSITION_NAME,
+		       HRE.POST_ID,
+		       IF(#language#='en', HRP.POST_EN_NAME, HRP.POST_NAME) POST_NAME,
+		       HRE.POST_GRADE_ID,
+		       IF(#language#,
+		              'en',
+		              HRPGR.POST_GRADE_EN_NAME,
+		              HRPGR.POST_GRADE_NAME) POST_GRADE_NAME,
+		       HRE.POST_COEF,
+		       HRE.POST_COLUMN_CODE,
+		       IF(#language#,
+		              'en',
+		              HRPC.POST_COLUMN_EN_NAME,
+		              HRPC.POST_COLUMN_NAME) POST_COLUMN_NAME,
+		       HRE.POST_GRADE_LEVEL_CODE,
+		       IF(#language#,
+		              'en',
+		              HRPGRL.POST_GRADE_LEVEL_EN_NAME,
+		              HRPGRL.POST_GRADE_LEVEL_NAME) POST_GRADE_LEVEL_NAME,
+		       HRE.POST_GROUP_ID,
+		       IF(#language#,
+		              'en',
+		              HRPG.POST_GROUP_EN_NAME,
+		              HRPG.POST_GROUP_NAME) POST_GROUP_NAME,
+		       HRE.STATUS_CODE,
+		       IF(#language#='en', M.CODE_EN_NAME, M.CODE_NAME) STATUS_NAME,
+		       HRE.JOIN_TYPE_CODE,
+		       N.CODE_NAME JOIN_TYPE_NAME, 
+		       
+		       TO_CHAR(HRE.JOIN_DATE, 'YYYY-MM-DD') JOIN_DATE,
+		       TO_CHAR(HRE.HIRE_DATE, 'YYYY-MM-DD') HIRE_DATE,
+		       TO_CHAR(HRE.END_PROBATION_DATE, 'YYYY-MM-DD') END_PROBATION_DATE,
+		       TO_CHAR(HRE.LEFT_DATE, 'YYYY-MM-DD') LEFT_DATE,  
+		       HRE.COSTCENTER,
+		       HRE.EMP_TYPE_CODE,
+		       IF(#language#='en', A.CODE_EN_NAME, A.CODE_NAME) EMP_TYPE_NAME, 
+		        
+		       EAL.ACTIVITY CON_STATUS_ID, 
+		       IF(EAL.ACTIVITY,
+		              '1',
+		              IF(#language#='en', '<p style="color: green;">Approved</p>', '<p style="color: green;">已通过</p>'),
+		              '2',
+		              IF(#language#='en', '<p style="color: red;">Rejected</p>', '<p style="color: red;">已否决</p>'),
+		              '0',
+		              IF(#language#='en', '<p style="color: purple;">Pending</p>', '<p style="color: purple;">未确认</p>'),
+		              '3',
+		              IF(#language#='en', '<p style="color: gray;">Cancelled</p>', '<p style="color: gray;">已取消</p>'),
+		              IF(#language#='en', 'Unknown', '未知状态')) CON_STATUS,
+		       IF(EA.AFFIRM_LEVEL, 6, 5, 5, 4, 4, 3, 3, 2, 2, 1, 1, 0) PRE_AFFIRM_LEVEL,
+		       EA.APPLY_TYPE,
+		       EA.AFFIRMOR_ID,
+		       EA.APP_REMARK,
+		       EA.ESS_AFFIRM_NO,
+		       EA.AFFIRM_FLAG APP_STATUS_ID, 
+		       IF(EA.AFFIRM_FLAG,
+		              '1',
+		              IF(#language#='en', '<p style="color: green;">Approved</p>', '<p style="color: green;">已通过</p>'),
+		              '2',
+		              IF(#language#='en', '<p style="color: red;">Rejected</p>', '<p style="color: red;">已否决</p>'),
+		              '0',
+		              IF(#language#='en', '<p style="color: purple;">Pending</p>', '<p style="color: purple;">未审核</p>'),
+		              IF(#language#='en', 'Unknown', '未知状态')) APP_STATUS,
+		       TO_CHAR(EAL.LEAVE_FROM_TIME, 'YYYY-MM-DD') LEAVE_DATE,
+		       TO_CHAR(EAL.LEAVE_FROM_TIME, 'YYYY-MM-DD HH24:MI') LEAVE_FROM_TIME, 
+               TO_CHAR(EAL.LEAVE_TO_TIME, 'YYYY-MM-DD HH24:MI') LEAVE_TO_TIME, 
+               EAL.LEAVE_TYPE_CODE,
+		       IF(#language#='en', B.CODE_EN_NAME, B.CODE_NAME) LEAVE_TYPE_NAME, 
+		       EAL.LEAVE_NO APPLY_NO,
+               EAL.LEAVE_REASON,
+               EAL.LEAVE_REMARK,
+               EAL.LEAVE_WA_EMPID, 
+               EAL.CON_REMARK,
+               EAL.CANCEL_REMARK
+               
+		  FROM HR_EMPLOYEE         HRE,
+		       ESS_APPLY_LEAVE     EAL,
+		       ESS_AFFIRM		   EA,
+		       HR_DEPARTMENT       HRD,
+		       HR_POSITION         HRPO,
+		       HR_POST             HRP,
+		       HR_POST_COLUMN      HRPC,
+		       HR_POST_GROUP       HRPG,
+		       HR_POST_GRADE_LEVEL HRPGRL,
+		       HR_POST_GRADE       HRPGR,  
+		       SY_CODE             J, 
+		       SY_CODE             M,
+		       SY_CODE             N,
+		       SY_CODE             A,
+		       SY_CODE             B
+		 WHERE HRE.EMPID = EAL.EMPID
+		   AND EAL.LEAVE_NO = EA.APPLY_NO(+)
+		   AND HRE.DEPTID = HRD.DEPTID(+)
+		   AND HRE.POST_ID = HRP.POST_ID(+)
+		   AND HRE.POST_GROUP_ID = HRPG.POST_GROUP_ID(+)
+		   AND HRE.POSITION_ID = HRPO.POSITION_ID(+)
+		   AND HRE.POST_GRADE_ID = HRPGR.POST_GRADE_ID(+)
+		   AND HRE.POST_COLUMN_CODE = HRPC.POST_COLUMN_ID(+)
+		   AND HRE.POST_GRADE_LEVEL_CODE = HRPGRL.POST_GRADE_LEVEL_ID(+)
+		   AND HRE.DUTY_CODE = J.CODE_ID(+)
+		   AND HRE.STATUS_CODE = M.CODE_ID(+)
+		   AND HRE.JOIN_TYPE_CODE = N.CODE_ID(+)
+		   AND HRE.EMP_TYPE_CODE = A.CODE_ID(+) 
+		   AND EAL.LEAVE_TYPE_CODE = B.CODE_ID(+) 
+	  ]]> 
+        <include refid="essLeaveAffirmCondition" />
+        
+        <isNotEmpty prepend="" property="sortname" >
+            <![CDATA[
+	 		  	ORDER BY $sortname$ $sortorder$
+	        ]]>
+        </isNotEmpty>
+
+        <isEmpty prepend="" property="sortname" >
+            <![CDATA[
+			 	ORDER BY IF(EAL.ACTIVITY,0,EAL.ACTIVITY),  EAL.LEAVE_TO_TIME DESC,HRE.DEPTID, EMPID 
+			 ]]>
+        </isEmpty> 
+    </select>
+
+    <select
+        id="getLeaveAffirmInfoCnt"
+        parameterClass="linkMap"
+        resultClass="int" >
+        <![CDATA[
+	    SELECT COUNT(*)  
+		  FROM HR_EMPLOYEE         HRE,
+		       ESS_APPLY_LEAVE     EAL,
+		       ESS_AFFIRM		   EA,
+		       HR_DEPARTMENT       HRD,
+		       HR_POSITION         HRPO,
+		       HR_POST             HRP,
+		       HR_POST_COLUMN      HRPC,
+		       HR_POST_GROUP       HRPG,
+		       HR_POST_GRADE_LEVEL HRPGRL,
+		       HR_POST_GRADE       HRPGR,  
+		       SY_CODE             J, 
+		       SY_CODE             M,
+		       SY_CODE             N,
+		       SY_CODE             A,
+		       SY_CODE             B
+		 WHERE HRE.EMPID = EAL.EMPID
+		   AND EAL.LEAVE_NO = EA.APPLY_NO(+)
+		   AND HRE.DEPTID = HRD.DEPTID(+)
+		   AND HRE.POST_ID = HRP.POST_ID(+)
+		   AND HRE.POST_GROUP_ID = HRPG.POST_GROUP_ID(+)
+		   AND HRE.POSITION_ID = HRPO.POSITION_ID(+)
+		   AND HRE.POST_GRADE_ID = HRPGR.POST_GRADE_ID(+)
+		   AND HRE.POST_COLUMN_CODE = HRPC.POST_COLUMN_ID(+)
+		   AND HRE.POST_GRADE_LEVEL_CODE = HRPGRL.POST_GRADE_LEVEL_ID(+)
+		   AND HRE.DUTY_CODE = J.CODE_ID(+)
+		   AND HRE.STATUS_CODE = M.CODE_ID(+)
+		   AND HRE.JOIN_TYPE_CODE = N.CODE_ID(+)
+		   AND HRE.EMP_TYPE_CODE = A.CODE_ID(+) 
+		   AND EAL.LEAVE_TYPE_CODE = B.CODE_ID(+)
+	  ]]> 
+        <include refid="essLeaveAffirmCondition" />
+    </select>
+    <!-- 取出当前登录者可以进行决裁的所有休假记录 --> 
+    <select
+        id="getExpAffirmInfo"
+        parameterClass="linkMap"
+        resultClass="linkMap" >
+        <![CDATA[
+        SELECT HRE.EMPID,
+		       IF(#language#='en', HRE.ENGLISHNAME, HRE.CHINESENAME) CHINESENAME,
+		        
+		       HRE.DEPTID,
+		       IF(#language#='en', HRD.DEPT_EN_NAME, HRD.DEPTNAME) DEPTNAME,
+		       HRE.DUTY_CODE,
+		       IF(#language#='en', J.CODE_EN_NAME, J.CODE_NAME) DUTY_NAME,
+		       HRE.POSITION_ID,
+		       IF(#language#='en', HRPO.POSITION_EN_NAME, HRPO.POSITION_NAME) POSITION_NAME,
+		       HRE.POST_ID,
+		       IF(#language#='en', HRP.POST_EN_NAME, HRP.POST_NAME) POST_NAME,
+		       HRE.POST_GRADE_ID,
+		       IF(#language#,
+		              'en',
+		              HRPGR.POST_GRADE_EN_NAME,
+		              HRPGR.POST_GRADE_NAME) POST_GRADE_NAME,
+		       HRE.POST_COEF,
+		       HRE.POST_COLUMN_CODE,
+		       IF(#language#,
+		              'en',
+		              HRPC.POST_COLUMN_EN_NAME,
+		              HRPC.POST_COLUMN_NAME) POST_COLUMN_NAME,
+		       HRE.POST_GRADE_LEVEL_CODE,
+		       IF(#language#,
+		              'en',
+		              HRPGRL.POST_GRADE_LEVEL_EN_NAME,
+		              HRPGRL.POST_GRADE_LEVEL_NAME) POST_GRADE_LEVEL_NAME,
+		       HRE.POST_GROUP_ID,
+		       IF(#language#,
+		              'en',
+		              HRPG.POST_GROUP_EN_NAME,
+		              HRPG.POST_GROUP_NAME) POST_GROUP_NAME,
+		       HRE.STATUS_CODE,
+		       IF(#language#='en', M.CODE_EN_NAME, M.CODE_NAME) STATUS_NAME,
+		       HRE.JOIN_TYPE_CODE,
+		       N.CODE_NAME JOIN_TYPE_NAME, 
+		       
+		       TO_CHAR(HRE.JOIN_DATE, 'YYYY-MM-DD') JOIN_DATE,
+		       TO_CHAR(HRE.HIRE_DATE, 'YYYY-MM-DD') HIRE_DATE,
+		       TO_CHAR(HRE.END_PROBATION_DATE, 'YYYY-MM-DD') END_PROBATION_DATE,
+		       TO_CHAR(HRE.LEFT_DATE, 'YYYY-MM-DD') LEFT_DATE,  
+		       HRE.COSTCENTER,
+		       HRE.EMP_TYPE_CODE,
+		       IF(#language#='en', A.CODE_EN_NAME, A.CODE_NAME) EMP_TYPE_NAME, 
+		        
+		       EAE.ACTIVITY CON_STATUS_ID, 
+		       IF(EAE.ACTIVITY,
+		              '1',
+		              IF(#language#='en', '<p style="color: green;">Approved</p>', '<p style="color: green;">已通过</p>'),
+		              '2',
+		              IF(#language#='en', '<p style="color: red;">Rejected</p>', '<p style="color: red;">已否决</p>'),
+		              '0',
+		              IF(#language#='en', '<p style="color: purple;">Pending</p>', '<p style="color: purple;">未确认</p>'),
+		              '3',
+		              IF(#language#='en', '<p style="color: gray;">Cancelled</p>', '<p style="color: gray;">已取消</p>'),
+		              IF(#language#='en', 'Unknown', '未知状态')) CON_STATUS,
+		       IF(EA.AFFIRM_LEVEL, 6, 5, 5, 4, 4, 3, 3, 2, 2, 1, 1, 0) PRE_AFFIRM_LEVEL,
+		       EA.APPLY_TYPE,
+		       EA.AFFIRMOR_ID,
+		       EA.APP_REMARK,
+		       EA.ESS_AFFIRM_NO,
+		       EA.AFFIRM_FLAG APP_STATUS_ID, 
+		       IF(EA.AFFIRM_FLAG,
+		              '1',
+		              IF(#language#='en', '<p style="color: green;">Approved</p>', '<p style="color: green;">已通过</p>'),
+		              '2',
+		              IF(#language#='en', '<p style="color: red;">Rejected</p>', '<p style="color: red;">已否决</p>'),
+		              '0',
+		              IF(#language#='en', '<p style="color: purple;">Pending</p>', '<p style="color: purple;">未审核</p>'),
+		              IF(#language#='en', 'Unknown', '未知状态')) APP_STATUS,
+		       TO_CHAR(EAE.CREATE_DATE, 'YYYY-MM-DD') EXP_DATE,
+		       TO_CHAR(EAE.EXP_TO_TIME, 'YYYY-MM-DD HH24:MI') EXP_TO_TIME, 
+               TO_CHAR(EAE.EXP_FROM_TIME, 'YYYY-MM-DD HH24:MI') EXP_FROM_TIME, 
+               EAE.EXP_TYPE_CODE,
+		       IF(#language#='en', '<p style="color: purple;">'||B.CODE_EN_NAME||'</p>', '<p style="color: purple;">'||B.CODE_NAME||'</p>') EXP_TYPE_NAME, 
+		       EAE.EXP_NO APPLY_NO, 
+               EAE.EXP_CONTENT,
+               EAE.EXP_REASON,
+               EAE.EXP_REMARK, 
+               EAE.CON_REMARK,
+               EAE.CANCEL_REMARK
+               
+		  FROM HR_EMPLOYEE         HRE,
+		       ESS_APPLY_EXP       EAE,
+		       ESS_AFFIRM		   EA,
+		       HR_DEPARTMENT       HRD,
+		       HR_POSITION         HRPO,
+		       HR_POST             HRP,
+		       HR_POST_COLUMN      HRPC,
+		       HR_POST_GROUP       HRPG,
+		       HR_POST_GRADE_LEVEL HRPGRL,
+		       HR_POST_GRADE       HRPGR,  
+		       SY_CODE             J, 
+		       SY_CODE             M,
+		       SY_CODE             N,
+		       SY_CODE             A,
+		       SY_CODE             B
+		 WHERE HRE.EMPID = EAE.EMPID
+		   AND EAE.EXP_NO = EA.APPLY_NO(+)
+		   AND HRE.DEPTID = HRD.DEPTID(+)
+		   AND HRE.POST_ID = HRP.POST_ID(+)
+		   AND HRE.POST_GROUP_ID = HRPG.POST_GROUP_ID(+)
+		   AND HRE.POSITION_ID = HRPO.POSITION_ID(+)
+		   AND HRE.POST_GRADE_ID = HRPGR.POST_GRADE_ID(+)
+		   AND HRE.POST_COLUMN_CODE = HRPC.POST_COLUMN_ID(+)
+		   AND HRE.POST_GRADE_LEVEL_CODE = HRPGRL.POST_GRADE_LEVEL_ID(+)
+		   AND HRE.DUTY_CODE = J.CODE_ID(+)
+		   AND HRE.STATUS_CODE = M.CODE_ID(+)
+		   AND HRE.JOIN_TYPE_CODE = N.CODE_ID(+)
+		   AND HRE.EMP_TYPE_CODE = A.CODE_ID(+) 
+		   AND EAE.EXP_TYPE_CODE = B.CODE_ID(+) 
+	  ]]> 
+        <include refid="essExpAffirmCondition" />
+        
+        <isNotEmpty prepend="" property="sortname" >
+            <![CDATA[
+	 		  	ORDER BY $sortname$ $sortorder$
+	        ]]>
+        </isNotEmpty>
+
+        <isEmpty prepend="" property="sortname" >
+            <![CDATA[
+			 	ORDER BY IF(EAE.ACTIVITY,0,EAL.ACTIVITY),  EAE.CREATE_DATE DESC,HRE.DEPTID, EMPID 
+			 ]]>
+        </isEmpty> 
+    </select>
+
+    <select
+        id="getExpAffirmInfoCnt"
+        parameterClass="linkMap"
+        resultClass="int" >
+        <![CDATA[
+	    select count(*)
+from HR_EMPLOYEE  HRE left join HR_DEPARTMENT  HRD on HRE.DEPTID = HRD.DEPTID
+left join   HR_POST HRP on HRE.POST_ID = HRP.POST_ID
+left join   HR_POST_GROUP  HRPG on HRE.POST_GROUP_ID = HRPG.POST_GROUP_ID
+left join  HR_POST_GRADE  HRPGR  on HRE.POST_GRADE_ID = HRPGR.POST_GRADE_ID
+left join  HR_POST_COLUMN HRPC   on HRE.POST_COLUMN_CODE = HRPC.POST_COLUMN_ID
+left join  HR_POST_GRADE_LEVEL HRPGRL on  HRE.POST_GRADE_LEVEL_CODE = HRPGRL.POST_GRADE_LEVEL_ID
+left join      SY_CODE J    on  HRE.DUTY_CODE = J.CODE_ID
+left join      SY_CODE  M   on  HRE.STATUS_CODE = M.CODE_ID
+left join      SY_CODE  N   on HRE.JOIN_TYPE_CODE = N.CODE_ID
+left join       SY_CODE A   on HRE.EMP_TYPE_CODE = A.CODE_ID,
+ESS_APPLY_EXP  EAE left join  ESS_AFFIRM  EA on EAE.EXP_NO = EA.APPLY_NO
+left join       SY_CODE B  on EAE.EXP_TYPE_CODE = B.CODE_ID
+where HRE.EMPID = EAE.EMPID
+
+	  ]]> 
+        <include refid="essExpAffirmCondition" />
+    </select>
+    <!-- 取出当前登录者可以进行决裁的所有休假记录 -->
+
+    <select
+        id="getCardtimeAffirmInfo"
+        parameterClass="linkMap"
+        resultClass="linkMap" >
+        <![CDATA[
+        SELECT HRE.EMPID,
+		       IF(#language#='en', HRE.ENGLISHNAME, HRE.CHINESENAME) CHINESENAME,
+		        
+		       HRE.DEPTID,
+		       IF(#language#='en', HRD.DEPT_EN_NAME, HRD.DEPTNAME) DEPTNAME,
+		       HRE.DUTY_CODE,
+		       IF(#language#='en', J.CODE_EN_NAME, J.CODE_NAME) DUTY_NAME,
+		       HRE.POSITION_ID,
+		       IF(#language#='en', HRPO.POSITION_EN_NAME, HRPO.POSITION_NAME) POSITION_NAME,
+		       HRE.POST_ID,
+		       IF(#language#='en', HRP.POST_EN_NAME, HRP.POST_NAME) POST_NAME,
+		       HRE.POST_GRADE_ID,
+		       IF(#language#,
+		              'en',
+		              HRPGR.POST_GRADE_EN_NAME,
+		              HRPGR.POST_GRADE_NAME) POST_GRADE_NAME,
+		       HRE.POST_COEF,
+		       HRE.POST_COLUMN_CODE,
+		       IF(#language#,
+		              'en',
+		              HRPC.POST_COLUMN_EN_NAME,
+		              HRPC.POST_COLUMN_NAME) POST_COLUMN_NAME,
+		       HRE.POST_GRADE_LEVEL_CODE,
+		       IF(#language#,
+		              'en',
+		              HRPGRL.POST_GRADE_LEVEL_EN_NAME,
+		              HRPGRL.POST_GRADE_LEVEL_NAME) POST_GRADE_LEVEL_NAME,
+		       HRE.POST_GROUP_ID,
+		       IF(#language#,
+		              'en',
+		              HRPG.POST_GROUP_EN_NAME,
+		              HRPG.POST_GROUP_NAME) POST_GROUP_NAME,
+		       HRE.STATUS_CODE,
+		       IF(#language#='en', M.CODE_EN_NAME, M.CODE_NAME) STATUS_NAME,
+		       HRE.JOIN_TYPE_CODE,
+		       N.CODE_NAME JOIN_TYPE_NAME, 
+		       
+		       TO_CHAR(HRE.JOIN_DATE, 'YYYY-MM-DD') JOIN_DATE,
+		       TO_CHAR(HRE.HIRE_DATE, 'YYYY-MM-DD') HIRE_DATE,
+		       TO_CHAR(HRE.END_PROBATION_DATE, 'YYYY-MM-DD') END_PROBATION_DATE,
+		       TO_CHAR(HRE.LEFT_DATE, 'YYYY-MM-DD') LEFT_DATE,  
+		       HRE.COSTCENTER,
+		       HRE.EMP_TYPE_CODE,
+		       IF(#language#='en', A.CODE_EN_NAME, A.CODE_NAME) EMP_TYPE_NAME, 
+		        
+		       EAC.ACTIVITY CON_STATUS_ID, 
+		       IF(EAC.ACTIVITY,
+		              '1',
+		              IF(#language#='en', '<p style="color: green;">Approved</p>', '<p style="color: green;">已通过</p>'),
+		              '2',
+		              IF(#language#='en', '<p style="color: red;">Rejected</p>', '<p style="color: red;">已否决</p>'),
+		              '0',
+		              IF(#language#='en', '<p style="color: purple;">Pending</p>', '<p style="color: purple;">未确认</p>'),
+		              '3',
+		              IF(#language#='en', '<p style="color: gray;">Cancelled</p>', '<p style="color: gray;">已取消</p>'),
+		              IF(#language#='en', 'Unknown', '未知状态')) CON_STATUS,
+		       IF(EA.AFFIRM_LEVEL, 6, 5, 5, 4, 4, 3, 3, 2, 2, 1, 1, 0) PRE_AFFIRM_LEVEL,
+		       EA.APPLY_TYPE,
+		       EA.AFFIRMOR_ID,
+		       EA.APP_REMARK,
+		       EA.ESS_AFFIRM_NO,
+		       EA.AFFIRM_FLAG APP_STATUS_ID, 
+		       IF(EA.AFFIRM_FLAG,
+		              '1',
+		              IF(#language#='en', '<p style="color: green;">Approved</p>', '<p style="color: green;">已通过</p>'),
+		              '2',
+		              IF(#language#='en', '<p style="color: red;">Rejected</p>', '<p style="color: red;">已否决</p>'),
+		              '0',
+		              IF(#language#='en', '<p style="color: purple;">Pending</p>', '<p style="color: purple;">未审核</p>'),
+		              IF(#language#='en', 'Unknown', '未知状态')) APP_STATUS,
+		       TO_CHAR(EAC.ATT_DATE, 'YYYY-MM-DD') ATT_DATE,
+		       TO_CHAR(EAC.R_TIME, 'YYYY-MM-DD HH24:MI') R_TIME,   
+               EAC.CARD_REASON_CODE,
+		       IF(#language#='en', B.CODE_EN_NAME, B.CODE_NAME) CARD_REASON_NAME, 
+               EAC.CARD_DOOR_TYPE CARD_DOOR_TYPE_CODE,
+		       IF(#language#='en', C.CODE_EN_NAME, C.CODE_NAME) CARD_DOOR_TYPE_NAME, 
+		       EAC.CARD_NO APPLY_NO, 
+               EAC.CARD_ID, 
+               EAC.CARD_REMARK, 
+               EAC.CON_REMARK,
+               EAC.CANCEL_REMARK
+               
+		  FROM HR_EMPLOYEE         HRE,
+		       ESS_APPLY_CARD      EAC,
+		       ESS_AFFIRM		   EA,
+		       HR_DEPARTMENT       HRD,
+		       HR_POSITION         HRPO,
+		       HR_POST             HRP,
+		       HR_POST_COLUMN      HRPC,
+		       HR_POST_GROUP       HRPG,
+		       HR_POST_GRADE_LEVEL HRPGRL,
+		       HR_POST_GRADE       HRPGR,  
+		       SY_CODE             J, 
+		       SY_CODE             M,
+		       SY_CODE             N,
+		       SY_CODE             A,
+		       SY_CODE             B,
+		       SY_CODE             C
+		 WHERE HRE.EMPID = EAC.EMPID
+		   AND EAC.CARD_NO = EA.APPLY_NO(+)
+		   AND HRE.DEPTID = HRD.DEPTID(+)
+		   AND HRE.POST_ID = HRP.POST_ID(+)
+		   AND HRE.POST_GROUP_ID = HRPG.POST_GROUP_ID(+)
+		   AND HRE.POSITION_ID = HRPO.POSITION_ID(+)
+		   AND HRE.POST_GRADE_ID = HRPGR.POST_GRADE_ID(+)
+		   AND HRE.POST_COLUMN_CODE = HRPC.POST_COLUMN_ID(+)
+		   AND HRE.POST_GRADE_LEVEL_CODE = HRPGRL.POST_GRADE_LEVEL_ID(+)
+		   AND HRE.DUTY_CODE = J.CODE_ID(+)
+		   AND HRE.STATUS_CODE = M.CODE_ID(+)
+		   AND HRE.JOIN_TYPE_CODE = N.CODE_ID(+)
+		   AND HRE.EMP_TYPE_CODE = A.CODE_ID(+) 
+		   AND EAC.CARD_REASON_CODE = B.CODE_ID(+) 
+		   AND EAC.CARD_DOOR_TYPE = C.CODE_ID(+) 
+	  ]]> 
+        <include refid="essCardtimeAffirmCondition" />
+        
+        <isNotEmpty prepend="" property="sortname" >
+            <![CDATA[
+	 		  	ORDER BY $sortname$ $sortorder$
+	        ]]>
+        </isNotEmpty>
+
+        <isEmpty prepend="" property="sortname" >
+            <![CDATA[
+			 	ORDER BY IF(EAC.ACTIVITY,0,EAC.ACTIVITY),  EAC.ATT_DATE DESC,HRE.DEPTID, HRE.EMPID 
+			 ]]>
+        </isEmpty> 
+    </select>
+
+    <select
+        id="getCardtimeAffirmInfoCnt"
+        parameterClass="linkMap"
+        resultClass="int" >
+        <![CDATA[
+	    SELECT COUNT(*)  
+		  FROM HR_EMPLOYEE         HRE,
+		       ESS_APPLY_CARD      EAC,
+		       ESS_AFFIRM		   EA,
+		       HR_DEPARTMENT       HRD,
+		       HR_POSITION         HRPO,
+		       HR_POST             HRP,
+		       HR_POST_COLUMN      HRPC,
+		       HR_POST_GROUP       HRPG,
+		       HR_POST_GRADE_LEVEL HRPGRL,
+		       HR_POST_GRADE       HRPGR,  
+		       SY_CODE             J, 
+		       SY_CODE             M,
+		       SY_CODE             N,
+		       SY_CODE             A,
+		       SY_CODE             B,
+		       SY_CODE             C
+		 WHERE HRE.EMPID = EAC.EMPID
+		   AND EAC.CARD_NO = EA.APPLY_NO(+)
+		   AND HRE.DEPTID = HRD.DEPTID(+)
+		   AND HRE.POST_ID = HRP.POST_ID(+)
+		   AND HRE.POST_GROUP_ID = HRPG.POST_GROUP_ID(+)
+		   AND HRE.POSITION_ID = HRPO.POSITION_ID(+)
+		   AND HRE.POST_GRADE_ID = HRPGR.POST_GRADE_ID(+)
+		   AND HRE.POST_COLUMN_CODE = HRPC.POST_COLUMN_ID(+)
+		   AND HRE.POST_GRADE_LEVEL_CODE = HRPGRL.POST_GRADE_LEVEL_ID(+)
+		   AND HRE.DUTY_CODE = J.CODE_ID(+)
+		   AND HRE.STATUS_CODE = M.CODE_ID(+)
+		   AND HRE.JOIN_TYPE_CODE = N.CODE_ID(+)
+		   AND HRE.EMP_TYPE_CODE = A.CODE_ID(+) 
+		   AND EAC.CARD_REASON_CODE = B.CODE_ID(+) 
+		   AND EAC.CARD_DOOR_TYPE = C.CODE_ID(+) 
+	  ]]> 
+        <include refid="essCardtimeAffirmCondition" />
+    </select>
+    
+    <!-- 取出当前登录者可以进行决裁的所有休假记录 -->
+
+    <select
+        id="getBTAffirmInfo"
+        parameterClass="linkMap"
+        resultClass="linkMap" >
+        <![CDATA[
+        SELECT HRE.EMPID,
+		       IF(#language#='en', HRE.ENGLISHNAME, HRE.CHINESENAME) CHINESENAME,
+		        
+		       HRE.DEPTID,
+		       IF(#language#='en', HRD.DEPT_EN_NAME, HRD.DEPTNAME) DEPTNAME,
+		       HRE.DUTY_CODE,
+		       IF(#language#='en', J.CODE_EN_NAME, J.CODE_NAME) DUTY_NAME,
+		       HRE.POSITION_ID,
+		       IF(#language#='en', HRPO.POSITION_EN_NAME, HRPO.POSITION_NAME) POSITION_NAME,
+		       HRE.POST_ID,
+		       IF(#language#='en', HRP.POST_EN_NAME, HRP.POST_NAME) POST_NAME,
+		       HRE.POST_GRADE_ID,
+		       IF(#language#,
+		              'en',
+		              HRPGR.POST_GRADE_EN_NAME,
+		              HRPGR.POST_GRADE_NAME) POST_GRADE_NAME,
+		       HRE.POST_COEF,
+		       HRE.POST_COLUMN_CODE,
+		       IF(#language#,
+		              'en',
+		              HRPC.POST_COLUMN_EN_NAME,
+		              HRPC.POST_COLUMN_NAME) POST_COLUMN_NAME,
+		       HRE.POST_GRADE_LEVEL_CODE,
+		       IF(#language#,
+		              'en',
+		              HRPGRL.POST_GRADE_LEVEL_EN_NAME,
+		              HRPGRL.POST_GRADE_LEVEL_NAME) POST_GRADE_LEVEL_NAME,
+		       HRE.POST_GROUP_ID,
+		       IF(#language#,
+		              'en',
+		              HRPG.POST_GROUP_EN_NAME,
+		              HRPG.POST_GROUP_NAME) POST_GROUP_NAME,
+		       HRE.STATUS_CODE,
+		       IF(#language#='en', M.CODE_EN_NAME, M.CODE_NAME) STATUS_NAME,
+		       HRE.JOIN_TYPE_CODE,
+		       N.CODE_NAME JOIN_TYPE_NAME, 
+		       
+		       TO_CHAR(HRE.JOIN_DATE, 'YYYY-MM-DD') JOIN_DATE,
+		       TO_CHAR(HRE.HIRE_DATE, 'YYYY-MM-DD') HIRE_DATE,
+		       TO_CHAR(HRE.END_PROBATION_DATE, 'YYYY-MM-DD') END_PROBATION_DATE,
+		       TO_CHAR(HRE.LEFT_DATE, 'YYYY-MM-DD') LEFT_DATE,  
+		       HRE.COSTCENTER,
+		       HRE.EMP_TYPE_CODE,
+		       IF(#language#='en', A.CODE_EN_NAME, A.CODE_NAME) EMP_TYPE_NAME, 
+		        
+		       EABT.ACTIVITY CON_STATUS_ID, 
+		       IF(EABT.ACTIVITY,
+		              '1',
+		              IF(#language#='en', '<p style="color: green;">Approved</p>', '<p style="color: green;">已通过</p>'),
+		              '2',
+		              IF(#language#='en', '<p style="color: red;">Rejected</p>', '<p style="color: red;">已否决</p>'),
+		              '0',
+		              IF(#language#='en', '<p style="color: purple;">Pending</p>', '<p style="color: purple;">未确认</p>'),
+		              '3',
+		              IF(#language#='en', '<p style="color: gray;">Cancelled</p>', '<p style="color: gray;">已取消</p>'),
+		              IF(#language#='en', 'Unknown', '未知状态')) CON_STATUS,
+		       IF(EA.AFFIRM_LEVEL, 6, 5, 5, 4, 4, 3, 3, 2, 2, 1, 1, 0) PRE_AFFIRM_LEVEL,
+		       EA.APPLY_TYPE,
+		       EA.AFFIRMOR_ID,
+		       EA.APP_REMARK,
+		       EA.ESS_AFFIRM_NO,
+		       EA.AFFIRM_FLAG APP_STATUS_ID, 
+		       IF(EA.AFFIRM_FLAG,
+		              '1',
+		              IF(#language#='en', '<p style="color: green;">Approved</p>', '<p style="color: green;">已通过</p>'),
+		              '2',
+		              IF(#language#='en', '<p style="color: red;">Rejected</p>', '<p style="color: red;">已否决</p>'),
+		              '0',
+		              IF(#language#='en', '<p style="color: purple;">Pending</p>', '<p style="color: purple;">未审核</p>'),
+		              IF(#language#='en', 'Unknown', '未知状态')) APP_STATUS,
+		       TO_CHAR(EABT.BT_FROM_TIME, 'YYYY-MM-DD') BT_DATE,
+		       TO_CHAR(EABT.BT_TO_TIME, 'YYYY-MM-DD HH24:MI') BT_TO_TIME, 
+               TO_CHAR(EABT.BT_FROM_TIME, 'YYYY-MM-DD HH24:MI') BT_FROM_TIME, 
+               EABT.BT_TYPE_CODE,
+		       IF(#language#='en', B.CODE_EN_NAME, B.CODE_NAME) BT_TYPE_NAME, 
+		       EABT.BT_CITY BT_CITY_CODE,
+		       IF(#language#='en', C.CODE_EN_NAME, C.CODE_NAME) BT_CITY_NAME, 
+		       EABT.BT_NO APPLY_NO,
+               EABT.BT_CONTENT,
+               EABT.BT_REASON,
+               EABT.BT_REMARK,
+               EABT.BT_WA_EMPID, 
+               EABT.TIME_STAMP,
+               EABT.CON_REMARK,
+               EABT.CANCEL_REMARK
+               
+		  FROM HR_EMPLOYEE         HRE,
+		       ESS_APPLY_BT        EABT,
+		       ESS_AFFIRM		   EA,
+		       HR_DEPARTMENT       HRD,
+		       HR_POSITION         HRPO,
+		       HR_POST             HRP,
+		       HR_POST_COLUMN      HRPC,
+		       HR_POST_GROUP       HRPG,
+		       HR_POST_GRADE_LEVEL HRPGRL,
+		       HR_POST_GRADE       HRPGR,  
+		       SY_CODE             J, 
+		       SY_CODE             M,
+		       SY_CODE             N,
+		       SY_CODE             A,
+		       SY_CODE             B,
+		       SY_CODE             C
+		 WHERE HRE.EMPID = EABT.EMPID
+		   AND EABT.BT_NO = EA.APPLY_NO(+)
+		   AND HRE.DEPTID = HRD.DEPTID(+)
+		   AND HRE.POST_ID = HRP.POST_ID(+)
+		   AND HRE.POST_GROUP_ID = HRPG.POST_GROUP_ID(+)
+		   AND HRE.POSITION_ID = HRPO.POSITION_ID(+)
+		   AND HRE.POST_GRADE_ID = HRPGR.POST_GRADE_ID(+)
+		   AND HRE.POST_COLUMN_CODE = HRPC.POST_COLUMN_ID(+)
+		   AND HRE.POST_GRADE_LEVEL_CODE = HRPGRL.POST_GRADE_LEVEL_ID(+)
+		   AND HRE.DUTY_CODE = J.CODE_ID(+)
+		   AND HRE.STATUS_CODE = M.CODE_ID(+)
+		   AND HRE.JOIN_TYPE_CODE = N.CODE_ID(+)
+		   AND HRE.EMP_TYPE_CODE = A.CODE_ID(+) 
+		   AND EABT.BT_TYPE_CODE = B.CODE_ID(+) 
+		   AND EABT.BT_CITY = C.CODE_ID(+)  
+	  ]]> 
+        <include refid="essBTAffirmCondition" />
+        
+        <isNotEmpty prepend="" property="sortname" >
+            <![CDATA[
+	 		  	ORDER BY $sortname$ $sortorder$
+	        ]]>
+        </isNotEmpty>
+
+        <isEmpty prepend="" property="sortname" >
+            <![CDATA[
+			 	ORDER BY IF(EABT.ACTIVITY,0,EABT.ACTIVITY),  EABT.BT_TO_TIME DESC,HRE.DEPTID, EMPID 
+			 ]]>
+        </isEmpty> 
+    </select>
+
+    <select
+        id="getBTAffirmInfoCnt"
+        parameterClass="linkMap"
+        resultClass="int" >
+        <![CDATA[
+	    SELECT COUNT(*)  
+		  FROM HR_EMPLOYEE         HRE,
+		       ESS_APPLY_BT        EABT,
+		       ESS_AFFIRM		   EA,
+		       HR_DEPARTMENT       HRD,
+		       HR_POSITION         HRPO,
+		       HR_POST             HRP,
+		       HR_POST_COLUMN      HRPC,
+		       HR_POST_GROUP       HRPG,
+		       HR_POST_GRADE_LEVEL HRPGRL,
+		       HR_POST_GRADE       HRPGR,  
+		       SY_CODE             J, 
+		       SY_CODE             M,
+		       SY_CODE             N,
+		       SY_CODE             A,
+		       SY_CODE             B,
+		       SY_CODE             C
+		 WHERE HRE.EMPID = EABT.EMPID
+		   AND EABT.BT_NO = EA.APPLY_NO(+)
+		   AND HRE.DEPTID = HRD.DEPTID(+)
+		   AND HRE.POST_ID = HRP.POST_ID(+)
+		   AND HRE.POST_GROUP_ID = HRPG.POST_GROUP_ID(+)
+		   AND HRE.POSITION_ID = HRPO.POSITION_ID(+)
+		   AND HRE.POST_GRADE_ID = HRPGR.POST_GRADE_ID(+)
+		   AND HRE.POST_COLUMN_CODE = HRPC.POST_COLUMN_ID(+)
+		   AND HRE.POST_GRADE_LEVEL_CODE = HRPGRL.POST_GRADE_LEVEL_ID(+)
+		   AND HRE.DUTY_CODE = J.CODE_ID(+)
+		   AND HRE.STATUS_CODE = M.CODE_ID(+)
+		   AND HRE.JOIN_TYPE_CODE = N.CODE_ID(+)
+		   AND HRE.EMP_TYPE_CODE = A.CODE_ID(+) 
+		   AND EABT.BT_TYPE_CODE = B.CODE_ID(+) 
+		   AND EABT.BT_CITY = C.CODE_ID(+) 
+	  ]]> 
+        <include refid="essBTAffirmCondition" />
+    </select>
+    
+    <update
+        id="updateDoAffirm"
+        parameterClass="linkMap" >
+        <![CDATA[
+  			  	UPDATE ESS_AFFIRM
+				SET    AFFIRM_FLAG = #AFFIRM_FLAG#,
+				       APP_REMARK  = #APP_REMARK#,
+				       UPDATE_DATE = SYSDATE,
+				       UPDATED_BY = #UPDATED_BY#
+				WHERE  ESS_AFFIRM_NO = #ESS_AFFIRM_NO# 
+			  ]]>
+    </update>
+    
+    <!-- 审核确认处理 -->
+    <update
+        id="updateOtAffirm"
+        parameterClass="linkMap" >
+        <![CDATA[
+  			    UPDATE ESS_APPLY_OT
+				SET    OT_AFFIRM = #AFFIRM_FLAG#,
+				       UPDATE_DATE = SYSDATE,
+				       UPDATED_BY = #UPDATED_BY#
+				WHERE  OT_NO = #APPLY_NO#
+				       AND OT_AFFIRM = 0
+			  ]]>
+    </update>
+    <!-- 审核确认处理 -->
+    <update
+        id="updateLeaveAffirm"
+        parameterClass="linkMap" >
+        <![CDATA[
+		UPDATE	ESS_APPLY_LEAVE
+   				SET LEAVE_AFFIRM = #AFFIRM_FLAG#, 
+   				UPDATE_DATE = SYSDATE, 
+   				UPDATED_BY = #UPDATED_BY#
+ 		WHERE 	LEAVE_NO = #APPLY_NO#
+		]]>
+    </update>
+    <!-- 审核确认处理 -->
+    <update
+        id="updateBTAffirm"
+        parameterClass="linkMap" >
+        <![CDATA[
+		UPDATE	ESS_APPLY_BT
+   				SET BT_AFFIRM = #AFFIRM_FLAG#, 
+   				UPDATE_DATE = SYSDATE, 
+   				UPDATED_BY = #UPDATED_BY#
+ 		WHERE 	BT_NO = #APPLY_NO#
+		]]>
+    </update>
+    <!-- 审核确认处理 -->
+    <update
+        id="updateExpAffirm"
+        parameterClass="linkMap" >
+        <![CDATA[
+		UPDATE	ESS_APPLY_EXP
+   				SET EXP_AFFIRM = #AFFIRM_FLAG#, 
+   				UPDATE_DATE = SYSDATE, 
+   				UPDATED_BY = #UPDATED_BY#
+ 		WHERE 	EXP_NO = #APPLY_NO#
+		]]>
+    </update>
+    <!-- 审核确认处理 -->
+    <update
+        id="updateCardtimeAffirm"
+        parameterClass="linkMap" >
+        <![CDATA[
+		UPDATE	ESS_APPLY_CARD
+   				SET CARD_AFFIRM = #AFFIRM_FLAG#, 
+   				UPDATE_DATE = SYSDATE, 
+   				UPDATED_BY = #UPDATED_BY#
+ 		WHERE 	CARD_NO = #APPLY_NO#
+		]]>
+    </update>
+ 
+    <select
+        id="getIsLastAffirm"
+        parameterClass="linkMap"
+        resultClass="string" >
+        <![CDATA[
+			SELECT COUNT(*)
+			  FROM ESS_AFFIRM A
+			 WHERE A.APPLY_NO = #APPLY_NO#
+			   AND A.APPLY_TYPE = #APPLY_TYPE#
+			   AND A.AFFIRM_FLAG = 0
+	       	  ]]>
+    </select>
+    <select
+        id="getRejectAffirm"
+        parameterClass="linkMap"
+        resultClass="string" >
+        <![CDATA[
+			SELECT COUNT(*)
+			  FROM ESS_AFFIRM A
+			 WHERE A.APPLY_NO = #APPLY_NO#
+			   AND A.APPLY_TYPE = #APPLY_TYPE#
+			   AND A.AFFIRM_FLAG = 2
+	       	  ]]>
+    </select>
+    <!-- 查询审核状态 -->
+	<select id="checkPreAffirmFlag" resultClass="string"
+		parameterClass="linkMap">
+		<![CDATA[	
+			SELECT IF(COUNT(*)=0,1,0)
+			  FROM ESS_AFFIRM EA
+			 WHERE EA.ACTIVITY = 1 
+			   AND EA.AFFIRM_FLAG = 0
+		]]> 
+		<isNotEmpty prepend="AND" property="APPLY_TYPE">
+			<![CDATA[
+				EA.APPLY_TYPE=#APPLY_TYPE#
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="APPLY_NO">
+			<![CDATA[
+				EA.APPLY_NO=#APPLY_NO#
+			]]>
+		</isNotEmpty> 
+		<isNotEmpty prepend="AND" property="PRE_AFFIRM_LEVEL">
+			<![CDATA[
+				EA.AFFIRM_LEVEL=#PRE_AFFIRM_LEVEL#
+			]]>
+		</isNotEmpty> 
+	</select> 
+</sqlMap>

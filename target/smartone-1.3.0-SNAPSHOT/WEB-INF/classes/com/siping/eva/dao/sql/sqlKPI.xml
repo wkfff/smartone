@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="eva.kpi">
+ <!-- 名称跟KPI Info 和KPI score 无关的都是不用的 -->
+	<sql id="EvaKPIInfoCondition"> 
+		<isNotEmpty prepend="AND" property="EMPID">
+			<![CDATA[
+				EVEWP.EV_EMPID=#EMPID#
+			]]>
+		</isNotEmpty>  
+		<isNotEmpty prepend="AND" property="TURN_TYPE_CODE">
+			<![CDATA[
+				EVEWP.TURN_TYPE_CODE=#TURN_TYPE_CODE#
+			]]>
+		</isNotEmpty>  
+		   
+		<isNotEmpty prepend="AND" property="ACTIVITY">
+			<![CDATA[
+				EVEWP.ACTIVITY=#ACTIVITY#
+			]]>
+		</isNotEmpty>   
+	</sql>  
+	<!-- 评价期间 -->
+	<insert id="addEvaEmpWorkInfo" parameterClass='linkMap'> 
+	</insert>
+	 <update id="updateEvaEmpWorkInfo" parameterClass="linkMap" >
+	</update> 
+	
+	<delete id="deleteEvaKPIInfo" parameterClass="linkMap" >
+	</delete> 
+	<!-- 返回KPI -->
+	<select id="getEvaKPIInfo" parameterClass="linkMap"
+		resultClass="linkMap">
+		<![CDATA[	
+			
+		]]>
+		<include refid="EvaKPIInfoCondition" />
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		  ORDER BY $sortname$ $sortorder$
+		    ]]>
+		</isNotEmpty>
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+	 		 	ORDER BY EVEWP.ORDERNO
+			 ]]>
+		</isEmpty> 
+	</select>
+	 <select id="getEvaKPIInfoCnt" parameterClass="linkMap"
+		resultClass="int">
+		<![CDATA[	
+		    
+		]]>
+		<include refid="EvaKPIInfoCondition" />
+	</select> 
+	
+	 <sql id="EvaKPIScoreCondition"> 
+		<isNotEmpty prepend="AND" property="EMPID">
+			<![CDATA[
+				EVEI.EV_EMPID=#EMPID#
+			]]>
+		</isNotEmpty>  
+		<isNotEmpty prepend="AND" property="TURN_TYPE_CODE">
+			<![CDATA[
+				EVEI.TURN_TYPE_CODE=#TURN_TYPE_CODE#
+			]]>
+		</isNotEmpty>  
+		   
+		<isNotEmpty prepend="AND" property="ACTIVITY">
+			<![CDATA[
+				EVEI.ACTIVITY=#ACTIVITY#
+			]]>
+		</isNotEmpty>   
+	</sql>  
+
+	<insert id="addEvaKPIInfo" parameterClass='linkMap'> 
+	<![CDATA[
+		INSERT INTO EVA_KPI_INFO 
+		    (	KPI_NO, 
+			    KPI_NAME, 
+			    KPI_LEVEL,  
+			    KPI_WEIGHT,
+			    KPI_DESCRIPTION, 
+			    KPI_STANDARD, 
+			    KPI_CHECKER,
+			    KPI_POST_ID,
+			    KPI_PARENT_NO,
+			    CREATE_DATE, 
+			    CREATED_BY, 
+			    ACTIVITY,
+			    ORDERNO)
+		VALUES (EVA_KPI_INFO_SEQ.NEXTVAL, 
+			    #KPI_NAME#, 
+			    #KPI_LEVEL#,   
+			    #KPI_WEIGHT#,
+			    #KPI_DESCRIPTION#,
+			    #KPI_STANDARD#, 
+			    #KPI_CHECKER#,
+			    #KPI_POST_ID#,
+			    #KPI_PARENT_NO#,  
+			    SYSDATE, 
+			    #CREATED_BY#, 
+			    1,
+			    #ORDERNO#)
+		]]> 
+	</insert>
+	 <update id="updateEvaKPIInfo" parameterClass="linkMap" >
+		<![CDATA[
+			UPDATE EVA_KPI_INFO EKI
+				SET 
+					EKI.KPI_NAME = #KPI_NAME# ,  
+					EKI.KPI_LEVEL = #KPI_LEVEL#, 
+					EKI.KPI_WEIGHT = #KPI_WEIGHT# ,  
+					EKI.KPI_DESCRIPTION = #KPI_DESCRIPTION#, 
+					EKI.KPI_STANDARD = #KPI_STANDARD# ,  
+					EKI.KPI_CHECKER = #KPI_CHECKER#, 
+					EKI.KPI_POST_ID = #KPI_POST_ID# ,  
+					EKI.KPI_PARENT_NO = #KPI_PARENT_NO#, 
+					EKI.ORDERNO = #ORDERNO#, 
+					EKI.UPDATE_DATE = SYSDATE ,
+					EKI.UPDATED_BY = #UPDATED_BY:VARCHAR# 
+				WHERE EKI.KPI_NO = #KPI_NO#
+		]]>
+	</update> 
+	
+	<delete id="deleteEvaEmpItemInfo" parameterClass="linkMap" >
+		
+	</delete> 
+	
+	<!-- 根据KPI查找KPI得分 -->
+	<select id="getKPIScoreListByKPI" parameterClass="linkMap"
+		resultClass="linkMap">
+		<![CDATA[	
+
+		]]>
+		<include refid="EvaKPIScoreCondition" />
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		  ORDER BY $sortname$ $sortorder$
+		    ]]>
+		</isNotEmpty>
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+	 		 	ORDER BY EVEI.ORDERNO
+			 ]]>
+		</isEmpty> 
+	</select>
+	 <select id="getKPIScoreListByKPICnt" parameterClass="linkMap"
+		resultClass="int">
+		<![CDATA[	
+		    SELECT COUNT(*)
+			  FROM EVE_EMP_ITEM EVEI
+			 WHERE EVEI.ACTIVITY = 1
+		]]>
+		<include refid="EvaKPIScoreCondition" />
+	</select> 
+	
+	<!-- 以Employee为单位查看KPI得分，每个员工查看自己的KPI得分 -->
+	<select id="getKPIScoreListByEmployee" parameterClass="linkMap"
+		resultClass="linkMap">
+		<![CDATA[	
+
+		]]>
+		<include refid="EvaKPIScoreCondition" />
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		  ORDER BY $sortname$ $sortorder$
+		    ]]>
+		</isNotEmpty>
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+	 		 	ORDER BY EVEI.ORDERNO
+			 ]]>
+		</isEmpty> 
+	</select>
+	 <select id="getKPIScoreListByEmployeeCnt" parameterClass="linkMap"
+		resultClass="int">
+		<![CDATA[	
+		    SELECT COUNT(*)
+			  FROM EVE_EMP_ITEM EVEI
+			 WHERE EVEI.ACTIVITY = 1
+		]]>
+		<include refid="EvaKPIScoreCondition" />
+	</select> 
+	
+	 <select id="checkEvaEmpEveInfo" parameterClass="linkMap"
+		resultClass="int"> 
+	</select> 
+	
+	 <select id="getKPIScoreDetail" parameterClass="linkMap"
+		resultClass="linkMap">
+		<![CDATA[	
+
+		]]> 
+		<isNotEmpty prepend="AND" property="EMPID">
+			<![CDATA[
+		 		  EVEE.EV_EMPID = #EMPID# 
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="TURN_TYPE_CODE">
+			<![CDATA[
+		 		  EVEE.TURN_TYPE_CODE = #TURN_TYPE_CODE#
+		    ]]>
+		</isNotEmpty>
+	</select>  
+	
+	 <update id="updateEssWorkFlagInfo" parameterClass="linkMap" >
+	</update> 
+	 <update id="updateEssItemFlagInfo" parameterClass="linkMap" >
+	</update>
+	 <update id="updateEvaItemFlagInfo" parameterClass="linkMap" >
+	</update>
+	<insert id="addEvaEmpEveInfo" parameterClass='linkMap'>  
+	</insert>
+	 <insert id="addEvaKPIScore" parameterClass="linkMap" >
+	 	<![CDATA[
+				INSERT INTO EVA_KPI_SCORE (
+				KPI_SCORE_NO,
+				KPI_NO,
+				KPI_SCORE,
+				KPI_SCORE_DESCRIPTION,
+				KPI_EMPLOYEE,
+				KPI_CHECKER,
+				CREATE_DATE,
+				CREATED_BY,
+				ORDERNO,
+				ACTIVITY,
+				MONTH
+				)VALUES(
+				EVA_KPI_SCORE_SQL.NEXTVAL,
+				#KPI_NO#,
+				#KPI_SCORE#,
+				#KPI_SCORE_DESCRIPTION#,
+				#KPI_EMPLOYEE#,
+				#KPI_CHECKER#,
+				SYSDATE,
+				#CREATED_BY#,
+				#ORDERNO#,
+				1,
+				#MONTH#
+				)				
+		]]>
+	</insert> 
+	
+	 <update id="updateEvaKPIScore" parameterClass="linkMap" >
+		<![CDATA[
+			UPDATE EVA_KPI_SCORE 
+				SET 
+					KPI_SCORE = #KPI_SCORE#
+					KPI_SCORE_DESCRIPTION = #KPI_SCORE_DESCRIPTION#,
+					KPI_EMPLOYEE = #KPI_EMPLOYEE#,
+					KPI_CHECKER = #KPI_CHECKER#,
+					ORDERNO = #ORDERNO#,
+					ACTIVITY = #ACTIVITY#,
+					MONTH = #MONTH#,
+					UPDATE_DATE = SYSDATE,
+					UPDATED_BY = #UPDATED_BY:VARCHAR# 
+				WHERE KPI_SCORE_NO = #KPI_SCORE_NO#
+		]]>
+	</update> 
+	 <update id="updateEssEmpOngoingItemInfo" parameterClass="linkMap" >
+	</update> 
+	 <update id="updateEssEmpOngoingWorkInfo" parameterClass="linkMap" >
+	</update>  
+</sqlMap>

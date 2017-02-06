@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+    PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+    "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="system.login">
+    <select id="findUser" parameterClass="linkMap" resultClass="AdminBean">
+        <![CDATA[
+            SELECT T.ADMINID AS adminID,
+                   T.LOGIN_TYPE AS loginType,
+                   T.USERNAME AS username,
+                   T.CHINESENAME AS chineseName,
+                   T.PASSWORD AS password,
+                   T.CHANNEL_ID AS channelID,
+                   T.SCREEN_GRANT_ID AS screenGrantID,
+                   T.DEPTID AS deptID,
+                   T.CPNY_ID AS cpnyId,
+                   T.ACCOUNT_TYPE accountType
+            FROM SY_ADMIN_V T 
+            WHERE T.USERNAME = #username:VARCHAR#
+                AND T.PASSWORD = #password:VARCHAR#
+                AND T.ACTIVITY = 1
+        ]]>
+    </select>
+    <select id="getMenuSplitTable" parameterClass="linkMap" resultClass="linkMap">
+         <![CDATA[
+             select get_grandIDs(#ADMINID#)
+         ]]>
+    </select>
+    <select id="getMainMenu" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT T.MENU_CODE,
+                T.MENU_INTRO MENU_INTRO
+            FROM SY_MENU T
+            WHERE T.MENU_PARENT_CODE = 'HRMS'
+                AND T.ACTIVITY=1
+                AND T.MENU_CODE IN ( 
+                    SELECT SCREEN_CODE 
+                    FROM SY_SCREEN_GRANT 
+                   WHERE SCREEN_GRANT_ID IN(
+                        select SCREEN_GRANT_ID from (SELECT  screen_grant_id,
+						 CASE
+							 WHEN INSTR((SELECT CONCAT(',' , screen_grant_id , ',')
+														FROM sy_admin
+													 WHERE adminid = #ADMINID#),CONCAT(',' , screen_grant_no , ',')
+													) > 0 THEN
+								1
+							 ELSE
+								0
+						 END AS count
+						FROM sy_login_screen ) as cc where cc.count=1         
+                ) AND SCREEN_GRANT_ID NOT IN (SELECT SLS.SCREEN_GRANT_ID FROM SY_LOGIN_SCREEN SLS WHERE SLS.ACTIVITY = 0)
+                AND (SY_SCREEN_GRANT.SELECTR=1 OR SY_SCREEN_GRANT.SAVER=1 OR SY_SCREEN_GRANT.INSERTR=1
+                OR SY_SCREEN_GRANT.CANCELR=1 OR SY_SCREEN_GRANT.DELETER=1 OR SY_SCREEN_GRANT.UPDATER=1)
+                )
+             ORDER BY T.ORDERNO
+        ]]>
+    </select>
+    <select id="getLeftMenu" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT T.MENU_CODE,
+                T.MENU_INTRO MENU_INTRO,
+                T.MENU_URL,
+                T.MENU_IMG,
+                T.MENU_PARENT_CODE
+            FROM SY_MENU T
+            WHERE T.ACTIVITY=1 and FIND_IN_SET(MENU_CODE, getMenuChildLst(#mainMenu#)) AND T.MENU_PARENT_CODE != 'HRMS'
+            AND T.MENU_CODE IN ( 
+                SELECT SCREEN_CODE FROM SY_SCREEN_GRANT 
+                    WHERE SCREEN_GRANT_ID IN(
+                        select SCREEN_GRANT_ID from (SELECT  screen_grant_id,
+						 CASE
+							 WHEN INSTR((SELECT CONCAT(',' , screen_grant_id , ',')
+														FROM sy_admin
+													 WHERE adminid = #ADMINID#),CONCAT(',' , screen_grant_no , ',')
+													) > 0 THEN
+								1
+							 ELSE
+								0
+						 END AS count
+						FROM sy_login_screen ) as cc where cc.count=1 
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                ) AND SCREEN_GRANT_ID NOT IN (SELECT SLS.SCREEN_GRANT_ID FROM SY_LOGIN_SCREEN SLS WHERE SLS.ACTIVITY = 0)
+                AND (SELECTR=1 OR SAVER=1 OR INSERTR=1 OR UPDATER=1 OR DELETER=1 OR CANCELR=1)
+                ) ORDER BY ORDERNO;
+        ]]>
+        
+    </select>
+    <select id="getMenuLoad" parameterClass="linkMap" resultClass="string">
+        <![CDATA[
+            SELECT  T.MENU_INTRO
+          AS MENU_INTRO  FROM SY_MENU T WHERE T.MENU_CODE = #tid#
+        ]]>
+    </select>
+    <select id="checkFirstLogin01" parameterClass="linkMap" resultClass="string">
+        <![CDATA[
+        SELECT date_format(T.UPDATE_DATE, '%Y-%m-%d') UPDATE_DATE
+          FROM SY_ADMIN T
+         WHERE T.ADMINID = #ADMINID#
+        ]]>
+    </select>
+    <select id="checkFirstLogin02" parameterClass="linkMap" resultClass="string">
+        <![CDATA[
+        SELECT date_format(T.UPDATE_DATE, '%Y-%m-%d') UPDATE_DATE
+          FROM SY_ADMIN T
+         WHERE T.ADMINID = #ADMINID#
+           AND T.UPDATE_DATE IS NOT NULL 
+           AND TO_DAYS(NOW())>TO_DAYS(T.UPDATE_DATE)+90
+  
+        ]]>
+    </select>
+    <insert id="addLoginInfo" parameterClass="linkMap">
+        <![CDATA[
+            INSERT INTO SY_LOGIN_INFO(EMPID,
+                        CONTACT_ID,
+                        IP,
+                        LOGIN_DATE,
+                        CREATE_DATE,
+                        CREATED_BY,
+                        ACTIVITY)
+                VALUES(
+                    #empid#,
+                    #contact_id#,
+                    #ip#,
+                    now(),
+                    now(),
+                    #empid#,
+                    1
+                )
+        ]]>
+    </insert>
+<!-- 	aibi更改，原sql在下面 -->
+    <update id="updateLoginInfo" parameterClass="linkMap">
+        <![CDATA[
+                UPDATE SY_LOGIN_INFO A
+                   SET A.UPDATE_DATE = SYSDATE(), A.UPDATED_BY = #empid#
+                 WHERE A.EMPID = #empid#
+                   AND A.LOGIN_DATE = (SELECT P.LOGIN_DATE
+                                         FROM (SELECT O.LOGIN_DATE
+                                                 FROM SY_LOGIN_INFO O
+                                                WHERE O.EMPID = #empid#
+												ORDER BY O.CREATE_DATE DESC) P
+                                        limit 0,1)
+        ]]>
+    </update>
+    <!--
+    <update id="updateLoginInfo" parameterClass="linkMap">
+        <![CDATA[
+                UPDATE SY_LOGIN_INFO A
+                   SET A.UPDATE_DATE = SYSDATE(), A.UPDATED_BY = #empid#
+                 WHERE A.EMPID = #empid#
+                   AND A.LOGIN_DATE = (SELECT P.LOGIN_DATE
+                                         FROM (SELECT O.LOGIN_DATE,
+                                                      ROW_NUMBER() OVER(PARTITION BY O.EMPID ORDER BY O.CREATE_DATE DESC) ROW_NUMBER
+                                                 FROM SY_LOGIN_INFO O
+                                                WHERE O.EMPID = #empid#) P
+                                        WHERE P.ROW_NUMBER = 1)
+        ]]>
+    </update> 
+     -->
+</sqlMap>

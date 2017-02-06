@@ -1,0 +1,461 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap
+    PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+    "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="process.objectType">
+    <resultMap id="typeMap" class="type">
+        <result property="no" column="OBJECT_TYPE_NO" />
+        <result property="id" column="OBJECT_TYPE_ID" />
+        <result property="name" column="OBJECT_TYPE_NAME" />
+        <result property="description" column="DESCRIPTION" />
+        <result property="active" column="ACTIVITY" />
+        <result property="defaultState.no" column="DEFAULT_STATUS_NO" />
+        <result property="parentType.no" column="PARENT_TYPE_NO" />
+    </resultMap>
+
+    <sql id="ObjectTypeSearchCondition">
+        <isNotEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+                (
+                    POTI.OBJECT_TYPE_NAME           LIKE '%'||TRIM(#keyWord#)||'%'
+                    OR POTI.DESCRIPTION             LIKE '%'||TRIM(#keyWord#)||'%'
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="ACTIVITY">
+            <![CDATA[
+                POTI.ACTIVITY = #ACTIVITY#
+            ]]>
+        </isNotEmpty>
+    </sql>
+
+    <select id="getObjectTypeList" parameterClass="linkMap" resultMap="typeMap">
+        <![CDATA[
+            SELECT  POTI.OBJECT_TYPE_NO           OBJECT_TYPE_NO,
+                    POTI.OBJECT_TYPE_ID           OBJECT_TYPE_ID,
+                    POTI.OBJECT_TYPE_NAME         OBJECT_TYPE_NAME,
+                    POTI.DESCRIPTION              DESCRIPTION,
+                    POTI.DEFAULT_STATUS_NO        DEFAULT_STATUS_NO,
+                    POTI.PARENT_TYPE_NO           PARENT_TYPE_NO,
+                    POTI.ACTIVITY                 ACTIVITY
+            FROM    PROCESS_OBJECT_TYPE_INFO            POTI,
+                    HR_EMPLOYEE         HE1,
+                    HR_EMPLOYEE         HE2
+            WHERE   POTI.CREATED_BY    = HE1.EMPID(+)
+            AND     POTI.UPDATED_BY    = HE2.EMPID(+)
+            AND     (POTI.CPNY_ID       = #metaData.company.companyId# OR POTI.CPNY_ID IS NULL)
+        ]]>
+        <include refid="ObjectTypeSearchCondition" />
+    </select>
+
+    <select id="getObjectTypeListCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(0)
+            FROM    PROCESS_OBJECT_TYPE_INFO            POTI,
+                    HR_EMPLOYEE         HE1,
+                    HR_EMPLOYEE         HE2
+            WHERE   POTI.CREATED_BY    = HE1.EMPID(+)
+            AND     POTI.UPDATED_BY    = HE2.EMPID(+)
+            AND     (POTI.CPNY_ID = #mataData.company.companyId# OR POTI.CPNY_ID IS NULL)
+        ]]>
+        <include refid="ObjectTypeSearchCondition" />
+    </select>
+
+    <select id="getObjectTypeDetail" parameterClass="type" resultMap="typeMap">
+        <![CDATA[
+            SELECT  POTI.OBJECT_TYPE_NO         OBJECT_TYPE_NO,
+                    POTI.OBJECT_TYPE_ID         OBJECT_TYPE_ID,
+                    POTI.OBJECT_TYPE_NAME       OBJECT_TYPE_NAME,
+                    POTI.DEFAULT_STATUS_NO      DEFAULT_STATUS_NO,
+                    POTI.PARENT_TYPE_NO         PARENT_TYPE_NO,
+                    POTI.DESCRIPTION            DESCRIPTION,
+                    POTI.ACTIVITY               ACTIVITY
+            FROM    PROCESS_OBJECT_TYPE_INFO    POTI,
+                    HR_EMPLOYEE         HE1,
+                    HR_EMPLOYEE         HE2
+            WHERE   POTI.CREATED_BY    = HE1.EMPID(+)
+            AND     POTI.UPDATED_BY    = HE2.EMPID(+)
+            AND     POTI.OBJECT_TYPE_NO = #no#
+        ]]>
+    </select>
+
+    <resultMap id="grantMap" class="grant">
+        <result property="role.no" column="SCREEN_GRANT_NO" />
+        <result property="role.id" column="SCREEN_GRANT_ID" />
+        <result property="role.name" column="SCREEN_GRANT_NAME" />
+        <result property="role.description" column="DESCRIPTION" />
+        <result property="createable" column="CREATER" />
+        <result property="readable" column="SELECTR" />
+        <result property="writeable" column="UPDATER" />
+        <result property="deleteable" column="DELETER" />
+    </resultMap>
+
+    <sql id="ObjectTypeGrantSearchCondition">
+        <isNotNull prepend="AND" property="role">
+            <![CDATA[
+                 B.SCREEN_GRANT_ID(+) = #role.no#
+            ]]>
+        </isNotNull>
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                  ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                  ORDER BY SCREEN_GRANT_NO
+            ]]>
+        </isEmpty>
+    </sql>
+
+    <select id="getObjectTypeGrantList" parameterClass="type" resultMap="grantMap">
+        <![CDATA[
+            SELECT A.SCREEN_GRANT_NO,
+                   A.SCREEN_GRANT_ID,
+                   A.SCREEN_GRANT_NAME,
+                   A.DESCRIPTION,
+                   1 AS ACTIVITY,
+                   NVL(B.SELECTR, 0) AS SELECTR,
+                   NVL(B.CREATER, 0) AS CREATER,
+                   NVL(B.UPDATER, 0) AS UPDATER,
+                   NVL(B.DELETER, 0) AS DELETER
+            FROM ( SELECT T.SCREEN_GRANT_NO,
+                       T.SCREEN_GRANT_ID,
+                       T.SCREEN_GRANT_NAME SCREEN_GRANT_NAME,
+                       T.DESCRIPTION DESCRIPTION
+                    FROM SY_LOGIN_SCREEN T
+                    WHERE T.ACTIVITY = 1
+                    AND T.CPNY_ID = #metaData.company.companyId#
+                    ORDER BY T.ORDERNO )      A,
+                    PROCESS_OBJECT_TYPE_GRANT B
+            WHERE A.SCREEN_GRANT_NO = B.GRANT_NO(+)
+            AND   B.OBJECT_TYPE_NO(+) = #no#
+            AND   B.CPNY_ID (+)= #metaData.company.companyId#
+        ]]>
+    </select>
+
+    <select id="getObjectTypeGrantListCnt" parameterClass="type" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(*)
+            FROM ( SELECT T.SCREEN_GRANT_NO,
+                       T.SCREEN_GRANT_ID,
+                       T.SCREEN_GRANT_NAME SCREEN_GRANT_NAME,
+                       T.DESCRIPTION DESCRIPTION,
+                       ROWNUM RN
+                    FROM SY_LOGIN_SCREEN T
+                    WHERE T.ACTIVITY = 1
+                    AND T.CPNY_ID = #metaData.company.companyId#
+                    ORDER BY T.ORDERNO )      A,
+                    PROCESS_OBJECT_TYPE_GRANT B
+            WHERE A.SCREEN_GRANT_NO = B.GRANT_NO(+)
+            AND   B.OBJECT_TYPE_NO(+) = #no#
+            AND   B.CPNY_ID (+)= #metaData.company.companyId#
+        ]]>
+    </select>
+
+    <!-- ObjectType and Grant's CURD -->
+    <insert id="addObjectType" parameterClass="type">
+        <selectKey keyProperty="no" resultClass="long"> SELECT PROCESS_OBJECT_TYPE_SEQ.NEXTVAL AS no FROM DUAL
+        </selectKey>
+        <![CDATA[
+            INSERT INTO PROCESS_OBJECT_TYPE_INFO (
+                OBJECT_TYPE_NO,
+                OBJECT_TYPE_ID,
+                OBJECT_TYPE_NAME,
+                PARENT_TYPE_NO,
+                DESCRIPTION,
+                CREATE_DATE,
+                CREATED_BY,
+                ACTIVITY,
+                CPNY_ID )
+            VALUES(
+                #no#,
+                #no#||'',
+                #name# ,
+                #parentType.no#,
+                #description# ,
+                #metaData.createDate#,
+                #metaData.createUser.adminID# ,
+                #active#,
+                #metaData.company.companyId# )
+        ]]>
+    </insert>
+
+    <update id="updateObjectType" parameterClass="type">
+        <![CDATA[
+            UPDATE PROCESS_OBJECT_TYPE_INFO SET
+                OBJECT_TYPE_NAME = #name#,
+                DESCRIPTION = #description#,
+                UPDATE_DATE = #metaData.lastUpdateDate#,
+                UPDATED_BY = #metaData.lastUpdateUser.adminID#,
+                DEFAULT_STATUS_NO = #defaultState.no#,
+                ACTIVITY = #active#
+            WHERE OBJECT_TYPE_NO = #no#
+        ]]>
+    </update>
+
+    <insert id="addObjectTypeGrant" parameterClass="grant">
+        <![CDATA[
+            DECLARE
+            BEGIN
+                DELETE FROM PROCESS_OBJECT_TYPE_GRANT WHERE OBJECT_TYPE_NO=#type.no# AND GRANT_NO=#role.no#;
+                INSERT INTO PROCESS_OBJECT_TYPE_GRANT (
+                    OBJECT_TYPE_NO,
+                    GRANT_NO,
+                    SELECTR,
+                    CREATER,
+                    UPDATER,
+                    DELETER,
+                    CPNY_ID
+                )
+                VALUES (
+                    #type.no#,
+                    #role.no#,
+                    #readable#,
+                    #createable#,
+                    #writeable#,
+                    #deleteable#,
+                    #type.metaData.company.companyId#
+                );
+            END;
+        ]]>
+    </insert>
+
+    <select id="getObjectGrantByRoles" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT T.SELECTR,
+                   T.CREATER,
+                   T.UPDATER,
+                   T.DELETER
+            FROM PROCESS_OBJECT_TYPE_GRANT T
+            WHERE T.ACTIVITY=1
+            AND T.OBJECT_TYPE_ID=#OBJECT_TYPE_ID#
+            AND T.GRANT_NO = #no#
+            AND T.CPNY_ID = #CPNY_ID#
+        ]]>
+    </select>
+
+    <resultMap id="processItemMap" class="processItem">
+        <result property="no" column="PROCESS_ITEM_NO" />
+        <result property="active" column="ACTIVITY" />
+        <result property="stateType" column="STATUS_TYPE_CODE" />
+        <result property="type.no" column="OBJECT_TYPE_NO" />
+        <result property="state.no" column="STATUS_NO" />
+        <result property="state.name" column="STATUS_NAME" />
+        <result property="nextState.no" column="SUC_STATUS_NO" />
+        <result property="nextState.name" column="SUC_STATUS_NAME" />
+        <result property="preState1.no" column="PRE_STATUS_NO1" />
+        <result property="preState1.name" column="PRE_STATUS_NAME1" />
+        <result property="preState2.no" column="PRE_STATUS_NO2" />
+        <result property="preState2.name" column="PRE_STATUS_NAME2" />
+        <result property="preState3.no" column="PRE_STATUS_NO3" />
+        <result property="preState3.name" column="PRE_STATUS_NAME3" />
+        <result property="processModel.id" column="MODEL_ID" />
+        <result property="processModel.processKey" column="PROCESS_ID" />
+    </resultMap>
+
+    <select id="getProcessItemList" parameterClass="type" resultMap="processItemMap">
+        <![CDATA[
+            SELECT  PII.PROCESS_ITEM_NO          PROCESS_ITEM_NO,
+                    PII.STATUS_TYPE_CODE          STATUS_TYPE_CODE,
+                    PII.OBJECT_TYPE_NO           OBJECT_TYPE_NO,
+                    PII.STATUS_NO                STATUS_NO,
+                    A.STATUS_NAME                STATUS_NAME,
+                    PII.PRE_STATUS_NO1           PRE_STATUS_NO1,
+                    B.STATUS_NAME                PRE_STATUS_NAME1,
+                    PII.PRE_STATUS_NO2           PRE_STATUS_NO2,
+                    C.STATUS_NAME                PRE_STATUS_NAME2,
+                    PII.PRE_STATUS_NO3           PRE_STATUS_NO3,
+                    D.STATUS_NAME                PRE_STATUS_NAME3,
+                    PII.SUC_STATUS_NO            SUC_STATUS_NO,
+                    E.STATUS_NAME                SUC_STATUS_NAME,
+                    PII.MODEL_ID                 MODEL_ID,
+                    PII.PROCESS_ID               PROCESS_ID,
+                    PII.ACTIVITY                 ACTIVITY
+            FROM    PROCESS_ITEM_INFO            PII,
+                    PROCESS_STATUS_INFO          A,
+                    PROCESS_STATUS_INFO          B,
+                    PROCESS_STATUS_INFO          C,
+                    PROCESS_STATUS_INFO          D,
+                    PROCESS_STATUS_INFO          E
+            WHERE   PII.STATUS_NO          = A.STATUS_NO(+)
+            AND     PII.PRE_STATUS_NO1     = B.STATUS_NO(+)
+            AND     PII.PRE_STATUS_NO2     = C.STATUS_NO(+)
+            AND     PII.PRE_STATUS_NO3     = D.STATUS_NO(+)
+            AND     PII.SUC_STATUS_NO      = E.STATUS_NO(+)
+            AND     PII.OBJECT_TYPE_NO     = #no#
+            AND     PII.CPNY_ID            = #metaData.company.companyId#
+            ORDER BY PII.PROCESS_ITEM_NO
+        ]]>
+    </select>
+
+    <select id="getProcessItemListCnt" parameterClass="type" resultClass="int">
+        <![CDATA[
+            SELECT  COUNT(0)
+            FROM    PROCESS_ITEM_INFO            PII,
+                    PROCESS_STATUS_INFO          A,
+                    PROCESS_STATUS_INFO          B,
+                    PROCESS_STATUS_INFO          C,
+                    PROCESS_STATUS_INFO          D,
+                    PROCESS_STATUS_INFO          E
+            WHERE   PII.STATUS_NO          = A.STATUS_NO(+)
+            AND     PII.PRE_STATUS_NO1     = B.STATUS_NO(+)
+            AND     PII.PRE_STATUS_NO2     = C.STATUS_NO(+)
+            AND     PII.PRE_STATUS_NO3     = D.STATUS_NO(+)
+            AND     PII.SUC_STATUS_NO      = E.STATUS_NO(+)
+            AND     PII.OBJECT_TYPE_NO     = #no#
+            AND     PII.CPNY_ID            = #metaData.company.companyId#
+        ]]>
+    </select>
+
+    <insert id="addProcessItem" parameterClass="processItem" >
+        <selectKey keyProperty="no" resultClass="long"> SELECT PROCESS_ITEM_SEQ.NEXTVAL AS no FROM DUAL
+        </selectKey>
+        <![CDATA[
+            INSERT INTO PROCESS_ITEM_INFO (
+                PROCESS_ITEM_NO,
+                OBJECT_TYPE_NO,
+                STATUS_NO,
+                STATUS_TYPE_CODE,
+                SUC_STATUS_NO,
+                PRE_STATUS_NO1,
+                PRE_STATUS_NO2,
+                PRE_STATUS_NO3,
+                MODEL_ID,
+                PROCESS_ID,
+                CREATE_DATE,
+                CREATED_BY,
+                ACTIVITY,
+                CPNY_ID)
+            VALUES(
+                #no#,
+                #type.no#,
+                #state.no#,
+                #stateType#,
+                #nextState.no#,
+                #preState1.no#,
+                #preState2.no#,
+                #preState3.no#,
+                #processModel.id#,
+                #processModel.processKey#,
+                #metaData.createDate#,
+                #metaData.createUser.adminID#,
+                #active#,
+                #metaData.company.companyId#
+            )
+        ]]>
+    </insert>
+
+    <update id="updateProcessItem" parameterClass="processItem">
+        <![CDATA[
+            UPDATE  PROCESS_ITEM_INFO SET
+                STATUS_NO = #state.no#,
+                STATUS_TYPE_CODE = #stateType#,
+                SUC_STATUS_NO = #nextState.no#,
+                PRE_STATUS_NO1 = #preState1.no#,
+                PRE_STATUS_NO2 = #preState2.no#,
+                PRE_STATUS_NO3 = #preState3.no#,
+                MODEL_ID = #processModel.id#,
+                PROCESS_ID = #processModel.processKey#,
+                ACTIVITY = #active#,
+                UPDATE_DATE = #metaData.lastUpdateDate#,
+                UPDATED_BY = #metaData.lastUpdateUser.adminID#
+            WHERE PROCESS_ITEM_NO = #no#
+            AND CPNY_ID = #metaData.company.companyId#
+        ]]>
+    </update>
+
+    <update id="removeProcessItem" parameterClass="processItem">
+        <![CDATA[
+            DELETE FROM PROCESS_ITEM_INFO T
+            WHERE T.PROCESS_ITEM_NO = #no#
+            AND   T.CPNY_ID = #metaData.company.companyId#
+        ]]>
+    </update>
+
+    <select id="getProcessItemDetail" parameterClass="processItem" resultMap="processItemMap" >
+        <![CDATA[
+            SELECT  PII.PROCESS_ITEM_NO          PROCESS_ITEM_NO,
+                    PII.STATUS_TYPE_CODE          STATUS_TYPE_CODE,
+                    PII.OBJECT_TYPE_NO           OBJECT_TYPE_NO,
+                    PII.STATUS_NO                STATUS_NO,
+                    A.STATUS_NAME                STATUS_NAME,
+                    PII.PRE_STATUS_NO1           PRE_STATUS_NO1,
+                    B.STATUS_NAME                PRE_STATUS_NAME1,
+                    PII.PRE_STATUS_NO2           PRE_STATUS_NO2,
+                    C.STATUS_NAME                PRE_STATUS_NAME2,
+                    PII.PRE_STATUS_NO3           PRE_STATUS_NO3,
+                    D.STATUS_NAME                PRE_STATUS_NAME3,
+                    PII.SUC_STATUS_NO            SUC_STATUS_NO,
+                    E.STATUS_NAME                SUC_STATUS_NAME,
+                    PII.MODEL_ID                 MODEL_ID,
+                    PII.PROCESS_ID               PROCESS_ID,
+                    PII.ACTIVITY                 ACTIVITY
+            FROM    PROCESS_ITEM_INFO            PII,
+                    PROCESS_STATUS_INFO          A,
+                    PROCESS_STATUS_INFO          B,
+                    PROCESS_STATUS_INFO          C,
+                    PROCESS_STATUS_INFO          D,
+                    PROCESS_STATUS_INFO          E
+            WHERE   PII.STATUS_NO          = A.STATUS_NO(+)
+            AND     PII.PRE_STATUS_NO1     = B.STATUS_NO(+)
+            AND     PII.PRE_STATUS_NO2     = C.STATUS_NO(+)
+            AND     PII.PRE_STATUS_NO3     = D.STATUS_NO(+)
+            AND     PII.SUC_STATUS_NO      = E.STATUS_NO(+)
+            AND     PII.PROCESS_ITEM_NO     = #no#
+            AND     PII.CPNY_ID            = #metaData.company.companyId#
+        ]]>
+    </select>
+    
+    <select id="getProcessItemDetailById" parameterClass="processItem" resultMap="processItemMap" >
+        <![CDATA[
+            SELECT  PII.PROCESS_ITEM_NO          PROCESS_ITEM_NO,
+                    PII.STATUS_TYPE_CODE          STATUS_TYPE_CODE,
+                    PII.OBJECT_TYPE_NO           OBJECT_TYPE_NO,
+                    PII.STATUS_NO                STATUS_NO,
+                    A.STATUS_NAME                STATUS_NAME,
+                    PII.PRE_STATUS_NO1           PRE_STATUS_NO1,
+                    B.STATUS_NAME                PRE_STATUS_NAME1,
+                    PII.PRE_STATUS_NO2           PRE_STATUS_NO2,
+                    C.STATUS_NAME                PRE_STATUS_NAME2,
+                    PII.PRE_STATUS_NO3           PRE_STATUS_NO3,
+                    D.STATUS_NAME                PRE_STATUS_NAME3,
+                    PII.SUC_STATUS_NO            SUC_STATUS_NO,
+                    E.STATUS_NAME                SUC_STATUS_NAME,
+                    PII.MODEL_ID                 MODEL_ID,
+                    PII.PROCESS_ID               PROCESS_ID,
+                    PII.ACTIVITY                 ACTIVITY
+            FROM    PROCESS_ITEM_INFO            PII,
+                    PROCESS_STATUS_INFO          A,
+                    PROCESS_STATUS_INFO          B,
+                    PROCESS_STATUS_INFO          C,
+                    PROCESS_STATUS_INFO          D,
+                    PROCESS_STATUS_INFO          E
+            WHERE   PII.STATUS_NO          = A.STATUS_NO(+)
+            AND     PII.PRE_STATUS_NO1     = B.STATUS_NO(+)
+            AND     PII.PRE_STATUS_NO2     = C.STATUS_NO(+)
+            AND     PII.PRE_STATUS_NO3     = D.STATUS_NO(+)
+            AND     PII.SUC_STATUS_NO      = E.STATUS_NO(+)
+            AND     PII.STATUS_NO          = #state.no#
+            AND     PII.OBJECT_TYPE_NO     = #type.no#
+            AND     PII.CPNY_ID            = #metaData.company.companyId#
+        ]]>
+    </select>
+
+    <select id="isObjectEditable" parameterClass="linkMap" resultClass="int">
+        <isEmpty prepend="" property="OBJECT_STATUS_NO">
+            <![CDATA[
+                SELECT 1 AS EDITABLE FROM DUAL
+            ]]>
+        </isEmpty>
+        <isNotEmpty prepend="" property="OBJECT_STATUS_NO">
+            <![CDATA[
+                SELECT DECODE(PII.STATUS_TYPE_CODE,'StatusType001',1,0) EDITABLE
+                FROM    PROCESS_ITEM_INFO           PII
+                WHERE   PII.OBJECT_TYPE_ID   = #OBJECT_TYPE_ID#
+                AND     PII.STATUS_NO  = #OBJECT_STATUS_NO#
+                AND     PII.CPNY_ID       = #CPNY_ID#
+            ]]>
+        </isNotEmpty>
+    </select>
+</sqlMap>

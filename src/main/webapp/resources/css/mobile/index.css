@@ -1,0 +1,139 @@
+@CHARSET "UTF-8";
+<!--登陆页面-->
+
+* {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: #EEEEEE !important;
+}
+body {
+    background: none repeat scroll 0 0 #FFFFFF;
+    color: #000000;
+    font-family: arial;
+}
+#tbh5v0 .innercontent .login-form fieldset {
+    border: medium none;
+}
+
+fieldset {
+    border: medium none;
+      margin: 0;
+      padding: 0;
+}
+#tbh5v0 .innercontent {
+    margin: 17px 20px 15px;
+}
+
+#tbh5v0 .innercontent .login-form .username input, #tbh5v0 .innercontent .login-form .pwd input {
+    padding-left: 26px;
+    text-indent: 0;
+    width: 100%;
+}
+#tbh5v0 .c-form-search input[type="text"], #tbh5v0 .c-form-search input[type="email"], #tbh5v0 .c-form-search input[type="search"], #tbh5v0 .c-form-search input[type="number"], #tbh5v0 .c-form-search input[type="tel"], #tbh5v0 .c-form-search input[type="url"] {
+    -moz-border-bottom-colors: none;
+    -moz-border-left-colors: none;
+    -moz-border-right-colors: none;
+    -moz-border-top-colors: none;
+    border-color: #BBBBBB #DDDDDD #DDDDDD;
+    border-image: none;
+    border-right: 1px solid #DDDDDD;
+    border-style: solid;
+    border-width: 1px;
+    color: #333333;
+    font-size: 16px;
+    height: 33px;
+    padding-left: 9px;
+    width: 289px;
+}
+#tbh5v0 .c-form-search input[type="text"], #tbh5v0 .c-form-search input[type="email"], #tbh5v0 .c-form-search input[type="search"], #tbh5v0 .c-form-search input[type="number"], #tbh5v0 .c-form-search input[type="tel"], #tbh5v0 .c-form-search input[type="url"] {
+    -moz-border-bottom-colors: none;
+    -moz-border-left-colors: none;
+    -moz-border-right-colors: none;
+    -moz-border-top-colors: none;
+    border-color: #BBBBBB #DDDDDD #DDDDDD;
+    border-image: none;
+    border-right: 1px solid #DDDDDD;
+    border-style: solid;
+    border-width: 1px;
+    color: #333333;
+    font-size: 16px;
+    height: 33px;
+    padding-left: 9px;
+    width: 289px;
+}
+input, select, textarea {
+    border: 0 none;
+    border-radius: 0 0 0 0;
+}
+input, img {
+    vertical-align: middle;
+}
+body, h1, h2, h3, h4, h5, h6, hr, p, blockquote, dl, dt, dd, ul, ol, li, pre, form, fieldset, legend, button, input, textarea, th, td {
+    margin: 0;
+    padding: 0;
+}
+#tbh5v0 .c-btn-oran-big {
+    background: none repeat scroll 0 0 #FF4400;
+    border: medium none;
+    border-radius: 2px 2px 2px 2px;
+    color: #FFFFFF;
+    display: inline-block;
+    font-size: 24px;
+    font-weight: 700;
+    height: 44px;
+    line-height: 44px;
+    min-width: 100%;
+    padding: 0;
+    text-align: center;
+    text-decoration: none;
+    text-shadow: 0 -1px 0 #441307;
+}
+.ui-footer {
+	position: relative;
+    overflow: hidden;
+    border-left-width: 0px;
+    border-right-width: 0px;
+    background: none repeat scroll 0% 0% rgb(226, 226, 226);
+    padding-top:10px;
+}
+
+.ui-footer p {
+    background: none repeat scroll 0% 0% rgb(226, 226, 226);
+    font-size: 11px;
+    color: rgb(101, 101, 101);
+    text-shadow: 0px 1px 0px rgb(255, 255, 255);
+    padding: 10px 0px;
+    border-top: 1px solid rgb(242, 242, 242);
+    margin: 0px;
+    overflow: hidden;
+}
+.ui-footer .ui-btn {
+    background: none repeat scroll 0% 0% rgb(119, 119, 119);
+    width: 160px;
+    color: rgb(255, 255, 255);
+    text-shadow: 0px -1px 1px rgb(0, 0, 0);
+    margin: 10px auto 0px;
+    border-right: 1px solid rgb(235, 235, 235);
+    border-width: 0px 1px 1px;
+    border-style: none solid solid;
+    border-color: -moz-use-text-color rgb(235, 235, 235) rgb(235, 235, 235);
+    -moz-border-top-colors: none;
+    -moz-border-right-colors: none;
+    -moz-border-bottom-colors: none;
+    -moz-border-left-colors: none;
+    border-image: none;
+    box-shadow: none;
+    display: block;
+}
+.ui-bar-f {
+    background: linear-gradient(rgb(60, 60, 60), rgb(17, 17, 17)) repeat scroll 0% 0% rgb(17, 17, 17);
+    color: rgb(255, 255, 255);
+    font-weight: bold;
+    text-shadow: 0px -1px 1px rgb(0, 0, 0);
+    font-family: Helvetica,Arial,sans-serif;
+    text-align:center;
+}
+

@@ -1,0 +1,625 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="pa.basicItem">
+	
+	<sql id="getPaBasicItemInfoCondition" >
+		<isNotEmpty prepend="AND" property="ITEM_ID">
+			<![CDATA[
+				PBI.ITEM_ID = #ITEM_ID# 
+			]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="ITEM_NO">
+			<![CDATA[
+				PBI.ITEM_NO = #ITEM_NO# 
+			]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+				PBI.CPNY_ID = #CPNY_ID# 
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+				(	
+					PBI.ITEM_ID				LIKE '%'||TRIM(#keyWord#)||'%'
+					OR PBI.ITEM_NO			LIKE '%'||TRIM(#keyWord#)||'%'
+					OR PBI.ITEM_NAME		LIKE '%'||TRIM(#keyWord#)||'%' 
+					OR PBI.DESCRIPTION		LIKE '%'||TRIM(#keyWord#)||'%' 
+					OR upper(PBI.ITEM_EN_NAME) LIKE '%'||TRIM(upper(#keyWord#))||'%'
+				)
+			]]>
+		</isNotEmpty>
+	</sql>
+	
+	<select id="getPaBasicItemInfo" parameterClass="linkMap" 
+		resultClass="linkMap" remapResults="true">
+		<![CDATA[
+		SELECT PBI.ITEM_NO, 
+			PBI.ITEM_ID ,
+			DECODE(#language#, 'en', PBI.ITEM_EN_NAME, PBI.ITEM_NAME) ITEM_NAME,
+			PBI.ITEM_EN_NAME,				 
+			PBI.DATATYPE DATA_TYPE_CODE,
+			DECODE(#language#, 'en', A.CODE_EN_NAME, A.CODE_NAME) DATA_TYPE_NAME,
+			PBI.DISTINCT_FIELD_1ST MC_1ST_CODE,
+			DECODE(#language#, 'en', MC_1ST.FIELD_EN_NAME, MC_1ST.FIELD_NAME) MC_1ST_NAME,  
+			PBI.DISTINCT_FIELD_2ND MC_2ND_CODE,
+			DECODE(#language#, 'en', MC_2ND.FIELD_EN_NAME, MC_2ND.FIELD_NAME) MC_2ND_NAME,  
+			PBI.DEFAULT_VAL, 
+			TO_CHAR(PBI.CREATE_DATE, 'YYYY-MM-DD') CREATE_DATE,
+			PBI.CREATED_BY,
+			TO_CHAR(PBI.UPDATE_DATE, 'YYYY-MM-DD') UPDATE_DATE,
+			PBI.UPDATED_BY,
+			PBI.DESCRIPTION,
+			PBI.CPNY_ID,
+			PBI.FLAG,
+			PBI.ORDERNO,
+			PBI.ACTIVITY
+		FROM PA_BASIC_ITEM	PBI,
+			PA_DISTINCT_LIST	MC_1ST,
+			PA_DISTINCT_LIST	MC_2ND,
+			SY_CODE			A
+		WHERE PBI.DISTINCT_FIELD_1ST = MC_1ST.DISTINCT_FIELD(+)
+			AND PBI.DISTINCT_FIELD_2ND = MC_2ND.DISTINCT_FIELD(+)
+			AND PBI.DATATYPE = A.CODE_ID(+) 
+			AND PBI.ACTIVITY = 1 
+		]]>
+		 
+		<include refid="getPaBasicItemInfoCondition"/>
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+				  ORDER BY $sortname$ $sortorder$
+			]]>
+		</isNotEmpty>
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY PBI.ORDERNO
+			]]>
+		</isEmpty>
+	</select>
+	
+	<select id="getPaBasicItemInfoCnt" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+		SELECT COUNT(*)
+		  FROM PA_BASIC_ITEM	PBI,
+			PA_DISTINCT_LIST	MC_1ST,
+			PA_DISTINCT_LIST	MC_2ND,
+			SY_CODE			A
+		 WHERE PBI.DISTINCT_FIELD_1ST = MC_1ST.DISTINCT_FIELD(+)
+		AND PBI.DISTINCT_FIELD_2ND = MC_2ND.DISTINCT_FIELD(+)
+		AND PBI.DATATYPE = A.CODE_ID(+) 
+		AND PBI.ACTIVITY = 1 
+		]]>
+		<include refid="getPaBasicItemInfoCondition"/>
+	</select>
+	  
+	<insert id="addPaBasicItemInfo" parameterClass="linkMap">
+		<![CDATA[
+			INSERT INTO PA_BASIC_ITEM
+				(
+					ITEM_NO,
+					ITEM_ID,
+					ITEM_NAME,
+					ITEM_EN_NAME, 
+					DISTINCT_FIELD_1ST,
+					DISTINCT_FIELD_2ND,
+					DATATYPE,
+					DESCRIPTION, 
+					DEFAULT_VAL,
+					CREATE_DATE,
+					CREATED_BY,
+					ACTIVITY,
+					CPNY_ID
+				)
+			VALUES(
+					PA_BASIC_ITEM_SEQ.NEXTVAL,
+					'B_ITEM_' || PA_BASIC_ITEM_SEQ.CURRVAL,
+					#ITEM_NAME:VARCHAR#,
+					#ITEM_EN_NAME:VARCHAR#, 
+					#MC_1ST_CODE:VARCHAR#,
+					#MC_2ND_CODE:VARCHAR#,
+					#DATA_TYPE_CODE:VARCHAR#,
+					#DESCRIPTION:VARCHAR#,
+					#DEFAULT_VAL:VARCHAR#,
+					SYSDATE,
+					#CREATED_BY:VARCHAR#,
+					1,
+					#CPNY_ID#
+				)
+		]]>
+	</insert>
+	
+	<update id="updatePaBasicItemInfo" parameterClass="linkMap">
+		<![CDATA[
+			UPDATE PA_BASIC_ITEM SET
+				ITEM_NAME = #ITEM_NAME:VARCHAR#,
+				ITEM_EN_NAME = #ITEM_EN_NAME:VARCHAR#, 
+				DESCRIPTION = #DESCRIPTION:VARCHAR#,
+				DATATYPE = #DATA_TYPE_CODE:VARCHAR#,
+				DISTINCT_FIELD_1ST = #MC_1ST_CODE:VARCHAR#,
+				DISTINCT_FIELD_2ND = #MC_2ND_CODE:VARCHAR#, 
+				DEFAULT_VAL = #DEFAULT_VAL:VARCHAR#,
+				UPDATE_DATE = SYSDATE,
+				UPDATED_BY = #UPDATED_BY:VARCHAR# 
+			WHERE ITEM_NO = #ITEM_NO:VARCHAR#
+		]]>
+	</update>
+	
+	<select id="checkDeletePaBasicItemInfo" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+			SELECT (SELECT COUNT(*) FROM PA_BASIC_DATA WHERE ITEM_NO = #ITEM_NO:NUMERIC#) +
+				(SELECT COUNT(*)
+					FROM USER_TAB_COLS
+					WHERE TABLE_NAME = 'PA_HISTORY'
+						AND COLUMN_NAME = #ITEM_ID:VARCHAR#
+				) AS A
+			 FROM DUAL
+		]]>
+	</select>
+	
+	<delete id="deletePaBasicItemInfo" parameterClass="linkMap">
+		<![CDATA[
+			UPDATE PA_BASIC_ITEM SET ACTIVITY=0 WHERE ITEM_NO = #ITEM_NO:VARCHAR#
+		]]>
+	</delete>
+	
+	<delete id="deletePaBasicItemDataInfo" parameterClass="linkMap">
+		<![CDATA[
+			DELETE PA_BASIC_DATA PBD WHERE 1 = 1 
+		]]>	 
+		<isNotEmpty prepend="AND" property="ITEM_NO">
+			<![CDATA[
+				 PBD.ITEM_NO = #ITEM_NO#
+			]]>
+		</isNotEmpty>
+		<isEmpty prepend="AND" property="ITEM_NO">
+			<![CDATA[
+				 1 = 2
+			]]>
+		</isEmpty>
+		<isNotEmpty prepend="AND" property="BASIC_DATA_NO">
+			<![CDATA[
+				 PBD.BASIC_DATA_NO = #BASIC_DATA_NO#
+			]]>
+		</isNotEmpty>
+	</delete>
+	 
+	<sql id="empID_getPaBasicItemDataInfoCondition" >
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+				(	
+					HRE.CHINESENAME				LIKE '%'||TRIM(#keyWord#)||'%' 
+					OR HRD.DEPTNAME				LIKE '%'||TRIM(#keyWord#)||'%' 
+					OR PBD.RETURN_VALUE			LIKE '%'||TRIM(#keyWord#)||'%' 
+					OR PBD.FIELD1_VALUE			LIKE '%'||TRIM(#keyWord#)||'%' 
+					OR upper(HRD.DEPT_EN_NAME)	LIKE '%'||TRIM(upper(#keyWord#))||'%'
+					OR upper(HRE.ENGLISHNAME)	LIKE '%'||TRIM(upper(#keyWord#))||'%'
+				)
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="DEPTID">
+			<![CDATA[
+				EXISTS (
+					SELECT	*
+					FROM HR_DEPARTMENT B1
+					WHERE B1.DEPTID=HRE.DEPTID
+					START WITH B1.DEPTID = #DEPTID#
+					CONNECT BY PRIOR B1.DEPTID = B1.PARENT_DEPT_ID
+				)
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="HR_ADMIN_ID">
+			<![CDATA[
+				HRE.EMPID IN(
+					SELECT HRE.EMPID AR_SUPERVISOR_ID
+					FROM AR_SUPERVISOR_INFO
+					WHERE AR_SUPERVISOR_INFO.SUPERVISED_DEPTID = HRE.DEPTID
+						AND AR_SUPERVISOR_ID = #HR_ADMIN_ID:VARCHAR#
+					
+					UNION
+					
+					SELECT #HR_ADMIN_ID:VARCHAR# AR_SUPERVISOR_ID
+					FROM DUAL 
+				)
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="BASIC_DATA_NO">
+			<![CDATA[
+				PBD.BASIC_DATA_NO = #BASIC_DATA_NO# 
+			]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="ITEM_NO">
+			<![CDATA[
+				PBD.ITEM_NO = #ITEM_NO# 
+			]]>
+		</isNotEmpty> 
+		<isNotEmpty prepend="AND" property="ACTIVITY">
+			<![CDATA[
+				PBD.ACTIVITY = #ACTIVITY# 
+			]]>
+		</isNotEmpty>
+	</sql>
+	<sql id="other_getPaBasicItemDataInfoCondition" >
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+				(
+					PBD.REMARK		LIKE '%'||TRIM(#keyWord#)||'%' 
+					OR PBD.RETURN_VALUE		LIKE '%'||TRIM(#keyWord#)||'%' 
+					OR PBD.FIELD1_VALUE		LIKE '%'||TRIM(#keyWord#)||'%'	
+				)
+			]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="BASIC_DATA_NO">
+			<![CDATA[
+				PBD.BASIC_DATA_NO = #BASIC_DATA_NO# 
+			]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="ITEM_NO">
+			<![CDATA[
+				PBD.ITEM_NO = #ITEM_NO# 
+			]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="ACTIVITY">
+			<![CDATA[
+				PBD.ACTIVITY = #ACTIVITY# 
+			]]>
+		</isNotEmpty>
+	</sql>
+	
+	<select id="empID_getPaBasicItemDataInfo" parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[
+			SELECT PBD.BASIC_DATA_NO,
+				PBD.ITEM_NO,
+				PBD.FIELD1_VALUE,
+				PBD.FIELD1_EN_VALUE, 
+				PBD.FIELD2_VALUE,
+				PBD.FIELD2_EN_VALUE, 
+				PBD.RETURN_VALUE,
+				PBD.REMARK,
+				HRE.EMPID,
+				DECODE(#language#, 'en', HRE.ENGLISHNAME, HRE.CHINESENAME) CHINESENAME,
+				HRE.DEPTID,
+				DECODE(#language#, 'en', HRD.DEPT_EN_NAME, HRD.DEPTNAME) DEPTNAME,
+				HRE.STATUS_CODE,
+				DECODE(#language#, 'en', C.CODE_EN_NAME, C.CODE_NAME) STATUS_NAME,
+				PBD.REASON_CODE,
+				DECODE(#language#, 'en', D.CODE_EN_NAME, D.CODE_NAME) REASON_NAME,
+				TO_CHAR(HRE.JOIN_DATE, 'YYYY-MM-DD') JOIN_DATE,
+				TO_CHAR(HRE.LEFT_DATE, 'YYYY-MM-DD') LEFT_DATE,
+				TO_CHAR(PBD.START_DATE, 'YYYY-MM-DD') START_DATE,
+				TO_CHAR(PBD.END_DATE, 'YYYY-MM-DD') END_DATE, 
+				PBD.ACTIVITY STATUS_ID,
+				DECODE(PBD.ACTIVITY,
+					'1',
+					DECODE(#language#, 'en', 'Available', '可用'),
+					DECODE(#language#, 'en', 'Unavailable', '不可用')) STATUS
+			FROM PA_BASIC_DATA	 PBD,
+				HR_EMPLOYEE		 HRE,
+				HR_DEPARTMENT	 HRD, 
+				SY_CODE			 C,
+				SY_CODE			 D
+			WHERE PBD.ITEM_NO = #ITEM_NO#
+				AND HRE.EMPID = PBD.FIELD1_VALUE(+)
+				AND HRE.DEPTID = HRD.DEPTID(+) 
+				AND HRE.STATUS_CODE = C.CODE_ID(+)
+				AND PBD.REASON_CODE = D.CODE_ID(+)
+		]]>
+		
+		<include refid="empID_getPaBasicItemDataInfoCondition"/>
+		
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY $sortname$ $sortorder$
+			]]>
+		</isNotEmpty>
+		
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY HRD.DEPTID,HRE.EMPID
+			]]>
+		</isEmpty>
+	</select>
+	
+	 <select id="empID_getPaBasicItemDataInfoCnt" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+			SELECT COUNT(*)
+			FROM PA_BASIC_DATA	 PBD,
+				HR_EMPLOYEE			 HRE,
+				HR_DEPARTMENT		 HRD, 
+				SY_CODE				 C,
+				SY_CODE				 D
+			WHERE PBD.ITEM_NO = #ITEM_NO#
+				AND HRE.EMPID = PBD.FIELD1_VALUE(+)
+				AND HRE.DEPTID = HRD.DEPTID(+) 
+				AND HRE.STATUS_CODE = C.CODE_ID(+)
+				AND PBD.REASON_CODE = D.CODE_ID(+)
+		]]> 
+		<include refid="empID_getPaBasicItemDataInfoCondition"/>
+	</select>
+	
+	<select id="other_getPaBasicItemDataInfo" parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[
+		SELECT PBD.BASIC_DATA_NO,
+			PBD.ITEM_NO,
+			PBD.FIELD1_VALUE,
+			PBD.FIELD1_EN_VALUE, 
+			PBD.FIELD2_VALUE,
+			PBD.FIELD2_EN_VALUE, 
+			PBD.RETURN_VALUE,
+			PBD.REMARK,
+			PBD.REASON_CODE,
+			DECODE(#language#, 'en', D.CODE_EN_NAME, D.CODE_NAME) REASON_NAME,
+			TO_CHAR(PBD.START_DATE, 'YYYY-MM-DD') START_DATE,
+			TO_CHAR(PBD.END_DATE, 'YYYY-MM-DD') END_DATE, 
+			PBD.ACTIVITY STATUS_ID,
+			DECODE(PBD.ACTIVITY,
+				'1',
+				DECODE(#language#, 'en', 'Available', '可用'),
+				DECODE(#language#, 'en', 'Unavailable', '不可用')) STATUS 
+		FROM PA_BASIC_DATA  PBD,	
+			SY_CODE  D
+		WHERE PBD.ITEM_NO = #ITEM_NO#
+			AND PBD.REASON_CODE = D.CODE_ID(+)
+		]]>
+		
+		<include refid="other_getPaBasicItemDataInfoCondition"/>
+		
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+				  ORDER BY $sortname$ $sortorder$
+			]]>
+		</isNotEmpty>
+		
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY PBD.FIELD1_VALUE,PBD.RETURN_VALUE
+			]]>
+		</isEmpty>
+		
+	</select>
+	
+	<select id="other_getPaBasicItemDataInfoCnt" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+			SELECT COUNT(*)
+			FROM PA_BASIC_DATA  PBD,
+				SY_CODED
+			WHERE PBD.ITEM_NO = #ITEM_NO#
+				AND PBD.REASON_CODE = D.CODE_ID(+)
+		]]> 
+		<include refid="other_getPaBasicItemDataInfoCondition"/>
+	</select>
+	
+	<sql id="getPaBasicItemDataEmpInfoCondition" >
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+				(	
+					HRE.CHINESENAME			LIKE '%'||TRIM(#keyWord#)||'%'
+					OR HRE.EMPID			LIKE '%'||TRIM(#keyWord#)||'%'
+					OR HRD.DEPTNAME			LIKE '%'||TRIM(#keyWord#)||'%'	
+					OR upper(HRD.DEPT_EN_NAME) LIKE '%'||TRIM(upper(#keyWord#))||'%'
+					OR upper(HRE.CHINESE_PINYIN) LIKE '%'||TRIM(upper(#keyWord#))||'%'
+					OR upper(HRE.ENGLISHNAME) LIKE '%'||TRIM(upper(#keyWord#))||'%'
+				)
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="DEPTID">
+			<![CDATA[
+				EXISTS (
+					SELECT	*
+					FROM HR_DEPARTMENT B1
+					WHERE B1.DEPTID=HRE.DEPTID
+					START WITH B1.DEPTID = #DEPTID#
+					CONNECT BY PRIOR B1.DEPTID = B1.PARENT_DEPT_ID
+				)
+			]]>
+		</isNotEmpty>
+	
+		<isNotEmpty prepend="AND" property="HR_ADMIN_ID">
+			<![CDATA[
+			HRE.EMPID IN(
+					SELECT HRE.EMPID AR_SUPERVISOR_ID
+					FROM AR_SUPERVISOR_INFO
+					WHERE AR_SUPERVISOR_INFO.SUPERVISED_DEPTID = HRE.DEPTID
+						AND AR_SUPERVISOR_ID = #HR_ADMIN_ID:VARCHAR#
+					
+					UNION
+					
+					SELECT #HR_ADMIN_ID:VARCHAR# AR_SUPERVISOR_ID
+					FROM DUAL 
+				)
+			]]>
+		</isNotEmpty> 
+		
+		<isNotEmpty prepend="AND" property="STATUS_CODE">
+			<![CDATA[ 
+			HRE.STATUS_CODE = #STATUS_CODE#
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="ITEM_NO">
+			<![CDATA[ 
+			HRE.EMPID NOT IN(
+					SELECT PBD.FIELD1_VALUE 
+					FROM PA_BASIC_DATA PBD 
+					WHERE PBD.ITEM_NO = #ITEM_NO#
+						AND PBD.ACTIVITY = 1
+				)
+			]]>
+		</isNotEmpty>
+	</sql>
+	<select id="getPaBasicItemDataEmpInfo" parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[
+			SELECT	#ITEM_NO# ITEM_NO,
+				'0' RETURN_VALUE, 
+				''  REMARK,
+				HRE.EMPID FIELD1_VALUE,
+				HRE.EMPID,
+				DECODE(#language#, 'en', HRE.ENGLISHNAME, HRE.CHINESENAME) CHINESENAME,
+				HRE.DEPTID,
+				DECODE(#language#, 'en', HRD.DEPT_EN_NAME, HRD.DEPTNAME) DEPTNAME,
+				HRE.STATUS_CODE,
+				DECODE(#language#, 'en', C.CODE_EN_NAME, C.CODE_NAME) STATUS_NAME,
+				TO_CHAR(HRE.JOIN_DATE, 'YYYY-MM-DD') JOIN_DATE,
+				TO_CHAR(HRE.LEFT_DATE, 'YYYY-MM-DD') LEFT_DATE
+			FROM HR_EMPLOYEE	 HRE,
+				HR_DEPARTMENT	 HRD, 
+				SY_CODE 		 C
+			WHERE HRE.DEPTID = HRD.DEPTID(+) 
+				AND HRE.STATUS_CODE = C.CODE_ID(+) 
+		]]>
+		<include refid="getPaBasicItemDataEmpInfoCondition"/>
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+				  ORDER BY $sortname$ $sortorder$
+			]]>
+		</isNotEmpty>
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY HRD.DEPTID,HRE.EMPID
+			]]>
+		</isEmpty>
+	</select>
+	<select id="getPaBasicItemDataEmpInfoCnt" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+			SELECT COUNT(*)
+			FROM HR_EMPLOYEE	 HRE,
+				HR_DEPARTMENT	 HRD, 
+				SY_CODE 		 C
+			WHERE HRE.DEPTID = HRD.DEPTID(+) 
+				AND HRE.STATUS_CODE = C.CODE_ID(+) 
+		]]> 
+		<include refid="getPaBasicItemDataEmpInfoCondition"/>
+	</select>
+	
+	<select id="getPaBasicItemDataPostGradeInfo" parameterClass="linkMap" 
+		resultClass="linkMap">
+		<![CDATA[
+			SELECT	#ITEM_NO# ITEM_NO,
+				'0' RETURN_VALUE, 
+				''  REMARK,
+				HRPG.POST_GRADE_ID FIELD1_VALUE,
+				DECODE(#language#, 'en', HRPG.POST_GRADE_EN_NAME, HRPG.POST_GRADE_NAME) NAME 
+			FROM HR_POST_GRADE	 HRPG
+			WHERE HRPG.ACTIVITY = 1
+				AND HRPG.CPNY_ID = #CPNY_ID#
+		]]>
+		<isNotEmpty prepend="AND" property="ITEM_NO">
+			<![CDATA[
+				HRPG.POST_GRADE_ID NOT IN(
+					SELECT PBD.FIELD1_VALUE 
+					FROM PA_BASIC_DATA PBD 
+					WHERE PBD.ITEM_NO = #ITEM_NO#
+						AND PBD.ACTIVITY = 1
+				)
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY $sortname$ $sortorder$
+			]]>
+		</isNotEmpty>
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY HRPG.POST_GRADE_ID
+			]]>
+		</isEmpty>
+	</select>
+	
+	 <select id="getPaBasicItemDataPostGradeInfoCnt" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+			SELECT COUNT(*)
+			FROM HR_POST_GRADE	HRPG
+			WHERE HRPG.ACTIVITY = 1
+				AND HRPG.CPNY_ID = #CPNY_ID#
+		]]>
+		<isNotEmpty prepend="AND" property="PARAM_NO">
+			<![CDATA[ 
+			HRPG.POST_GRADE_ID NOT IN(
+					SELECT PIPD.FIELD1_VALUE 
+					FROM PA_INS_PARAM_DATA PIPD 
+					WHERE PIPD.PARAM_NO = #PARAM_NO#
+				)
+			]]>
+		</isNotEmpty>
+	</select>
+	 
+	<update id="updatePaBasicItemDataInfo" parameterClass="linkMap">
+		<![CDATA[
+			UPDATE PA_BASIC_DATA SET
+				RETURN_VALUE = #RETURN_VALUE#,
+				START_DATE	 = TO_DATE(#START_DATE#,'YYYY-MM-DD'),
+				END_DATE	 = TO_DATE(#END_DATE#,'YYYY-MM-DD'),
+				REMARK		 = #REMARK#,
+				ACTIVITY	 = #ACTIVITY#,
+				REASON_CODE	 = #REASON_CODE#
+			WHERE BASIC_DATA_NO = #BASIC_DATA_NO#
+		]]>
+	</update>
+	
+	<procedure id="initializePaBasicItemDataInfo" parameterClass="linkMap">
+		{call PR_BASEPARAM_LIST(#ITEM_NO:VARCHAR#)}
+	</procedure>
+	
+	<insert id="addPaBasicItemDataInfo" parameterClass="linkMap">
+		<![CDATA[
+			INSERT INTO PA_BASIC_DATA (
+				BASIC_DATA_NO,
+				ITEM_NO,
+				FIELD1_VALUE,
+				RETURN_VALUE,
+				FIELD2_VALUE,
+				FIELD1_EN_VALUE,
+				FIELD2_EN_VALUE,
+				START_DATE,
+				END_DATE,
+				REMARK,
+				REASON_CODE,
+				CREATE_DATE,
+				CREATED_BY,
+				ACTIVITY
+			)
+			VALUES(
+				PA_BASIC_DATA_SEQ.NEXTVAL,
+				#ITEM_NO#,
+				#FIELD1_VALUE#,
+				#RETURN_VALUE#,
+				#FIELD2_VALUE#,
+				#FIELD1_EN_VALUE#,
+				#FIELD2_EN_VALUE#,
+				TO_DATE(#START_DATE#,'YYYY-MM-DD'),
+				TO_DATE(#END_DATE#,'YYYY-MM-DD'),
+				#REMARK#,
+				#REASON_CODE#, 
+				SYSDATE,
+				#CREATED_BY#,
+				1
+			) 
+		]]>
+	</insert>
+	
+	<update id="updatePaBasicItemDataActivityInfo_0" parameterClass="linkMap">
+		<![CDATA[
+			UPDATE PA_BASIC_DATA SET 
+					ACTIVITY = 0,
+					UPDATE_DATE = SYSDATE
+			WHERE END_DATE < SYSDATE
+			  AND ACTIVITY = 1
+		]]>
+	</update>
+	<update id="updatePaBasicItemDataActivityInfo_1" parameterClass="linkMap">
+		<![CDATA[
+			UPDATE PA_BASIC_DATA SET 
+				ACTIVITY = 1,
+				UPDATE_DATE = SYSDATE
+			WHERE END_DATE >= SYSDATE
+				AND ACTIVITY = 0
+		]]>
+	</update>
+
+</sqlMap>

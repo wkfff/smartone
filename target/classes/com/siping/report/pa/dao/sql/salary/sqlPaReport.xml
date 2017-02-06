@@ -1,0 +1,560 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+    PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+    "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="pa.paReport">
+    <select id="getDataInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT  $sqlPiece$ FROM PA_HISTORY
+            WHERE PA_MONTH = #PA_MONTH#
+        ]]>
+        <isNotEmpty prepend="AND" property="DEPTID">
+            <![CDATA[
+                DEPTID = #DEPTID:VARCHAR#
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY EMP_TYPE_NAME, DEPTID, POST_ID, EMPID
+            ]]>
+        </isEmpty>
+    </select>
+    <select id="getPaTitleInfo" parameterClass="linkMap"
+        resultClass="string" remapResults="true">
+        <![CDATA[
+            SELECT DECODE(#language#, 'en', ITEM_EN_NAME, ITEM_NAME) ITEM_NAME 
+            FROM (
+                SELECT PI.ITEM_NO,
+                       PI.ITEM_ID,
+                       PI.ITEM_NAME,
+                       PI.ITEM_EN_NAME,
+                       PI.CPNY_ID,
+                       #PA_MONTH# AS PA_MONTH
+                FROM PA_ITEM PI
+                WHERE CPNY_ID = #CPNY_ID#
+                    
+                UNION
+                
+                SELECT PPI.PARAM_NO       AS ITEM_NO,
+                        PPI.PARAM_ID      AS ITEM_ID,
+                        PPI.PARAM_NAME    AS ITEM_NAME,
+                        PPI.PARAM_EN_NAME AS ITEM_EN_NAME,
+                        CPNY_ID           AS CPNY_ID,
+                        #PA_MONTH#        AS PA_MONTH
+                FROM PA_PARAM_ITEM PPI
+                WHERE CPNY_ID = #CPNY_ID#
+                
+                UNION
+                
+                SELECT T.ID             AS ITEM_NO,
+                       T.DISTINCT_FIELD AS ITEM_ID,
+                       T.FIELD_NAME     AS ITEM_NAME,
+                       T.FIELD_EN_NAME  AS ITEM_EN_NAME,
+                       #CPNY_ID#        AS CPNY_ID,
+                       #PA_MONTH#       AS PA_MONTH
+                FROM PA_DISTINCT_LIST T
+                WHERE T.TABLE_NAME = 'PA_HR_V'
+                
+                UNION
+                
+                SELECT 0               AS ITEM_NO,
+                      ASI.ITEM_ID      AS ITEM_ID,
+                      ASI.ITEM_NAME    AS ITEM_NAME,
+                      ASI.ITEM_EN_NAME AS ITEM_EN_NAME,
+                      ASI.CPNY_ID      AS CPNY_ID,
+                      #PA_MONTH#       AS PA_MONTH
+                FROM AR_STA_ITEM ASI
+                WHERE CPNY_ID = #CPNY_ID#
+            )
+            WHERE ITEM_ID = #ITEM_ID#
+        ]]>
+    </select>
+
+    <insert id="addComputerInfo" parameterClass="linkMap">
+        <![CDATA[
+            INSERT INTO COMPUTER
+                (
+                    ID,BRAND,CPU,GPU,MEMORY,PRICE
+                )
+            VALUES(
+                    PA_INS_EMP_SEQ.NEXTVAL ,
+                    #BRAND:VARCHAR#,
+                    #CPU:VARCHAR#,
+                    #GPU:VARCHAR#,
+                    #MEMORY:VARCHAR#, 
+                    #PRICE:VARCHAR# 
+                )
+        ]]>
+    </insert>
+    
+    <sql id="EssWhCondition">
+        <isNotEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+                (   
+                    HRE.CHINESENAME         LIKE '%'||TRIM(#keyWord#)||'%'
+                    OR HRE.EMPID            LIKE '%'||TRIM(#keyWord#)||'%'
+                    OR HRD.DEPTNAME         LIKE '%'||TRIM(#keyWord#)||'%' 
+                    OR upper(HRD.DEPT_EN_NAME) LIKE '%'||TRIM(upper(#keyWord#))||'%'
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="DEPTID">
+            <![CDATA[
+                EXISTS (
+                    SELECT *
+                    FROM HR_DEPARTMENT B1
+                    WHERE B1.DEPTID=HRE.DEPTID
+                    START WITH B1.DEPTID = #DEPTID#
+                    CONNECT BY PRIOR B1.DEPTID = B1.PARENT_DEPT_ID
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="HR_ADMIN_ID">
+            <![CDATA[
+                (
+                    EAW.CREATED_BY = #HR_ADMIN_ID#
+                    OR EAW.EMPID = #HR_ADMIN_ID#
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="E_DATE">
+            <![CDATA[
+                EAW.START_DATE <= TO_DATE(#E_DATE#,'YYYY-MM-DD')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="S_DATE">
+            <![CDATA[
+               EAW.START_DATE >= TO_DATE(#S_DATE#,'YYYY-MM-DD')
+            ]]>
+        </isNotEmpty>
+    </sql>
+    
+    <sql id="getWhInfo">
+        <![CDATA[
+            SELECT HRE.EMPID,
+                   DECODE(#language#, 'en', HRE.ENGLISHNAME, HRE.CHINESENAME) CHINESENAME,
+                   HRE.DEPTID,
+                   DECODE(#language#, 'en', HRD.DEPT_EN_NAME, HRD.DEPTNAME) DEPTNAME,
+                   HRE.POST_ID,
+                   DECODE(#language#, 'en', HRP.POST_EN_NAME, HRP.POST_NAME) POST_NAME,
+                   HRE.STATUS_CODE,
+                   DECODE(#language#, 'en', M.CODE_EN_NAME, M.CODE_NAME) STATUS_NAME,
+                   EAW.PROJ_PROS_TYPE_CODE,
+                   DECODE(#language#, 'en', N.CODE_EN_NAME, N.CODE_NAME) PROJ_PROS_TYPE_NAME,
+                   TO_CHAR(HRE.JOIN_DATE, 'YYYY-MM-DD') JOIN_DATE,
+                   TO_CHAR(HRE.HIRE_DATE, 'YYYY-MM-DD') HIRE_DATE,
+                   TO_CHAR(HRE.END_PROBATION_DATE, 'YYYY-MM-DD') END_PROBATION_DATE,
+                   TO_CHAR(HRE.LEFT_DATE, 'YYYY-MM-DD') LEFT_DATE, 
+                   HRE.COSTCENTER,
+                   HRE.EMP_TYPE_CODE,
+                   DECODE(#language#, 'en', A.CODE_EN_NAME, A.CODE_NAME) EMP_TYPE_NAME, 
+                   EAW.PROD_NO,
+                   EAW.WH_NO,
+                   TO_CHAR(EAW.START_DATE, 'YYYY-MM-DD') START_DATE,
+                   TO_CHAR(EAW.END_DATE, 'YYYY-MM-DD') END_DATE,
+                   EAW.WORK_CONTENT,
+                   EAW.REMARK,
+                   EAW.WORK_HOUR    QUANTITY,
+                   EAW.CREATE_DATE,
+                   EAW.CREATED_BY,
+                   EAW.UPDATED_BY,
+                   EAW.UPDATE_DATE,
+                   EAW.CANCEL_REMARK,
+                 EAW.CON_REMARK,
+                 EPO.PROD_ID PROD_ID,
+                 EPO.DRAWING_NO DRAWING_NO,
+                 EP.PRO_NO PRO_NO,
+                 DECODE(#language#, 'en', EP.PRO_EN_NAME, EP.PRO_NAME) PRO_NAME
+          FROM HR_EMPLOYEE         HRE,
+                 ESS_APPLY_WH        EAW,
+                 HR_DEPARTMENT       HRD,
+                 HR_POST             HRP,
+                 SY_CODE             M,
+                 SY_CODE             A,
+                 SY_CODE             N,
+                 ESS_PRODUCTION_ORDER EPO,
+                 ESS_PROJECT EP
+          WHERE EAW.EMPID = HRE.EMPID(+)
+             AND EAW.ACTIVITY = 1
+             AND HRE.DEPTID = HRD.DEPTID(+)
+             AND HRE.POST_ID = HRP.POST_ID(+)
+             AND HRE.STATUS_CODE = M.CODE_ID(+)
+             AND HRE.EMP_TYPE_CODE = A.CODE_ID(+)
+             AND EAW.PROJ_PROS_TYPE_CODE = N.CODE_ID(+)
+             AND EAW.PROD_NO = EPO.PROD_NO(+)
+             AND EPO.PRO_NO = EP.PRO_NO(+)
+        ]]>
+        <include refid="EssWhCondition" />
+
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY EAW.START_DATE DESC
+            ]]>
+        </isEmpty>
+    </sql>
+    
+    <select id="getWhDataInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT  $sqlPiece$ FROM(
+        ]]>
+        
+        <include refid="getWhInfo" />
+        
+        <![CDATA[
+            )
+        ]]>
+    </select>
+    
+    <select id="getWhSumDataInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT  $sqlPiece$ FROM(
+                SELECT HRE.EMPID,
+                       DECODE(#language#, 'en', HRE.ENGLISHNAME, HRE.CHINESENAME) CHINESENAME,
+                       HRE.DEPTID,
+                       DECODE(#language#, 'en', HRD.DEPT_EN_NAME, HRD.DEPTNAME) DEPTNAME,
+                       HRE.POST_ID,
+                       DECODE(#language#, 'en', HRP.POST_EN_NAME, HRP.POST_NAME) POST_NAME,
+                       HRE.STATUS_CODE,
+                       DECODE(#language#, 'en', M.CODE_EN_NAME, M.CODE_NAME) STATUS_NAME,
+                       HRE.EMP_TYPE_CODE,
+                       DECODE(#language#, 'en', A.CODE_EN_NAME, A.CODE_NAME) EMP_TYPE_NAME,
+                       EAW.QUANTITY_SUM
+                FROM HR_EMPLOYEE           HRE,
+                        (   SELECT EMPID,
+                            SUM(WORK_HOUR)      QUANTITY_SUM
+                            FROM ESS_APPLY_WH
+                            WHERE START_DATE >= AR_GET_STARTDATE(#PA_MONTH#)
+                                AND START_DATE <= AR_GET_ENDDATE(#PA_MONTH#)
+                                AND ACTIVITY = 1
+                                GROUP BY EMPID )   EAW,
+                       HR_DEPARTMENT       HRD,
+                       HR_POST             HRP,
+                       SY_CODE             M,
+                       SY_CODE             A
+                WHERE EAW.EMPID = HRE.EMPID(+)
+                   AND HRE.DEPTID = HRD.DEPTID(+)
+                   AND HRE.POST_ID = HRP.POST_ID(+)
+                   AND HRE.STATUS_CODE = M.CODE_ID(+)
+                   AND HRE.EMP_TYPE_CODE = A.CODE_ID(+)
+            )
+        ]]>
+    </select>
+    
+    <sql id="getPaWhTitles" >
+        <![CDATA[
+                SELECT 'EMPID' AS "COLUMN_NAME",
+                        DECODE(#language#, 'en', 'Emp ID', '工号') ITEM_NAME, 
+                       1 AS CALCU_ORDER
+                  FROM DUAL
+                UNION ALL
+                SELECT 'CHINESENAME' AS "COLUMN_NAME", 
+                        DECODE(#language#, 'en', 'Name', '姓名') ITEM_NAME,
+                       2 AS CALCU_ORDER
+                  FROM DUAL
+                UNION ALL
+                SELECT 'DEPTNAME' AS "COLUMN_NAME",
+                        DECODE(#language#, 'en', 'Department', '部门') ITEM_NAME,  
+                       3 AS CALCU_ORDER
+                  FROM DUAL
+                UNION ALL
+                SELECT 'START_DATE' AS "COLUMN_NAME",
+                        DECODE(#language#, 'en', 'DATE', '日期') ITEM_NAME,  
+                       4 AS CALCU_ORDER
+                FROM DUAL
+                UNION ALL
+                SELECT 'WORK_CONTENT' AS "COLUMN_NAME",
+                        DECODE(#language#, 'en', 'Working Contetn', '工作内容') ITEM_NAME,  
+                       7 AS CALCU_ORDER
+                FROM DUAL
+                UNION ALL
+                SELECT 'PRO_NAME' AS "COLUMN_NAME",
+                        DECODE(#language#, 'en', 'Sales Summary', '项目') ITEM_NAME,  
+                       5 AS CALCU_ORDER
+                  FROM DUAL 
+                UNION ALL
+                SELECT 'PROD_ID' AS "COLUMN_NAME",
+                        DECODE(#language#, 'en', 'Production Order', '物料编码') ITEM_NAME,  
+                       5 AS CALCU_ORDER
+                  FROM DUAL 
+                UNION ALL
+                SELECT 'PROJ_PROS_TYPE_NAME' AS "COLUMN_NAME",
+                        DECODE(#language#, 'en', 'Project Process', '工序') ITEM_NAME,  
+                       6 AS CALCU_ORDER
+                FROM DUAL
+                UNION ALL
+                SELECT 'QUANTITY' AS "COLUMN_NAME",
+                        DECODE(#language#, 'en', 'Quantity Detail', '工单额') ITEM_NAME,  
+                       8 AS CALCU_ORDER
+                  FROM DUAL
+                UNION ALL
+                SELECT 'QUANTITY_SUM' AS "COLUMN_NAME",
+                        DECODE(#language#, 'en', 'Summery', '工单总额') ITEM_NAME,  
+                       8 AS CALCU_ORDER
+                  FROM DUAL
+                UNION ALL
+                SELECT 'REMARK' AS "COLUMN_NAME",
+                        DECODE(#language#, 'en', 'Remark', '备注') ITEM_NAME,  
+                       9 AS CALCU_ORDER
+                  FROM DUAL
+                 ORDER BY CALCU_ORDER
+        ]]>
+    </sql>
+    
+    <select id="getPaWhTitleInfo" parameterClass="linkMap" resultClass="string" remapResults="true">
+        <![CDATA[
+            SELECT ITEM_NAME FROM (
+        ]]>
+        <include refid="getPaWhTitles"/>
+        <![CDATA[
+            )
+            WHERE COLUMN_NAME = #ITEM_ID# 
+        ]]> 
+    </select>
+    
+    <select id="getPaColumns" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+                SELECT 'ITEM_ID' AS "COLUMN_NAME",
+                    '工号' AS ITEM_NAME, 
+                    1 AS CALCU_ORDER
+                FROM DUAL
+                
+                UNION ALL
+                
+                SELECT ITEM_ID AS  COLUMN_NAME,
+                IF(''='en', ITEM_EN_NAME, ITEM_NAME) ITEM_NAME,  
+                CALCU_ORDER + 100 AS CALCU_ORDER
+                FROM PA_ITEM PI
+                WHERE ACTIVITY = 1
+                    AND CPNY_ID = #CPNY_ID#
+                ORDER BY CALCU_ORDER
+            ]]>
+    </select>
+    
+    <select id="getPaReportSta" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+                SELECT  $GROUP_BY$ AS ITEM_ID
+                        $itemSql$
+                FROM PA_HISTORY
+                WHERE PA_MONTH<=#PA_END_MONTH#
+                AND PA_MONTH>=#PA_START_MONTH#
+        ]]>
+        <isNotEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+                $GROUP_BY$ LIKE concat('%',TRIM(#keyWord#),'%')
+            ]]>
+        </isNotEmpty>
+        <![CDATA[
+            GROUP BY $GROUP_BY$
+        ]]>
+    </select>
+    
+    <select id="getPaReportStaCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(*) FROM(
+                SELECT  $GROUP_BY$
+                FROM PA_HISTORY
+                WHERE PA_MONTH<=#PA_END_MONTH#
+                AND PA_MONTH>=#PA_START_MONTH#
+        ]]>
+        <isNotEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+                $GROUP_BY$ LIKE concat('%',TRIM(#keyWord#),'%')
+            ]]>
+        </isNotEmpty>
+        <![CDATA[
+            GROUP BY $GROUP_BY$) as b1
+        ]]>
+    </select>
+    
+    <select id="getPaStaDetailList" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT PA_MONTH $itemSql$
+            FROM PA_HISTORY
+            WHERE PA_MONTH <= #PA_END_MONTH#
+                AND PA_MONTH >= #PA_START_MONTH#
+                AND $GROUP_BY$ = #ITEM_VAL#
+                GROUP BY PA_MONTH
+                ORDER BY PA_MONTH
+        ]]>
+    </select>
+    
+    <select id="getPaStaDetailCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(*)
+            FROM ( SELECT PA_MONTH
+	            FROM PA_HISTORY
+	            WHERE PA_MONTH <= #PA_END_MONTH#
+	                AND PA_MONTH >= #PA_START_MONTH#
+	                AND $GROUP_BY$ = #ITEM_VAL#
+	                GROUP BY PA_MONTH
+	                ORDER BY PA_MONTH) as b2
+        ]]>
+    </select>
+    
+    <select id="getPaItem" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+                SELECT ITEM_ID
+                FROM PA_ITEM
+                WHERE ACTIVITY = 1
+        ]]>
+    </select>
+    
+    <!-- 管理费用汇总 -->
+    <select id="getPaManageSum" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT '管理人员人工成本'                   TYPE,
+                DEPTNAME,
+                COUNT(EMPID)                       MAN_COUNT,
+                ROUND(SUM( TO_NUMBER(I_PA_45) ),2) ATT_SUM,
+                SUM( PA_166 )                      PA_TOBE_PAID,
+                SUM( PA_165 )                      PA_CUT_PAID,
+                SUM( PA_163 )                      PA_REAL_PAID,
+                SUM( PA_157 )                      PA_COMP_SOSE,
+                SUM( PA_159 )                      PA_COMP_FUND,
+                ROUND(CASE WHEN SUM( I_PA_45 ) != 0
+                    THEN SUM( PA_166 )/SUM( I_PA_45 ) ELSE 0 END,2)                       PA_SALARY_PERDAY,
+                ROUND(CASE WHEN COUNT(EMPID)<>0 THEN SUM( PA_166 )/COUNT(EMPID) END,2)    PA_SALARY_PERMONTH,
+                ROUND(SUM( PA_166 )/(SELECT SUM( PA_166 ) FROM PA_HISTORY 
+                    WHERE PA_MONTH = #PA_MONTH# AND EMP_TYPE_CODE = #EMP_TYPE_CODE#),3)   PA_TOBE_PAID_PERCENT
+            FROM PA_HISTORY
+            WHERE PA_MONTH = #PA_MONTH#
+                AND EMP_TYPE_CODE = #EMP_TYPE_CODE#
+                AND DEPTID NOT IN(
+                    SELECT DEPTID FROM HR_DEPARTMENT
+                    WHERE ACTIVITY = 1
+                        START WITH PARENT_DEPT_ID = 'DEPT006'
+                        CONNECT BY PARENT_DEPT_ID = PRIOR DEPTID
+                )
+                GROUP BY DEPTNAME
+                ORDER BY DEPTNAME
+        ]]>
+    </select>
+    
+    <!-- 生产费用汇总 -->
+    <select id="getPaProductionSum" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT '车间人工成本'                      TYPE,
+                DEPTNAME,
+                COUNT(EMPID)                       MAN_COUNT,
+                ROUND(SUM( TO_NUMBER(I_PA_45) ),2) ATT_SUM,
+                SUM( PA_166 )                      PA_TOBE_PAID,
+                SUM( PA_165 )                      PA_CUT_PAID,
+                SUM( PA_163 )                      PA_REAL_PAID,
+                SUM( PA_157 )                      PA_COMP_SOSE,
+                SUM( PA_159 )                      PA_COMP_FUND,
+                ROUND(CASE WHEN SUM( I_PA_45 ) <> 0
+                    THEN SUM( PA_166 )/SUM( I_PA_45 ) ELSE 0 END,2)                       PA_SALARY_PERDAY,
+                ROUND(CASE WHEN COUNT(EMPID)<>0 THEN SUM( PA_166 )/COUNT(EMPID) END,2)    PA_SALARY_PERMONTH,
+                ROUND(SUM( PA_166 )/(SELECT SUM( PA_166 ) FROM PA_HISTORY 
+                    WHERE PA_MONTH = #PA_MONTH# AND EMP_TYPE_CODE = #EMP_TYPE_CODE#),3)   PA_TOBE_PAID_PERCENT
+            FROM PA_HISTORY PH
+            WHERE PA_MONTH = #PA_MONTH#
+                AND EMP_TYPE_CODE = #EMP_TYPE_CODE#
+                AND DEPTID IN(
+                    SELECT DEPTID FROM HR_DEPARTMENT
+                    WHERE ACTIVITY = 1
+                        START WITH PARENT_DEPT_ID = 'DEPT021'
+                        CONNECT BY PARENT_DEPT_ID = PRIOR DEPTID
+                )
+                GROUP BY DEPTNAME
+                ORDER BY DEPTNAME
+        ]]>
+    </select>
+    
+    <!-- 项目费用汇总 -->
+    <select id="getPaProjectSum" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT '项目人工成本'                      TYPE,
+                DEPTNAME,
+                COUNT(EMPID)                       MAN_COUNT,
+                ROUND(SUM( TO_NUMBER(I_PA_45) ),2) ATT_SUM,
+                SUM( PA_166 )                      PA_TOBE_PAID,
+                SUM( PA_165 )                      PA_CUT_PAID,
+                SUM( PA_163 )                      PA_REAL_PAID,
+                SUM( PA_157 )                      PA_COMP_SOSE,
+                SUM( PA_159 )                      PA_COMP_FUND,
+                ROUND(CASE WHEN SUM( I_PA_45 ) <> 0
+                    THEN SUM( PA_166 )/SUM( I_PA_45 ) ELSE 0 END,2)                       PA_SALARY_PERDAY,
+                ROUND(CASE WHEN COUNT(EMPID)<>0 THEN SUM( PA_166 )/COUNT(EMPID) END,2)    PA_SALARY_PERMONTH,
+                ROUND(SUM( PA_166 )/(SELECT SUM( PA_166 ) FROM PA_HISTORY 
+                    WHERE PA_MONTH = #PA_MONTH# AND EMP_TYPE_CODE = #EMP_TYPE_CODE#),3)   PA_TOBE_PAID_PERCENT
+            FROM PA_HISTORY
+            WHERE PA_MONTH = #PA_MONTH#
+                AND EMP_TYPE_CODE = #EMP_TYPE_CODE#
+                AND DEPTID IN(
+                    SELECT DEPTID FROM HR_DEPARTMENT
+                    WHERE ACTIVITY = 1
+                        START WITH PARENT_DEPT_ID = 'DEPT020'
+                        CONNECT BY PARENT_DEPT_ID = PRIOR DEPTID
+                )
+                GROUP BY DEPTNAME
+                ORDER BY DEPTNAME
+        ]]>
+    </select>
+    
+    <!-- 生产费用总额 -->
+    <select id="getPaProductionTotal" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT COUNT(EMPID)                    MAN_COUNT,
+                ROUND(SUM( TO_NUMBER(I_PA_45) ),2) ATT_SUM,
+                SUM( PA_166 )                      PA_TOBE_PAID,
+                SUM( PA_165 )                      PA_CUT_PAID,
+                SUM( PA_163 )                      PA_REAL_PAID,
+                SUM( PA_157 )                      PA_COMP_SOSE,
+                SUM( PA_159 )                      PA_COMP_FUND,
+                ROUND(CASE WHEN SUM( I_PA_45 ) <> 0
+                    THEN SUM( PA_166 )/SUM( I_PA_45 ) ELSE 0 END,2)                       PA_SALARY_PERDAY,
+                ROUND(CASE WHEN COUNT(EMPID)<>0 THEN SUM( PA_166 )/COUNT(EMPID) END,2)    PA_SALARY_PERMONTH,
+                1                                  PA_TOBE_PAID_PERCENT
+            FROM PA_HISTORY PH
+            WHERE PA_MONTH = #PA_MONTH#
+                AND EMP_TYPE_CODE = #EMP_TYPE_CODE#
+                AND DEPTID IN(
+                    SELECT DEPTID FROM HR_DEPARTMENT
+                    WHERE ACTIVITY = 1
+                        START WITH PARENT_DEPT_ID = 'DEPT021'
+                        CONNECT BY PARENT_DEPT_ID = PRIOR DEPTID
+                )
+                ORDER BY DEPTNAME
+        ]]>
+    </select>
+    
+    <!-- 生产费用总额 -->
+    <select id="getPaProjectAverage" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT '生产人工成本'          AS           TYPE,
+                EP0.PRO_NAME           AS           DEPTNAME,
+                #MAN_COUNT#*GET_PROJ_PERCENT(PROJ_T.PRO_NO,#PA_MONTH#,#EMP_TYPE_CODE#)                         MAN_COUNT,
+                #ATT_SUM#*GET_PROJ_PERCENT(PROJ_T.PRO_NO,#PA_MONTH#,#EMP_TYPE_CODE#)                           ATT_SUM,
+                #PA_TOBE_PAID#*GET_PROJ_PERCENT(PROJ_T.PRO_NO,#PA_MONTH#,#EMP_TYPE_CODE#)                      PA_TOBE_PAID,
+                #PA_CUT_PAID#*GET_PROJ_PERCENT(PROJ_T.PRO_NO,#PA_MONTH#,#EMP_TYPE_CODE#)                       PA_CUT_PAID,
+                #PA_REAL_PAID#*GET_PROJ_PERCENT(PROJ_T.PRO_NO,#PA_MONTH#,#EMP_TYPE_CODE#)                      PA_REAL_PAID,
+                #PA_COMP_SOSE#*GET_PROJ_PERCENT(PROJ_T.PRO_NO,#PA_MONTH#,#EMP_TYPE_CODE#)                      PA_COMP_SOSE,
+                #PA_COMP_FUND#*GET_PROJ_PERCENT(PROJ_T.PRO_NO,#PA_MONTH#,#EMP_TYPE_CODE#)                      PA_COMP_FUND,
+                #PA_SALARY_PERDAY#                  PA_SALARY_PERDAY,
+                #PA_SALARY_PERMONTH#                PA_SALARY_PERMONTH,
+                GET_PROJ_PERCENT(PROJ_T.PRO_NO,#PA_MONTH#,#EMP_TYPE_CODE#)                                    PA_TOBE_PAID_PERCENT
+            FROM (
+	            SELECT DISTINCT(EP.PRO_NO) AS PRO_NO
+	            FROM ESS_APPLY_WH EAW,
+	                   HR_EMPLOYEE HE,
+	                   ESS_PROJECT EP,
+	                   ESS_PRODUCTION_ORDER EPO
+	            WHERE EAW.PROD_NO = EPO.PROD_NO(+)
+	              AND EPO.PRO_NO = EP.PRO_NO(+)
+	              AND HE.EMP_TYPE_CODE = #EMP_TYPE_CODE#
+	              AND EAW.ACTIVITY = 1
+	              AND EAW.EMPID = HE.EMPID(+)
+	              AND EAW.START_DATE <= AR_GET_ENDDATE(#PA_MONTH#)
+	              AND EAW.START_DATE >= AR_GET_STARTDATE(#PA_MONTH#)
+            ) PROJ_T,
+            ESS_PROJECT EP0
+            WHERE PROJ_T.PRO_NO = EP0.PRO_NO(+)
+        ]]>
+    </select>
+</sqlMap>

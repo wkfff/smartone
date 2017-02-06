@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="pa.insReport">
+    
+	<select id="getDataInfo" parameterClass="linkMap" 
+	    resultClass="linkMap" remapResults="true">
+		<![CDATA[
+        SELECT  $sqlPiece$ FROM T_PA_INS_RESULT
+		]]> 
+			 
+	</select>
+	<select id="getInsTitleInfo" parameterClass="linkMap" 
+	    resultClass="string" remapResults="true">
+		<![CDATA[
+         SELECT DECODE(#language#, 'en', ITEM_EN_NAME, ITEM_NAME) ITEM_NAME 
+           FROM PA_INS_V
+          WHERE CPNY_ID = #CPNY_ID#
+            AND ITEM_ID = #ITEM_ID#
+            AND (PA_MONTH IS NULL OR PA_MONTH = #PA_MONTH#)
+		]]>  
+	</select>
+	
+	<insert id="addComputerInfo" parameterClass="linkMap">
+		<![CDATA[
+			INSERT INTO COMPUTER
+				(
+					ID,BRAND,CPU,GPU,MEMORY,PRICE
+				)
+			VALUES(
+					PA_INS_EMP_SEQ.NEXTVAL ,
+					#BRAND:VARCHAR#,
+					#CPU:VARCHAR#,
+					#GPU:VARCHAR#,
+					#MEMORY:VARCHAR#, 
+					#PRICE:VARCHAR# 
+				)
+		]]>
+	</insert>
+</sqlMap>

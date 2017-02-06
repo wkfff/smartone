@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:aop="http://www.springframework.org/schema/aop"
+    xmlns:tx="http://www.springframework.org/schema/tx"
+    xmlns:task="http://www.springframework.org/schema/task"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context-3.0.xsd
+        http://www.springframework.org/schema/aop
+        http://www.springframework.org/schema/aop/spring-aop-3.0.xsd
+        http://www.springframework.org/schema/tx
+        http://www.springframework.org/schema/tx/spring-tx-3.0.xsd
+        http://www.springframework.org/schema/task
+        http://www.springframework.org/schema/task/spring-task-3.0.xsd">
+    <!-- 配置 dataSource 192.168.10.68 dev siping-->
+    <bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource" destroy-method="close">
+        <property name="driverClass" value="com.mysql.jdbc.Driver" />
+        <!-- <property name="jdbcUrl" value="jdbc:mysql://192.168.10.20:3306/smartone_v1?allowMultiQueries=true&amp;useUnicode=true&amp;characterEncoding=UTF-8" /> -->
+        <property name="jdbcUrl" value="jdbc:mysql://localhost:3306/smartone_v1?allowMultiQueries=true&amp;useUnicode=true&amp;characterEncoding=UTF-8" />
+        <property name="user" value="root" />
+        <property name="password" value="" />
+        <property name="maxPoolSize" value="30" />
+        <property name="minPoolSize" value="1" />
+        <property name="initialPoolSize" value="1" />
+        <property name="maxIdleTime" value="300" />
+    </bean>
+
+<!--     <bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+        <property name="dataSource" ref="dataSource"></property>
+    </bean> -->
+
+   <!--  配置 ibatis -->
+    <bean id="sqlMapClientF" class="org.springframework.orm.ibatis.SqlMapClientFactoryBean">
+        <property name="configLocations" value="WEB-INF/conf/sqlMapConfig.xml" />
+        <property name="dataSource" ref="dataSource" />
+    </bean>
+
+    <!-- 重载SQL加之类载入数据库方言 -->
+    <bean id="sqlExecutor" class="com.siping.web.utility.limit.LimitSqlExecutor">
+        <property name="dialect">
+            <bean class="com.siping.web.utility.limit.dialect.DatabaseDialect" />
+        </property>
+    </bean>
+
+    <!-- 加入ibatis控制类 -->
+     <bean id="sqlMapClient" class="com.siping.web.utility.SqlMapClientSupport" init-method="initialize">
+        <property name="dataSource">
+            <ref bean="dataSource" />
+        </property>
+        <property name="sqlMapClient">
+            <ref bean="sqlMapClientF" />
+        </property>
+        <property name="sqlExecutor">
+            <ref bean="sqlExecutor" />
+        </property>
+    </bean>
+
+    <bean id="messageSource" class="org.springframework.context.support.ReloadableResourceBundleMessageSource">
+        <property name="basenames" >
+            <list>
+                <value>classpath:com/siping/web/messages/messages</value>
+                <value>classpath:com/siping/web/messages/warning</value>
+                <value>classpath:com/siping/web/messages/errors</value>
+            </list>
+        </property>
+        <property name="cacheSeconds" value="300" />
+        <property name="defaultEncoding" value="GBK"/>
+        <property name="useCodeAsDefaultMessage" value="true"/>
+    </bean>
+
+    <bean class="com.siping.web.messages.Messages">
+        <property name="messageSource" ref="messageSource"/>
+    </bean>
+
+    <!-- 事务配置 -->
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource" />
+    </bean>
+
+     <!-- 事务拦截器 -->
+    <tx:advice id="txAdvice" transaction-manager="transactionManager">
+        <tx:attributes>
+            <tx:method name="find*" propagation="REQUIRED" />
+            <tx:method name="get*" propagation="REQUIRED" />
+            <tx:method name="view*" propagation="REQUIRED" />
+            <tx:method name="query*" propagation="REQUIRED" />
+            <tx:method name="select*" propagation="REQUIRED" />
+            <tx:method name="save*" propagation="REQUIRED" rollback-for="Exception"/>
+            <tx:method name="add*" propagation="REQUIRED" rollback-for="Exception"/>
+            <tx:method name="update*" propagation="REQUIRED" rollback-for="Exception"/>
+            <tx:method name="create*" propagation="REQUIRED" rollback-for="Exception"/>
+            <tx:method name="change*" propagation="REQUIRED" rollback-for="Exception"/>
+            <tx:method name="delete*" propagation="REQUIRED" rollback-for="Exception"/>
+            <tx:method name="remove*" propagation="REQUIRED" rollback-for="Exception"/>
+            <tx:method name="insert*" propagation="REQUIRED" rollback-for="Exception"/>
+            <tx:method name="modify*" propagation="REQUIRED" rollback-for="Exception"/>
+            <tx:method name="*" propagation="SUPPORTS" /> 
+        </tx:attributes>
+    </tx:advice>
+
+     <!-- 添加事务拦截器 -->
+    <aop:config proxy-target-class="true">
+        <aop:pointcut id="pointcut" expression="execution(* com.siping..service..*.*(..))"/>
+        <aop:advisor advice-ref="txAdvice" pointcut-ref="pointcut" />
+    </aop:config>
+
+    <!-- 将提交上来的locale字段信息生成真正的Locale对象，然后将对象保存在Session中 -->
+    <bean id="localeResolver" class="org.springframework.web.servlet.i18n.SessionLocaleResolver"/>
+
+    <!--开发期间注释掉，上线后启用 错误解析器 发生错误默认会跳转到/web-inf/views/web/error/timeout.jsp -->
+    <!-- 
+    <bean id="exceptionResolver" class="org.springframework.web.servlet.handler.SimpleMappingExceptionResolver">
+        <property name="defaultErrorView" value="/web/error/timeout" />
+        <property name="exceptionMappings">
+            <props>
+                <prop key="java.sql.SQLException">/web/error/timeout</prop>
+                <prop key="java.lang.RuntimeException">/web/error/timeout</prop>
+                <prop key="org.springframework.transaction.TransactionException">/web/error/timeout</prop>
+                <prop key="org.springframework.dao.DataAccessException">/web/error/timeout</prop>
+            </props>
+        </property>
+    </bean>-->  
+
+    <!-- 上传拦截，如最大上传值及最小上传值 -->
+    <bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+        <!-- 解析request的编码 ，Default is ISO-8859-1 -->
+        <property name="defaultEncoding" value="UTF-8" />
+        <!-- 设置最大允许的大小(字节)。-1表示没有限制(默认) 1024*1024*10=10MB -->
+        <property name="maxUploadSize" value="10485760" />
+        <!--被允许的最大的内存的大小，Default is 10240 bytes -->
+        <property name="maxInMemorySize" value="20480" />
+        <!-- 一个类似懒加载的属性.可以定义该属性.让解析文件的时候再抛异常,然后Controller中定义异常处理的方法 -->
+        <property name="resolveLazily" value="true" />
+    </bean>
+
+    <context:component-scan base-package="com.siping">
+        <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+    </context:component-scan>
+
+    <!-- 启动任务调度     -->
+    <task:annotation-driven/>
+
+    <bean id="processEngineConfiguration" class="org.activiti.spring.SpringProcessEngineConfiguration">
+        <property name="processEngineName" value="default"/>
+        <property name="dataSource" ref="dataSource" />
+        <property name="transactionManager" ref="transactionManager" />
+        <property name="databaseSchemaUpdate" value="true" />
+        <property name="mailServerHost" value="smtp.exmail.qq.com" />
+        <property name="mailServerPort" value="25" />
+        <property name="mailServerDefaultFrom" value="sipingsoft.hrms@sipingsoft.com"/>
+        <property name="mailServerUsername" value="sipingsoft.hrms@sipingsoft.com"/>
+        <property name="mailServerPassword" value="sipingsoft147258"/>
+        <property name="jpaHandleTransaction" value="true" />
+        <property name="jpaCloseEntityManager" value="true" />
+        <property name="jobExecutorActivate" value="false" />
+        <property name="deploymentResources" value="/WEB-INF/conf/bp_models/autodeploy.*.bpmn20.xml"/>
+    </bean>
+
+    <bean id="processEngine" class="org.activiti.spring.ProcessEngineFactoryBean">
+        <property name="processEngineConfiguration" ref="processEngineConfiguration" />
+    </bean>
+
+    <bean id="repositoryService" factory-bean="processEngine" factory-method="getRepositoryService" />
+    <bean id="runtimeService" factory-bean="processEngine" factory-method="getRuntimeService" />
+    <bean id="taskService" factory-bean="processEngine" factory-method="getTaskService" />
+    <bean id="historyService" factory-bean="processEngine" factory-method="getHistoryService" />
+    <bean id="managementService" factory-bean="processEngine" factory-method="getManagementService" />
+    <bean id="formService" factory-bean="processEngine" factory-method="getFormService" />
+
+    <bean class="com.siping.web.utility.SMSUtil">
+        <property name="spid" value="436663"/>
+        <property name="appid" value="845" />
+        <property name="pwd" value="sipingsoft2013" />
+        <property name="ims" value="02885980585" />
+        <property name="key" value="30954897" />
+    </bean>
+
+    <!-- 配置kaptcha用于移动端生成验证码 -->
+    <bean id="captchaProducer" class="com.google.code.kaptcha.impl.DefaultKaptcha">
+        <property name="config">
+            <bean class="com.google.code.kaptcha.util.Config">
+                <constructor-arg>
+                    <props>
+                        <prop key="kaptcha.border">no</prop>
+                        <prop key="kaptcha.border.color">105,179,90</prop>
+                        <prop key="kaptcha.textproducer.font.color">red</prop>
+                        <prop key="kaptcha.image.width">150</prop>
+                        <prop key="kaptcha.image.height">50</prop>
+                        <prop key="kaptcha.textproducer.char.string">0123456789</prop>
+                        <prop key="kaptcha.textproducer.char.length">4</prop>
+                    </props>
+                </constructor-arg>
+            </bean>
+        </property>
+    </bean>
+
+</beans>

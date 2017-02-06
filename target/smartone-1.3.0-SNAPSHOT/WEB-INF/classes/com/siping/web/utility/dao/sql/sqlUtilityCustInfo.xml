@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap
+        PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+        "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="utility.custInfo">
+
+    <sql id="CustSearchCondition">
+        <isNotEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+                (
+                        CBI.CUST_NAME          LIKE concat('%',TRIM(#keyWord#),'%')
+                        OR CBI.CUST_EN_NAME    LIKE concat('%',TRIM(#keyWord#),'%')
+                        OR if(#language#='en',PR.CODE_EN_NAME,PR.CODE_NAME)||
+                       if(#language#='en',CI.CODE_EN_NAME,CI.CODE_NAME)||
+                        if(#language#='en',AR.CODE_EN_NAME,AR.CODE_NAME)||
+                        CBI.ADDRESS         LIKE concat('%',TRIM(#keyWord#),'%') 
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="OWNER_ID">
+            <![CDATA[
+                CBI.OWNER_ID= #OWNER_ID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="CUST_TYPE_CODE">
+            <![CDATA[
+                CBI.CUST_TYPE_CODE= #CUST_TYPE_CODE#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="CUST_STATUS_CODE">
+            <![CDATA[
+                CBI.CUST_STATUS_CODE= #CUST_STATUS_CODE#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="E_DATE">
+            <![CDATA[
+               CBI.CREATED_DATE <= str_to_date(#E_DATE#,'%Y-%m-%d')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="S_DATE">
+            <![CDATA[
+               CBI.CREATED_DATE >= str_to_date(#S_DATE#,'%Y-%m-%d')
+            ]]>
+        </isNotEmpty>
+        <isEqual prepend="AND" property="isSupervisor" compareValue="false">
+            <![CDATA[
+                CBI.OWNER_ID = #EMP_ID#
+            ]]>
+        </isEqual>
+        <isEqual prepend="AND" property="isSupervisor" compareValue="true">
+            <![CDATA[
+                HE.DEPTID IN (SELECT SUPERVISED_DEPTID FROM SALES_SUPERVISOR_INFO WHERE SUPERVISOR_ID = #EMP_ID# )
+            ]]>
+        </isEqual>
+        <isNotEmpty prepend="AND" property="CUST_NO">
+            <![CDATA[
+                CBI.CUST_NO= #CUST_NO#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="CUST_ID">
+            <![CDATA[
+                CBI.CUST_ID= #CUST_ID#
+            ]]>
+        </isNotEmpty>
+    </sql>
+    <resultMap id="customerListMap" class="linkMap" groupBy="CUST_ID">
+        <result property="CUST_ID" column="CUST_ID"/>
+        <result property="CUST_NO" column="CUST_NO"/>
+        <result property="CUST_NAME" column="CUST_NAME"/>
+        <result property="CUST_TYPE_CODE" column="CUST_TYPE_CODE"/>
+        <result property="CUST_STATUS_CODE" column="CUST_STATUS_CODE"/>
+        <result property="CUST_SALES_MODE_CODE" column="CUST_SALES_MODE_CODE" />
+        <result property="CUST_SALES_MODE" column="CUST_SALES_MODE" />
+        <result property="CUST_SALES_MODE_ID" column="CUST_SALES_MODE_ID" />
+        <result property="PROVINCE_CODE" column="PROVINCE_CODE"/>
+        <result property="CITY_CODE" column="CITY_CODE"/>
+        <result property="AREA_CODE" column="AREA_CODE"/>
+        <result property="ADDRESS_TOTAL" column="ADDRESS_TOTAL"/>
+        <result property="ADDRESS" column="ADDRESS"/>
+        <result property="OWNER" column="OWNER"/>
+        <result property="CONTACT" column="CONTACT"/>
+        <result property="MOBILEPHONE" column="MOBILEPHONE"/>
+        <result property="DESCRIPTION" column="DESCRIPTION"/>
+        <result property="REMARK" column="REMARK"/>
+        <result property="CUST_TYPE" column="CUST_TYPE"/>
+        <result property="CUST_STATUS" column="CUST_STATUS"/>
+        <result property="CUST_LEVEL" column="CUST_LEVEL"/>
+        <result property="INVITATION_ID" column="INVITATION_ID"/>
+        <result property="RECEIVERS" javaType="list" resultMap="utility.custInfo.receiverMap"/>
+    </resultMap>
+    <resultMap id="receiverMap" class="linkMap">
+        <result property="RECEIVER_ID" column="RECEIVER_ID"/>
+        <result property="RECEIVER_NAME" column="RECEIVER_NAME"/>
+        <result property="RECEIVER_ADDRESS" column="RECEIVER_ADDRESS"/>
+        <result property="RECEIVER_MOBILE1" column="RECEIVER_MOBILE1"/>
+    </resultMap>
+    <select id="getCustomerList" parameterClass="linkMap" resultMap="customerListMap">
+        <![CDATA[
+         SELECT  CBI.CUST_ID                                        CUST_ID,
+                  CBI.CUST_NO                                        CUST_NO,
+                 if(''='en',CUST_EN_NAME,CUST_NAME)             CUST_NAME,
+                  CBI.CUST_TYPE_CODE                                 CUST_TYPE_CODE,
+                  CBI.CUST_STATUS_CODE                               CUST_STATUS_CODE,
+                  ifnull(PSM.SALES_MODE_NO,'')                          CUST_SALES_MODE_CODE,
+                  ifnull(PSM.SALES_MODE_ID,'')                          CUST_SALES_MODE_ID,
+                  ifnull(PSM.SALES_MODE_NAME,'')                        CUST_SALES_MODE,
+                  CBI.PROVINCE                                       PROVINCE_CODE,
+                  CBI.CITY                                           CITY_CODE,
+                  CBI.AREA                                           AREA_CODE,
+                 if(''='en',PR.CODE_EN_NAME,PR.CODE_NAME)||
+                 if(''='en',CI.CODE_EN_NAME,CI.CODE_NAME)||
+                 if(''='en',AR.CODE_EN_NAME,AR.CODE_NAME)||
+                  CBI.ADDRESS                                        ADDRESS_TOTAL,
+                  CBI.ADDRESS                                        ADDRESS,
+                 if(''='en',HE.ENGLISHNAME,HE.CHINESENAME)      OWNER,
+                  CBI.CONTACT                                        CONTACT,
+                  CBI.MOBILEPHONE                                    MOBILEPHONE,
+                  CBI.DESCRIPTION                                    DESCRIPTION,
+                  CBI.REMARK                                         REMARK,
+                 if(''='en',A.CODE_EN_NAME,A.CODE_NAME)         CUST_TYPE,
+                 if(''='en',B.CODE_EN_NAME,B.CODE_NAME)         CUST_STATUS,
+                 if(''='en',C.CODE_EN_NAME,C.CODE_NAME)         CUST_LEVEL,
+                  MI.INVITATION_ID                                   INVITATION_ID,
+                  CR.RECEIVER_ID                                     RECEIVER_ID,
+                  CR.RECEIVER_NAME                                   RECEIVER_NAME,
+                  CR_PR.CODE_NAME ||
+                  CR_CI.CODE_NAME ||
+                  CR_AR.CODE_NAME ||
+                  CR.RECEIVER_ADDRESS                                RECEIVER_ADDRESS,
+                  CR.RECEIVER_MOBILE1                                RECEIVER_MOBILE1
+              FROM  CUST_BASIC_INFO    CBI left join 
+ HR_EMPLOYEE          HE on  CBI.OWNER_ID = HE.EMPID
+     left join   SY_CODE       A     on    CBI.CUST_TYPE_CODE = A.CODE_ID
+     left join   SY_CODE       B     on    CBI.CUST_STATUS_CODE = B.CODE_ID
+     left join   SY_CODE       C     on     CBI.CUST_LEVEL_CODE = C.CODE_ID
+     left join   SY_CODE      PR      on    CBI.PROVINCE = PR.CODE_ID
+     left join   SY_CODE     CI      on   CBI.CITY = CI.CODE_ID
+     left join    SY_CODE     AR     on    CBI.AREA = AR.CODE_ID
+     left join    MOBILE_INVITATION   MI on     CBI.CUST_NO = MI.CUST_NO
+     left join    CUST_RECEIVER   CR   on    CBI.CUST_ID = CR.CUST_ID
+     left join    PROSTOR_SALES_MODEL PSM  on CBI.CUST_SALES_MODE_CODE=PSM.SALES_MODE_NO
+     left join   SY_CODE           CR_PR  on CR.RECEIVER_PROVINCE = CR_PR.CODE_ID
+     left join   SY_CODE              CR_CI on CR.RECEIVER_CITY = CR_CI.CODE_ID
+     left join  SY_CODE            CR_AR   on CR.RECEIVER_AREA = CR_AR.CODE_ID
+      WHERE  CBI.ACTIVITY = 1
+
+        ]]>
+        <include refid="CustSearchCondition"/>
+    </select>
+
+
+    <select id="getCustomerListCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+           SELECT COUNT(0)
+            FROM    CUST_BASIC_INFO        CBI left join 
+                    HR_EMPLOYEE         HE on CBI.OWNER_ID = HE.EMPID
+                    left join SY_CODE             A on CBI.CUST_TYPE_CODE = A.CODE_ID
+                   left join  SY_CODE             B on CBI.CUST_STATUS_CODE = B.CODE_ID
+                    left join SY_CODE             C on  CBI.CUST_LEVEL_CODE = C.CODE_ID
+                   left join  SY_CODE             PR on CBI.PROVINCE = PR.CODE_ID
+                    left join SY_CODE             CI on CBI.CITY = CI.CODE_ID
+                   left join  SY_CODE             AR on  CBI.AREA = AR.CODE_ID
+            WHERE    CBI.ACTIVITY = 1
+           
+        ]]>
+        <include refid="CustSearchCondition"/>
+    </select>
+</sqlMap>

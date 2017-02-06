@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"  "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="wechat">
+    <!-- 删除menu-->
+    <delete id="deleteMenu" parameterClass="int">
+        <![CDATA[
+            DELETE FROM wechat_menu WHERE id=#id#
+        ]]>
+    </delete>
+    <!-- 插入menu -->
+    <insert id="addWechatMenu" parameterClass="com.siping.wechat.bean.WechatMenu" > 
+        <selectKey resultClass="int" keyProperty="id" >
+            SELECT wechat_menu_seq.nextval AS id FROM dual
+        </selectKey>
+        <![CDATA[
+            INSERT INTO wechat_menu(
+               id,
+               menu_name,
+               parent_menu_id,
+               created_date,
+               created_by
+            )VALUES(
+               #id#,
+               #menuName#,
+               #parentMenuId#,
+               SYSDATE,
+               #createdBy#
+            )
+        ]]>
+    </insert>
+    <select id="getMenusByPaId" resultClass="com.siping.wechat.bean.WechatMenu">
+        <![CDATA[
+            SELECT
+                w.id id,
+                w.menu_name menuName,
+                w.menu_type menuType,
+                w.menu_key menuKey,
+                w.menu_url menuUrl,
+                w.created_date createdDate,
+                w.created_by createdBy,
+                w.updated_date updatedDate,
+                w.updated_by updatedBy
+            FROM wechat_menu w
+            WHERE w.parent_menu_id=#parentMenuId#
+            ORDER BY w.id ASC
+        ]]>
+    </select>
+    <resultMap class="com.siping.wechat.bean.WechatMenu" id="wechatMenuMap">
+        <result property="id" column="id"/>
+        <result property="menuName" column="menuName"/>
+        <result property="menuType" column="menuType"/>
+        <result property="menuKey" column="menuKey"/>
+        <result property="menuUrl" column="menuUrl"/>
+        <result property="parentMenuId" column="parentMenuId"/>
+        <result property="updatedDate" column="updatedDate"/>
+        <result property="updatedBy" column="updatedBy"/>
+        <result property="createdDate" column="createdDate"/>
+        <result property="createdBy" column="createdBy"/>
+        <result property="sonMenus" column="parentMenuId" select="wechat.getMenusByPaId" />
+    </resultMap>
+    <select id="getWechatMenuList" resultMap="wechatMenuMap">
+        <![CDATA[
+            SELECT
+                w.id id,
+                w.menu_name menuName,
+                w.menu_type menuType,
+                w.menu_key menuKey,
+                w.menu_url menuUrl,
+                w.id parentMenuId,
+                w.created_date createdDate,
+                w.created_by createdBy,
+                w.updated_date updatedDate,
+                w.updated_by updatedBy
+            FROM wechat_menu w
+            WHERE w.parent_menu_id IS NULL
+            ORDER BY w.id ASC
+        ]]>
+    </select>
+    <update id="updateMenu" parameterClass="com.siping.wechat.bean.WechatMenu">
+        <![CDATA[
+            UPDATE wechat_menu SET
+               updated_date=SYSDATE,
+               updated_by=#updatedBy#,
+               menu_type=#menuType#,
+               menu_key=#menuKey#,
+               menu_url=#menuUrl#,
+               reply_text=#replyText#
+            WHERE id=#id#
+        ]]>
+    </update>
+    <update id="updateMenuName" parameterClass="com.siping.wechat.bean.WechatMenu">
+        <![CDATA[
+            UPDATE wechat_menu SET
+               updated_date=SYSDATE,
+               updated_by=#updatedBy#,
+               menu_name=#menuName#
+            WHERE id=#id#
+        ]]>
+    </update>
+    <select id="menuKeyIsExist" parameterClass="java.util.Map" resultClass="int">
+        <![CDATA[
+            SELECT count(id) cnt
+            FROM wechat_menu
+            WHERE menu_key=#menuKey#
+            AND id <> #id#
+        ]]>
+    </select>
+    <select id="getMenuById" parameterClass="int" resultClass="com.siping.wechat.bean.WechatMenu">
+        <![CDATA[
+            SELECT
+                w.id id,
+                w.menu_name menuName,
+                w.menu_type menuType,
+                w.menu_key menuKey,
+                w.menu_url menuUrl,
+                w.reply_text replyText,
+                w.created_date createdDate,
+                w.created_by createdBy,
+                w.updated_date updatedDate,
+                w.updated_by updatedBy
+            FROM wechat_menu w
+            WHERE w.id=#id#
+        ]]>
+    </select>
+
+    <select id="isMenuExistSonMenu" parameterClass="int" resultClass="int">
+        <![CDATA[
+            SELECT 
+               count(w.id) cnt
+            FROM wechat_menu w
+            where w.parent_menu_id=#id#
+        ]]>
+    </select>
+    <select id="getMenuByMenuKey" parameterClass="string" resultClass="com.siping.wechat.bean.WechatMenu">
+        <![CDATA[
+            SELECT
+                w.id id,
+                w.menu_name menuName,
+                w.menu_type menuType,
+                w.menu_key menuKey,
+                w.menu_url menuUrl,
+                w.reply_text replyText,
+                w.created_date createdDate,
+                w.created_by createdBy,
+                w.updated_date updatedDate,
+                w.updated_by updatedBy
+            FROM wechat_menu w
+            WHERE w.menu_key=#key#
+        ]]>
+    </select>
+    <resultMap id="registUserMap" class="com.siping.wechat.bean.WechatUser">
+        <result property="id" column="id" />
+        <result property="openid" column="openid" />
+        <result property="subscribe" column="subscribe" />
+        <result property="subscribeTime" column="subscribeTime" />
+        <result property="nickname" column="nickname" />
+        <result property="sex" column="sex" />
+        <result property="country" column="country" />
+        <result property="province" column="province" />
+        <result property="city" column="city" />
+        <result property="headImgUrl" column="headImgUrl" />
+    </resultMap>
+    <select id="getRegistUserList" resultMap="registUserMap" parameterClass="java.util.Map">
+        <![CDATA[
+            select rui.id id,
+                rui.openid openid,
+                rui.subscribeTime subscribeTime,
+                rui.nickname nickname,
+                rui.sex sex,
+                rui.country country,
+                rui.province province,
+                rui.city city,
+                rui.language language,
+                rui.subscribe subscribe,
+                rui.unsubscribetime unsubscribetime,
+                rui.headImgUrl headImgUrl
+            from regist_user_info rui
+            where rui.nickname like '%'||trim(#keyWord#)||'%'
+            ORDER BY rui.subscribeTime DESC
+        ]]>
+    </select>
+    <select id="getRegistUserListCnt" resultClass="int">
+        <![CDATA[
+            select count(rui.openid)
+            from regist_user_info rui
+            where rui.nickname like '%'||trim(#keyWord#)||'%'
+        ]]>
+    </select>
+    <insert id="updateWechatUser" parameterClass="com.siping.wechat.bean.WechatUser">
+        <![CDATA[
+            update regist_user_info
+            set nickname = #nickname#,
+                sex = #sex#,
+                country = #country#,
+                province = #province#,
+                city = #city#,
+                language = #language#,
+                headImgUrl = #headImgUrl#,
+                subscribe = #subscribe#
+             where openid = #openid#
+        ]]>
+    </insert>
+
+    <insert id="insertWechatUser" parameterClass="com.siping.wechat.bean.WechatUser">
+        <![CDATA[
+            insert into regist_user_info
+            (
+                id,
+                openid,
+                subscribeTime,
+                nickname,
+                sex,
+                country,
+                province,
+                city,
+                language,
+                headImgUrl,
+                subscribe
+            )
+            values
+            (
+                regist_user_info_seq.nextval,
+                #openid#,
+                TO_DATE(#subscribeTime#,'yyyy-mm-dd hh24:mi:ss'),
+                #nickname#,
+                #sex#,
+                #country#,
+                #province#,
+                #city#,
+                #language#,
+                #headImgUrl#,
+                #subscribe#
+            )
+        ]]>
+    </insert>
+
+    <select id="getWechatUser" parameterClass="com.siping.wechat.bean.WechatUser" resultClass="com.siping.wechat.bean.WechatUser">
+        select id, openid, nickname, sex, country, province, city, headImgUrl
+        from regist_user_info
+        where openid = #openid#
+    </select>
+    <insert id="insertDayTimes" parameterClass="com.siping.wechat.bean.Visits">
+        <![CDATA[
+            insert into visits
+            (
+                day,
+                times
+            )
+            values
+            (
+                #day#,
+                #times#
+            )
+        ]]>
+    </insert>
+
+    <select id="getDaylyFlowList" resultClass="com.siping.wechat.bean.Visits" parameterClass="int">
+        <![CDATA[
+            select day as day, times as times
+            from visits
+            where day < sysdate
+            and day > sysdate-#days#
+            ORDER BY day
+        ]]>
+    </select>
+
+    <select id="getDaylyWechatFlowList" resultClass="com.siping.wechat.bean.Visits" parameterClass="int">
+        <![CDATA[
+            select TO_DATE(TO_CHAR(subscribeTime,'yyyy-mm-dd'),'yyyy-mm-dd') as day,
+                   count(1) as times
+            from regist_user_info
+            where subscribeTime < sysdate
+            and subscribeTime > sysdate-#days#
+            group by TO_CHAR(subscribeTime,'yyyy-mm-dd')
+            ORDER BY day
+        ]]>
+    </select>
+</sqlMap>

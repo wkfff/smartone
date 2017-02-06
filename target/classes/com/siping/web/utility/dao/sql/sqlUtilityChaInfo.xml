@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="utility.chaInfo">
+	
+	<sql id="searchChannelCondition" >
+	 
+	</sql>
+	
+	<select id="getChannelList" parameterClass="linkMap"
+		resultClass="linkMap" remapResults="true">
+		<![CDATA[
+      SELECT  CHBA.CHANNEL_ID   CHANNEL_ID,
+              CHBA.CHANNEL_NAME CHANNEL_NAME,
+              CHBA.TOTAL_CREDIT TOTAL_CREDIT,
+              CHBA.LEFT_CREDIT  LEFT_CREDIT,
+              CHBA.CHA_LEVEL    CHA_LEVEL
+      FROM CHA_BASIC_INFO    CHBA
+		]]>
+	</select>
+	
+	<select id="getChannelListCnt" parameterClass="linkMap"
+		resultClass="int">
+		<![CDATA[
+	 SELECT COUNT(0)
+     FROM CHA_BASIC_INFO    CHBA
+   	   	]]>
+	</select>
+	
+</sqlMap>

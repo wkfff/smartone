@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="att.detail">
+ 
+ <select id="getAttDetailList" resultClass="linkMap" parameterClass="linkMap">
+	<![CDATA[	
+		SELECT AR_DETAIL.PK_NO,
+			AR_DETAIL.EMPID, 
+			IF(#language#='en', HR_EMPLOYEE.ENGLISHNAME, HR_EMPLOYEE.CHINESENAME)||' ['||AR_DETAIL.EMPID||']' CHINESENAME,
+			HR_DEPARTMENT.DEPTID, 
+			IF(#language#='en', HR_DEPARTMENT.DEPT_EN_NAME, HR_DEPARTMENT.DEPTNAME) DEPTNAME,
+			AR_DETAIL.AR_DATE_STR,
+			AR_DETAIL.DATE_TYPE,
+			AR_DETAIL.AR_MONTH_STR,
+			AR_DETAIL.AR_ITEM_NO ITEM_NO,
+			IF(#language#='en', AR_ITEM.ITEM_EN_NAME, AR_ITEM.ITEM_NAME) ITEM_NAME, 
+			IFNULL(date_format(AR_DETAIL.FROM_TIME, '%Y-%m-%d %T'), '') FROMTIME,
+			IFNULL(date_format(AR_DETAIL.TO_TIME, '%Y-%m-%d %T'), '') TOTIME,
+			AR_DETAIL.SHIFT_NO,
+			DECODE(#language#, 'en', AR_SHIFT010.SHIFT_EN_NAME, AR_SHIFT010.SHIFT_NAME) SHIFT_NAME, 
+			AR_DETAIL.QUANTITY,
+			AR_DETAIL.UNIT UNIT_CODE,
+			DECODE(#language#, 'en', A.CODE_EN_NAME, A.CODE_NAME) UNIT_NAME, 
+			DECODE(AR_DETAIL.LOCK_YN,
+				'Y',
+				DECODE(#language#, 'en', 'Locked', '锁定'),
+				DECODE(#language#, 'en', 'Unlocked', '未锁定')) LOCK_YN_NAME,
+				AR_DETAIL.LOCK_YN LOCK_YN_CODE
+		FROM AR_DETAIL,
+			HR_EMPLOYEE,
+			HR_DEPARTMENT,
+			AR_SHIFT010,
+			AR_ITEM,
+			SY_CODE	A
+		WHERE AR_DETAIL.EMPID = HR_EMPLOYEE.EMPID
+		AND HR_EMPLOYEE.DEPTID = HR_DEPARTMENT.DEPTID
+		AND AR_DETAIL.SHIFT_NO = AR_SHIFT010.SHIFT_NO
+		AND AR_DETAIL.AR_ITEM_NO = AR_ITEM.ITEM_NO
+		AND AR_DATE_STR BETWEEN #sDate# AND #eDate#
+		AND (AR_DETAIL.EMPID LIKE '%' || TRIM(#keyWord:VARCHAR#) || '%'
+		OR HR_EMPLOYEE.CHINESENAME LIKE '%' || TRIM(#keyWord:VARCHAR#) ||'%' 
+		OR HR_EMPLOYEE.ENGLISHNAME LIKE '%' || TRIM(#keyWord:VARCHAR#) ||'%' 
+		OR HR_EMPLOYEE.CHINESE_PINYIN LIKE '%' || TRIM(#keyWord:VARCHAR#) ||'%' 
+		OR AR_ITEM.ITEM_NAME LIKE '%' || TRIM(#keyWord:VARCHAR#) || '%'
+		OR HR_DEPARTMENT.DEPTNAME LIKE '%' || TRIM(#keyWord:VARCHAR#) || '%')
+		AND AR_DETAIL.UNIT = A.CODE_ID(+)
+		]]>
+		<isNotEmpty prepend="AND" property="deptID">
+			<![CDATA[
+					EXISTS (
+						SELECT	*
+							FROM HR_DEPARTMENT B1
+							WHERE B1.DEPTID=HR_EMPLOYEE.DEPTID
+						START WITH B1.DEPTID = #deptID:VARCHAR#
+						CONNECT BY PRIOR B1.DEPTID = B1.PARENT_DEPT_ID
+					)
+			]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="AND" property="itemNo">
+			<![CDATA[
+					AR_ITEM.ITEM_NO = #itemNo:VARCHAR#
+			]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="empId">
+			<![CDATA[
+					AR_DETAIL.EMPID = #empId#
+			]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="lockCode">
+			<![CDATA[
+					AR_DETAIL.LOCK_YN = #lockCode:VARCHAR#
+			]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY $sortname$ $sortorder$
+			]]>
+		</isNotEmpty>
+		
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+			ORDER BY AR_DETAIL.AR_DATE_STR, AR_DETAIL.EMPID
+			]]>
+		</isEmpty> 
+	</select>
+
+	<select id="getAttDetailListCnt" resultClass="int" parameterClass="linkMap">
+	<![CDATA[	
+		SELECT	COUNT(*) 
+		FROM AR_DETAIL,
+			HR_EMPLOYEE,
+			HR_DEPARTMENT,
+			AR_SHIFT010,
+			AR_ITEM,
+			SY_CODE	A
+		WHERE AR_DETAIL.EMPID = HR_EMPLOYEE.EMPID
+			AND HR_EMPLOYEE.DEPTID = HR_DEPARTMENT.DEPTID
+			AND AR_DETAIL.SHIFT_NO = AR_SHIFT010.SHIFT_NO
+			AND AR_DETAIL.AR_ITEM_NO = AR_ITEM.ITEM_NO
+			AND AR_DATE_STR BETWEEN #sDate# AND #eDate#
+			AND (AR_DETAIL.EMPID LIKE '%' || TRIM(#keyWord:VARCHAR#) || '%'
+			OR HR_EMPLOYEE.CHINESENAME LIKE '%' || TRIM(#keyWord:VARCHAR#) ||'%' 
+			OR HR_EMPLOYEE.ENGLISHNAME LIKE '%' || TRIM(#keyWord:VARCHAR#) ||'%' 
+			OR HR_EMPLOYEE.CHINESE_PINYIN LIKE '%' || TRIM(#keyWord:VARCHAR#) ||'%' 
+			OR AR_ITEM.ITEM_NAME LIKE '%' || TRIM(#keyWord:VARCHAR#) || '%'
+			OR HR_DEPARTMENT.DEPTNAME LIKE '%' || TRIM(#keyWord:VARCHAR#) || '%')
+			AND AR_DETAIL.UNIT = A.CODE_ID(+)
+		]]>
+		<isNotEmpty prepend="AND" property="deptID">
+			<![CDATA[
+					EXISTS (
+						SELECT	*
+							FROM HR_DEPARTMENT B1
+							WHERE B1.DEPTID=HR_EMPLOYEE.DEPTID
+						START WITH B1.DEPTID = #deptID:VARCHAR#
+						CONNECT BY PRIOR B1.DEPTID = B1.PARENT_DEPT_ID
+					)
+			]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="empId">
+			<![CDATA[
+					AR_DETAIL.EMPID = #empId#
+			]]>
+		</isNotEmpty>
+		<!--
+		<isNotEmpty prepend="AND" property="AR_ADMIN_ID">
+			<![CDATA[
+		 		  EXISTS(
+		 		  	SELECT *
+					  FROM AR_SUPERVISOR_INFO
+					 WHERE AR_SUPERVISOR_INFO.SUPERVISED_DEPTID = HR_EMPLOYEE.DEPTID
+					   AND AR_SUPERVISOR_ID = #AR_ADMIN_ID:VARCHAR#
+		 		  )
+		    ]]>
+		</isNotEmpty>
+		-->
+		<isNotEmpty prepend="AND" property="itemNo">
+			<![CDATA[
+					AR_ITEM.ITEM_NO = #itemNo:VARCHAR#
+			]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="lockCode">
+			<![CDATA[
+					AR_DETAIL.LOCK_YN = #lockCode:VARCHAR#
+			]]>
+		</isNotEmpty>
+	</select>
+
+	<select id="getStartDateStr" resultClass="int" parameterClass="linkMap">
+		<![CDATA[ 		      
+			SELECT START_DATE
+				FROM AR_STATISTIC_DATE
+			WHERE str_to_date(#CUR_DATE#, '%Y-%m-%d') BETWEEN VALID_DATE_FROM AND VALID_DATE_TO
+				AND CPNY_ID = #CPNY_ID#
+				AND ACTIVITY = 1
+		]]>
+	</select>
+
+	<select id="getEndDateStr" resultClass="int" parameterClass="linkMap">
+		<![CDATA[
+			SELECT END_DATE
+				FROM AR_STATISTIC_DATE
+			WHERE str_to_date(#CUR_DATE#, '%Y-%m-%d') BETWEEN VALID_DATE_FROM AND VALID_DATE_TO
+			AND CPNY_ID = #CPNY_ID#
+			AND ACTIVITY = 1
+		]]>
+	</select>
+	<select id="validateDailyLock" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+			SELECT IF(STATUS='LockStatus020',0,1) 
+				FROM AR_DETAIL_LOCK
+				WHERE AR_DATE_STR = date_format(str_to_date(#AR_DATE_STR#,'%Y-%m-%d'),'%Y-%m-%d');
+		]]>
+	</select>
+	<!-- add detail lock data by batch -->
+	<insert id="addDailyLock" parameterClass="linkMap" >
+		<![CDATA[
+				INSERT INTO AR_DETAIL_LOCK 
+					( LOCK_NO,
+						AR_DATE_STR,
+						AR_MONTH_STR,
+						STATUS,
+						CREATE_DATE,
+						CREATED_BY,
+						UPDATE_DATE,
+						UPDATED_BY,
+						ACTIVITY)
+				SELECT AR_DETAIL_LOCK_SEQ.NEXTVAL,
+						date_format(DDATE,'%Y-%m-%d'),
+						 GET_ARMONTH(DDATE),
+						 'LockStatus020',
+						 SYSDATE,
+						 #SupervisorID#,
+						 SYSDATE,
+						 #SupervisorID#,
+						 1
+					FROM AR_CALENDER
+					WHERE DDATE BETWEEN str_to_date(#from_date#,'%Y-%m-%d') AND str_to_date(#to_date#,'%Y-%m-%d')
+					AND NOT EXISTS (SELECT *
+									FROM AR_DETAIL_LOCK
+									WHERE AR_DATE_STR = date_format(DDATE,'%Y-%m-%d')
+									)
+		]]>
+	</insert>
+	<select id="validateDetailItemType" parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[ 
+			SELECT T.UNIT,
+				T.DATE_TYPE,
+				IF(#language#='en', AR_ITEM.ITEM_EN_NAME, AR_ITEM.ITEM_NAME) ITEM_NAME
+			FROM AR_ITEM_PARAM T, AR_ITEM A
+			WHERE T.AR_ITEM_NO = A.ITEM_NO
+			AND T.AR_ITEM_NO = #ITEM_NO:NUMERIC#
+			AND T.AR_GROUP_NO = 'constant' 
+			]]>
+	</select>
+
+	<update id="updateAttDetailInfo" parameterClass="linkMap">
+		<![CDATA[ 
+			UPDATE AR_DETAIL
+				SET AR_ITEM_NO = #ITEM_NO#, QUANTITY = #QUANTITY#, UNIT = #UNIT_CODE#
+			WHERE PK_NO = #PK_NO#
+		]]>
+	</update> 
+	<update id="updateAttDaliyLockInfo" parameterClass="linkMap">
+		<![CDATA[
+			UPDATE AR_DETAIL_LOCK SET
+				STATUS = IF(#MONTHLY_LOCK_FLAG#='0','LockStatus020','LockStatus010'), 
+				UPDATED_BY = #UPDATED_BY:VARCHAR#,
+				UPDATE_DATE = SYSDATE 
+		]]>
+		<dynamic prepend="WHERE"> 
+			<isNotEmpty prepend="" property="AR_DATE_STR">
+				<![CDATA[
+					AR_DATE_STR = #AR_DATE_STR#
+				]]>
+			</isNotEmpty>
+			<isNotEmpty prepend="" property="arMonth">
+				<![CDATA[
+					AR_MONTH_STR = #arMonth#
+				]]>
+			</isNotEmpty>
+		</dynamic>  
+	</update>
+
+	<delete id="deleteAttDetailInfo" parameterClass="linkMap">
+		<![CDATA[ 
+			DELETE FROM AR_DETAIL WHERE PK_NO =#PK_NO#
+		]]>
+	</delete >
+
+	<insert id="addAttDetailInfo" parameterClass="linkMap">
+	<![CDATA[ 
+		INSERT INTO  AR_DETAIL
+			(
+			PK_NO,
+			EMPID,
+			  AR_ITEM_NO,
+			  FROM_TIME,
+			  TO_TIME,
+			  SHIFT_NO,
+			  AR_DATE_STR,
+			  AR_MONTH_STR,
+			  QUANTITY,
+			  LOCK_YN,
+			  DATE_TYPE,
+			  UNIT
+			)
+			VALUES
+			(
+			  AR_DETAIL_SEQ.NEXTVAL,
+			  #EMPID#,       
+			  #AR_ITEM_NO#,   
+			  str_to_date(#FROM_TIME#,'%Y-%m-%d %H:%i'),  
+			  str_to_date(#TO_TIME#,'%Y-%m-%d %H:%i'),    
+			  AR_GET_SHIFTNO(#EMPID#,#AR_DATE_STR#), 
+			  #AR_DATE_STR# , 
+			  AR_GET_MONTHSTR(#AR_DATE_STR#), 
+			  #QUANTITY#,
+			  'Y',
+			  AR_GET_DATETYPE(#EMPID#,#AR_DATE_STR#),
+			  #UNIT# 
+			)
+	]]>
+	</insert >
+
+	<select id="getAttDaliyLockInfo" parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[ 
+			SELECT LOCK_NO, AR_DATE_STR, AR_MONTH_STR, STATUS, ACTIVITY, ARC.*
+			FROM AR_DETAIL_LOCK ARD,
+				(SELECT *
+				FROM AR_CALENDER
+			WHERE (SELECT GET_ARMONTH(DDATE) ) = #AR_MONTH#
+			ORDER BY IYEAR, IMONTH, IDAY) ARC
+			WHERE ACTIVITY = 1
+			AND ARD.AR_DATE_STR = date_format(ARC.DDATE, '%Y-%m-%d')
+		]]>
+	</select>
+</sqlMap>

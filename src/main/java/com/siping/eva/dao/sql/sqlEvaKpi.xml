@@ -1,0 +1,744 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="eva.myKpi">
+	<sql id="getEvaKpiTypeInfoCondition">
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+				CPNY_ID = #CPNY_ID#
+			]]>
+		</isNotEmpty>
+	</sql>
+	<select id="getEvaKpiTypeInfo" parameterClass="linkMap"
+		resultClass="linkMap" remapResults="true">
+		<![CDATA[
+		SELECT	EVA_TYPE_NO,
+				EVA_TYPE_ID, 
+				DECODE(#language#, 'en', EVA_TYPE_EN_NAME, EVA_TYPE_NAME) EVA_TYPE_NAME,
+				DESCRIPTION,
+				ACTIVITY
+		FROM	EVA_KPI_TYPE
+		WHERE	ACTIVITY = 1
+		]]>
+		<include refid="getEvaKpiTypeInfoCondition" />
+	</select>
+
+	<select id="getEvaKpiTypeInfoCnt" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+			SELECT	COUNT(*)
+				FROM	EVA_KPI_TYPE
+				WHERE	ACTIVITY = 1
+		]]>
+		<include refid="getEvaKpiTypeInfoCondition" />
+	</select>
+
+
+
+
+	<sql id="getEvaKpiItemInfoCondition">
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+				EI.CPNY_ID = #CPNY_ID#
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="EVA_TYPE_ID">
+			<![CDATA[
+				EI.EVA_TYPE_ID = #EVA_TYPE_ID#
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+			(
+				EI.EVA_KPI_NAME LIKE '%'||TRIM(#keyWord#)||'%'
+				OR EI.KPI_DEFINE LIKE '%'||TRIM(#keyWord#)||'%'
+				OR EI.CAL_DES LIKE '%'||TRIM(#keyWord#)||'%'
+			)
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="EVA_KPI_ID">
+			<![CDATA[
+				EI.EVA_KPI_ID = #EVA_KPI_ID#
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="MANAGER_ID">
+			<![CDATA[
+				EI.EVA_KPI_ID IN (
+					SELECT EKV.EVA_KPI_ID
+					FROM EVA_KPI_VALIDATER EKV
+					WHERE EKV.EMPID = #MANAGER_ID#
+					AND	EKV.ACTIVITY = 1
+				)
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="isExistKpiName">
+			<![CDATA[
+				EI.EVA_KPI_NAME = #isExistKpiName#
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="ownKpiNo">
+			<![CDATA[
+				EI.EVA_KPI_NO <> #ownKpiNo#
+			]]>
+		</isNotEmpty>
+	</sql>
+	<select id="getEvaKpiItemInfo" parameterClass="linkMap"
+		resultClass="linkMap" remapResults="true">
+		<![CDATA[
+		SELECT	EI.EVA_KPI_NO EVA_KPI_NO,
+				EI.EVA_KPI_ID EVA_KPI_ID,
+				DECODE(#language#, 'en', EI.EVA_KPI_EN_NAME, EI.EVA_KPI_NAME) EVA_KPI_NAME,
+				EI.KPI_DEFINE KPI_DEFINE,
+				EI.CAL_DES CAL_DES,
+				EI.ACTIVITY ACTIVITY,
+				ET.EVA_TYPE_NAME EVA_TYPE_NAME,
+				EI.KPI_STANDARD KPI_STANDARD
+		FROM	EVA_KPI_ITEM EI,EVA_KPI_TYPE ET
+		WHERE	EI.ACTIVITY = 1
+		AND		ET.ACTIVITY = 1
+		AND		EI.EVA_TYPE_ID = ET.EVA_TYPE_ID
+		]]>
+		<include refid="getEvaKpiItemInfoCondition" />
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY $sortname$ $sortorder$
+			]]>
+		</isNotEmpty>
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY NLSSORT(EVA_KPI_NAME,'NLS_SORT=SCHINESE_PINYIN_M')
+			]]>
+		</isEmpty>
+	</select>
+
+	<select id="getEvaKpiItemInfoCnt" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+			SELECT	COUNT(*)
+				FROM	EVA_KPI_ITEM EI,EVA_KPI_TYPE ET
+			WHERE	EI.ACTIVITY = 1
+			AND		ET.ACTIVITY = 1
+			AND		EI.EVA_TYPE_ID = ET.EVA_TYPE_ID
+		]]>
+		<include refid="getEvaKpiItemInfoCondition" />
+	</select>
+
+	<select id="getEvaKpiItemInfoUnused" parameterClass="linkMap"
+		resultClass="linkMap" remapResults="true">
+		<![CDATA[
+		SELECT	EI.EVA_KPI_NO EVA_KPI_NO,
+				EI.EVA_KPI_ID EVA_KPI_ID,
+				DECODE(#language#, 'en', EI.EVA_KPI_EN_NAME, EI.EVA_KPI_NAME) EVA_KPI_NAME,
+				EI.KPI_DEFINE KPI_DEFINE,
+				EI.CAL_DES CAL_DES,
+				EI.ACTIVITY ACTIVITY,
+				ET.EVA_TYPE_NAME EVA_TYPE_NAME,
+				100 AS MAX_SCORE,
+				0 AS MIN_SCORE,
+				EI.KPI_STANDARD KPI_STANDARD
+		FROM	EVA_KPI_ITEM EI,EVA_KPI_TYPE ET
+		WHERE	EI.ACTIVITY = 1
+		AND		ET.ACTIVITY = 1
+		AND		EI.EVA_TYPE_ID = ET.EVA_TYPE_ID
+		AND		(SELECT COUNT(*) FROM EVA_KPI_BEVALIDATER EB 
+				WHERE	EB.EVA_KPI_ID = EI.EVA_KPI_ID
+				AND		EB.ACTIVITY = 1
+				AND		EB.POST_ID = #POST_ID#
+				AND		EB.PA_MONTH = #PA_MONTH#)<=0
+		]]>
+		<include refid="getEvaKpiItemInfoCondition" />
+	</select>
+
+	<select id="getEvaKpiItemInfoCntUnused" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+			SELECT	COUNT(*)
+			FROM	EVA_KPI_ITEM EI,EVA_KPI_TYPE ET
+			WHERE	EI.ACTIVITY = 1
+			AND		ET.ACTIVITY = 1
+			AND		EI.EVA_TYPE_ID = ET.EVA_TYPE_ID
+			AND		(SELECT COUNT(*) FROM EVA_KPI_BEVALIDATER EB 
+					WHERE	EB.EVA_KPI_ID = EI.EVA_KPI_ID
+					AND		EB.ACTIVITY = 1
+					AND		EB.POST_ID = #POST_ID#
+					AND		EB.PA_MONTH = #PA_MONTH#)<=0
+		]]>
+		<include refid="getEvaKpiItemInfoCondition" />
+	</select>
+	
+	
+	<select id="getEvaKpiItemInfoUnusedManager" parameterClass="linkMap"
+		resultClass="linkMap" remapResults="true">
+		<![CDATA[
+		SELECT	EI.EVA_KPI_NO EVA_KPI_NO,
+				EI.EVA_KPI_ID EVA_KPI_ID,
+				DECODE('zh', 'en', EI.EVA_KPI_EN_NAME, EI.EVA_KPI_NAME) EVA_KPI_NAME,
+				EI.KPI_DEFINE KPI_DEFINE,
+				EI.CAL_DES CAL_DES,
+				EI.ACTIVITY ACTIVITY,
+				ET.EVA_TYPE_NAME EVA_TYPE_NAME,
+				EI.KPI_STANDARD KPI_STANDARD
+		FROM	EVA_KPI_ITEM EI,EVA_KPI_TYPE ET
+		WHERE	EI.ACTIVITY = 1
+		AND		ET.ACTIVITY = 1
+		AND		EI.EVA_TYPE_ID = ET.EVA_TYPE_ID
+		AND		EI.EVA_KPI_ID NOT IN (
+				SELECT EKV.EVA_KPI_ID
+				FROM	EVA_KPI_VALIDATER EKV
+				WHERE	EKV.EMPID = #EMPID#
+				AND	EKV.ACTIVITY = 1
+			)
+		]]>
+		<include refid="getEvaKpiItemInfoCondition" />
+	</select>
+
+	<select id="getEvaKpiItemInfoCntUnusedManager" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+			SELECT	COUNT(*)
+			FROM	EVA_KPI_ITEM EI,EVA_KPI_TYPE ET
+			WHERE	EI.ACTIVITY = 1
+			AND		ET.ACTIVITY = 1
+			AND		EI.EVA_TYPE_ID = ET.EVA_TYPE_ID
+			AND		EI.EVA_KPI_ID NOT IN (
+					SELECT EKV.EVA_KPI_ID
+					FROM	EVA_KPI_VALIDATER EKV
+					WHERE	EKV.EMPID = #EMPID#
+					AND	EKV.ACTIVITY = 1
+				)
+		]]>
+		<include refid="getEvaKpiItemInfoCondition" />
+	</select>
+
+
+	<insert id="addKpiTypeInfo" parameterClass="linkMap">
+		<![CDATA[
+			INSERT INTO EVA_KPI_TYPE
+				(
+					EVA_TYPE_NO,
+					EVA_TYPE_ID,
+					EVA_TYPE_NAME,
+					CREATED_BY,
+					CREATE_DATE,
+					ACTIVITY,
+					CPNY_ID,
+					DESCRIPTION
+				)
+			VALUES(
+					EVA_KPI_TYPE_SEQ.NEXTVAL,
+					'KPI_TYPE_' || EVA_KPI_TYPE_SEQ.CURRVAL,
+					#EVA_TYPE_NAME#,
+					#CREATED_BY#,
+					SYSDATE,
+					1,
+					#CPNY_ID#,
+					#DESCRIPTION#
+				)
+		]]>
+	</insert>
+
+	<update id="updateKpiTypeInfo" parameterClass="linkMap">
+		<![CDATA[
+			UPDATE EVA_KPI_TYPE SET
+					EVA_TYPE_NAME = #EVA_TYPE_NAME#,
+					DESCRIPTION = #DESCRIPTION#,
+					UPDATED_BY = #UPDATED_BY#,
+					UPDATE_DATE = #UPDATE_DATE#
+			WHERE EVA_TYPE_NO = #EVA_TYPE_NO#
+		]]>
+	</update>
+
+	<select id="checkDeleteKpiTypeInfo" parameterClass="linkMap"
+		resultClass="int">
+		<![CDATA[
+			SELECT COUNT(*) FROM EVA_KPI_ITEM
+			WHERE	EVA_TYPE_ID = #EVA_TYPE_ID#
+			AND		ACTIVITY = 1
+		]]>
+	</select>
+	
+	<delete id="deleteKpiTypeInfo" parameterClass="linkMap">
+		<![CDATA[
+			UPDATE EVA_KPI_TYPE 
+				SET ACTIVITY = 0,
+				UPDATED_BY = #UPDATED_BY#,
+				UPDATE_DATE = SYSDATE
+			WHERE EVA_TYPE_NO = #EVA_TYPE_NO#
+		]]>
+	</delete>
+
+	<insert id="addKpiItemInfo" parameterClass="linkMap">
+		<![CDATA[
+			INSERT INTO EVA_KPI_ITEM (
+				EVA_KPI_NO,
+				EVA_TYPE_ID,
+				EVA_KPI_ID,
+				EVA_KPI_NAME,
+				EVA_KPI_EN_NAME,
+				KPI_DEFINE,
+				CAL_DES,
+				CREATE_DATE,
+				CREATED_BY,
+				ACTIVITY,
+				CPNY_ID,
+				KPI_STANDARD)
+			VALUES(
+				EVA_KPI_ITEM_SEQ.NEXTVAL ,
+				#EVA_TYPE_ID#,
+				'KPI_ITEM_' || EVA_KPI_ITEM_SEQ.CURRVAL,
+				#EVA_KPI_NAME#,
+				#EVA_KPI_EN_NAME#,
+				#KPI_DEFINE#,
+				#CAL_DES#,
+				SYSDATE,
+				#CREATED_BY#, 
+				1,
+				#CPNY_ID#,
+				#KPI_STANDARD#)
+		]]>
+	</insert>
+	
+	<delete id="deleteKpiItemInfo" parameterClass="linkMap">
+		<![CDATA[
+			UPDATE		EVA_KPI_ITEM
+				SET		ACTIVITY = 0,
+						UPDATED_BY = #UPDATED_BY#,
+						UPDATE_DATE = SYSDATE
+				WHERE	EVA_KPI_NO = #EVA_KPI_NO#
+		]]>
+	</delete>
+	
+	<select id="checkKpiItemDis" parameterClass="linkMap"
+		resultClass="int">
+		<![CDATA[
+			SELECT COUNT(*) FROM(
+				SELECT EKB.EVA_KPI_ID FROM EVA_KPI_BEVALIDATER EKB
+					WHERE	EKB.EVA_KPI_ID = #EVA_KPI_ID#
+					AND		EKB.ACTIVITY = 1
+				UNION ALL
+					SELECT EKV.EVA_KPI_ID FROM EVA_KPI_VALIDATER EKV
+					WHERE	EKV.EVA_KPI_ID = #EVA_KPI_ID#
+					AND		EKV.ACTIVITY = 1
+			)
+		]]>
+	</select>
+	
+	<update id="updateKpiItemInfo" parameterClass="linkMap">
+		<![CDATA[
+			UPDATE EVA_KPI_ITEM SET
+				EVA_KPI_NAME = #EVA_KPI_NAME#,
+				UPDATED_BY = #UPDATED_BY#,
+				UPDATE_DATE = SYSDATE,
+				KPI_DEFINE = #KPI_DEFINE#,
+				CAL_DES = #CAL_DES#,
+				KPI_STANDARD = #KPI_STANDARD#
+			WHERE EVA_KPI_NO = #EVA_KPI_NO#
+		]]>
+	</update>
+
+
+
+	<sql id="getKpiItemByMonthCondition">
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+				EI.CPNY_ID = #CPNY_ID#
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="EVA_TYPE_ID">
+			<![CDATA[
+				EI.EVA_TYPE_ID = #EVA_TYPE_ID#
+			]]>
+		</isNotEmpty>
+	</sql>
+	<select id="getKpiItemByMonth" parameterClass="linkMap"
+		resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT	EI.EVA_KPI_NO EVA_KPI_NO,
+					EI.EVA_KPI_ID EVA_KPI_ID,
+					DECODE(#language#, 'en', EI.EVA_KPI_EN_NAME, EI.EVA_KPI_NAME) EVA_KPI_NAME,
+					EI.KPI_DEFINE KPI_DEFINE,
+					EI.CAL_DES CAL_DES,
+					EI.ACTIVITY ACTIVITY,
+					ET.EVA_TYPE_NAME EVA_TYPE_NAME,
+					EB.MAX_SCORE MAX_SCORE,
+					EB.MIN_SCORE MIN_SCORE,
+					EI.KPI_STANDARD KPI_STANDARD
+			FROM	EVA_KPI_ITEM EI,EVA_KPI_TYPE ET,EVA_KPI_BEVALIDATER EB
+			WHERE	EI.ACTIVITY = 1
+			AND		EB.ACTIVITY = 1
+			AND		ET.ACTIVITY = 1
+			AND		EI.EVA_TYPE_ID = ET.EVA_TYPE_ID
+			AND		EI.EVA_KPI_ID = EB.EVA_KPI_ID
+			AND		EB.POST_ID = #POST_ID#
+			AND		EB.PA_MONTH = #PA_MONTH#
+		]]>
+		<include refid="getKpiItemByMonthCondition" />
+	</select>
+
+	<select id="getKpiItemByMonthCnt" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+			SELECT	COUNT(*)
+			FROM	EVA_KPI_ITEM EI,EVA_KPI_TYPE ET,EVA_KPI_BEVALIDATER EB
+			WHERE	EI.ACTIVITY = 1
+			AND		EB.ACTIVITY = 1
+			AND		ET.ACTIVITY = 1
+			AND		EI.EVA_TYPE_ID = ET.EVA_TYPE_ID
+			AND		EI.EVA_KPI_ID = EB.EVA_KPI_ID
+			AND		EB.POST_ID = #POST_ID#
+			AND		EB.PA_MONTH = #PA_MONTH#
+		]]>
+		<include refid="getKpiItemByMonthCondition" />
+	</select>
+
+
+	<sql id="getKpiItemByMonthIsScoreCondition">
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+				(
+					HE.CHINESENAME	LIKE '%'||TRIM(#keyWord#)||'%'
+					OR HE.EMPID 	LIKE '%'||TRIM(#keyWord#)||'%'
+				)
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+				HE.CPNY_ID = #CPNY_ID#
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="EVA_TYPE_ID">
+			<![CDATA[
+				EKI.EVA_TYPE_ID = #EVA_TYPE_ID#
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="validaterEmpId">
+			<![CDATA[
+				EKV.EMPID = #validaterEmpId#
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="HR_ADMIN_ID">
+			<![CDATA[
+				EXISTS (
+					SELECT EMPID FROM
+						(
+						SELECT EMPID FROM HR_POST_RECORDS H2
+							WHERE EXISTS
+							(
+							SELECT S2.ADMINID AS EMPID
+								FROM SY_ADMIN_DEPTID S1, SY_ADMIN S2
+								WHERE S2.ADMINNO = S1.ADMIN_NO
+								AND S2.ADMINID = #HR_ADMIN_ID#
+								AND H2.DEPTID=S1.ADMIN_DEPTID
+							)
+						AND H2.NO=(
+									SELECT MAX(HPE2.NO)
+									FROM HR_POST_RECORDS HPE2
+									WHERE HPE2.EMPID = H2.EMPID
+									AND   HPE2.START_DATE <= TO_DATE(#PA_MONTH#,'YYYYMM')
+							)
+						UNION
+						SELECT #HR_ADMIN_ID# AS EMPID FROM DUAL
+					) S3
+					WHERE S3.EMPID = HE.EMPID
+				)
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="DEPTID">
+			<![CDATA[
+				HP.DEPTID = #DEPTID#
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="EMPID">
+			<![CDATA[
+				HE.EMPID = #EMPID#
+			]]>
+		</isNotEmpty>
+	</sql>
+
+	<select id="getKpiItemByMonthIsScore" parameterClass="linkMap"
+		resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT
+				DISTINCT
+				HE.EMPID,
+				HE.CHINESENAME,
+				HP2.POST_NAME,
+				HD.DEPTNAME,
+				EKI.EVA_KPI_NO,
+				EKI.EVA_KPI_ID,
+				EKI.EVA_KPI_NAME,
+				EKI.KPI_DEFINE,
+				EKI.KPI_STANDARD,
+				EKI.CAL_DES,
+				EKT.EVA_TYPE_NAME,
+				EKB.MIN_SCORE,
+				EKB.MAX_SCORE,
+				NVL((SELECT ES.SCORE 
+					FROM	EVA_KPI_SCORE ES
+					WHERE	ES.EMPID = HE.EMPID
+						AND		ES.EVA_KPI_ID = EKB.EVA_KPI_ID
+						AND		ES.PA_MONTH = #PA_MONTH#),0) SCORE,
+				NVL((SELECT ES.DESCRIPTION 
+					FROM	EVA_KPI_SCORE ES
+					WHERE	ES.EMPID = HE.EMPID
+					AND		ES.EVA_KPI_ID = EKB.EVA_KPI_ID
+					AND		ES.PA_MONTH = #PA_MONTH#),'') DESCRIPTION,
+				NVL((SELECT HRE.CHINESENAME
+					FROM HR_EMPLOYEE HRE,EVA_KPI_SCORE EKS
+					WHERE HRE.EMPID = EKS.VALIDATER_ID
+					AND		EKS.PA_MONTH = #PA_MONTH#
+					AND		EKS.EVA_KPI_ID = EKB.EVA_KPI_ID
+					AND		EKS.EMPID = HE.EMPID),'') VALIDATERNAME
+			FROM
+				HR_EMPLOYEE HE,
+				HR_POST_RECORDS HP,
+				HR_POST HP2,
+				HR_DEPARTMENT HD,
+				EVA_KPI_ITEM EKI,
+				EVA_KPI_TYPE EKT,
+				EVA_KPI_BEVALIDATER EKB,
+				EVA_KPI_VALIDATER EKV
+			WHERE	1=1
+			
+			AND		HP.NO=(
+						SELECT MAX(HPE.NO)
+						FROM HR_POST_RECORDS HPE
+						WHERE HPE.EMPID = HE.EMPID
+						AND   HPE.START_DATE <= TO_DATE(#PA_MONTH#,'YYYYMM')
+					)
+			AND		HP2.POST_ID = HP.POST_ID
+			AND		HD.DEPTID = HP.DEPTID
+			AND		EKB.POST_ID = HP.POST_ID
+			AND		EKB.EVA_KPI_ID = EKI.EVA_KPI_ID
+			AND		EKI.EVA_TYPE_ID = EKT.EVA_TYPE_ID
+			AND		EKV.EVA_KPI_ID = EKB.EVA_KPI_ID
+			AND		EKB.PA_MONTH = #PA_MONTH#
+			AND		HE.ACTIVITY = 1
+			AND		HP.ACTIVITY = 1
+			AND		EKI.ACTIVITY = 1
+			AND		EKT.ACTIVITY = 1 
+			AND		EKB.ACTIVITY = 1
+			AND		EKV.ACTIVITY = 1
+		]]>
+		<include refid="getKpiItemByMonthIsScoreCondition" />
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY $sortname$ $sortorder$
+			]]>
+		</isNotEmpty>
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY HE.EMPID
+			]]>
+		</isEmpty>
+	</select>
+
+	<select id="getKpiItemByMonthCntIsScore" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+		SELECT COUNT(0) FROM (
+			SELECT
+				DISTINCT
+				HE.EMPID,
+				EKB.MIN_SCORE,
+				EKI.EVA_KPI_NO
+			FROM
+				HR_EMPLOYEE HE,
+				HR_POST_RECORDS HP,
+				EVA_KPI_ITEM EKI,
+				EVA_KPI_TYPE EKT,
+				EVA_KPI_BEVALIDATER EKB,
+				EVA_KPI_VALIDATER EKV
+			WHERE	1=1
+			
+			AND		HP.NO=(
+						SELECT MAX(HPE.NO)
+						FROM HR_POST_RECORDS HPE
+						WHERE HPE.EMPID = HE.EMPID
+						AND   HPE.START_DATE <= TO_DATE(#PA_MONTH#,'YYYYMM')
+					)
+			AND		EKB.POST_ID = HP.POST_ID
+			AND		EKB.EVA_KPI_ID = EKI.EVA_KPI_ID
+			AND		EKI.EVA_TYPE_ID = EKT.EVA_TYPE_ID
+			AND		EKV.EVA_KPI_ID = EKB.EVA_KPI_ID
+			AND		EKB.PA_MONTH = #PA_MONTH#
+			AND		HE.ACTIVITY = 1
+			AND		HP.ACTIVITY = 1
+			AND		EKI.ACTIVITY = 1
+			AND		EKT.ACTIVITY = 1 
+			AND		EKB.ACTIVITY = 1
+			AND		EKV.ACTIVITY = 1
+		]]>
+		<include refid="getKpiItemByMonthIsScoreCondition" />
+		<![CDATA[
+		)
+		]]>
+	</select>
+
+	
+	<insert id="addKpiBevalidaterInfo" parameterClass="linkMap" >
+		<![CDATA[
+			INSERT INTO EVA_KPI_BEVALIDATER (
+					EVA_KPI_ID,
+					POST_ID,
+					PA_MONTH,
+					CREATED_BY,
+					CREATE_DATE,
+					ACTIVITY,
+					CPNY_ID,
+					MAX_SCORE,
+					MIN_SCORE
+				)
+				VALUES(
+					#EVA_KPI_ID#,
+					#POST_ID#,
+					#PA_MONTH#,
+					#CREATED_BY#,
+					SYSDATE,
+					1,
+					#CPNY_ID#,
+					#MAX_SCORE#,
+					#MIN_SCORE#
+				)
+		]]>
+	</insert>
+	
+	<delete id="deleteDistriKpiItemInfo" parameterClass="linkMap">
+		<![CDATA[
+			DECLARE
+			BEGIN
+				UPDATE EVA_KPI_BEVALIDATER
+					SET ACTIVITY = 0,
+						UPDATED_BY = #UPDATED_BY#,
+						UPDATE_DATE = SYSDATE
+				WHERE	EVA_KPI_ID = #EVA_KPI_ID#
+				AND		POST_ID = #POST_ID#
+				AND		PA_MONTH = #PA_MONTH#;
+				
+				DELETE FROM EVA_KPI_SCORE 
+				WHERE	EVA_KPI_ID = #EVA_KPI_ID#
+				AND		PA_MONTH = #PA_MONTH#
+				AND		EMPID IN (
+						SELECT HE.EMPID FROM HR_EMPLOYEE HE
+						WHERE HE.POST_ID = #POST_ID#
+						);
+			END;
+		]]>
+	</delete>
+	
+	
+	<select id="getKpiItemManager" parameterClass="linkMap"
+		resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT 
+				HE.EMPID EMPID,
+				HE.CHINESENAME CHINESENAME,
+				HD.DEPTNAME DEPTNAME,
+				HE.POST_ID,
+				DECODE(#language#,'en',HP.POST_EN_NAME,HP.POST_NAME) POST_NAME,
+				DECODE(#language#, 'en', A.CODE_EN_NAME, A.CODE_NAME) STATUS
+			FROM 
+				HR_EMPLOYEE HE,
+				HR_DEPARTMENT HD,
+				EVA_KPI_VALIDATER EKV,
+				HR_POST HP,
+				SY_CODE A
+			WHERE	HE.DEPTID = HD.DEPTID
+			AND		EKV.EMPID = HE.EMPID
+			AND		HE.STATUS_CODE = A.CODE_ID
+			AND		EKV.ACTIVITY = 1
+			AND		HE.POST_ID = HP.POST_ID(+)
+			AND		EKV.EVA_KPI_ID = #EVA_KPI_ID#
+		]]>
+	</select>
+
+	<select id="getKpiItemManagerCnt" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+			SELECT 
+				COUNT(*)
+			FROM 
+				HR_EMPLOYEE HE,
+				HR_DEPARTMENT HD,
+				EVA_KPI_VALIDATER EKV,
+				HR_POST HP,
+				SY_CODE A
+			WHERE	HE.DEPTID = HD.DEPTID
+			AND		EKV.EMPID = HE.EMPID
+			AND		HE.STATUS_CODE = A.CODE_ID
+			AND		EKV.ACTIVITY = 1
+			AND		HE.POST_ID = HP.POST_ID(+)
+			AND		EKV.EVA_KPI_ID = #EVA_KPI_ID#
+		]]>
+	</select>
+	
+	
+	<insert id="addKpiManagerInfo" parameterClass="linkMap">
+		<![CDATA[
+			INSERT INTO EVA_KPI_VALIDATER(
+				EVA_KPI_ID,
+				EMPID,
+				CREATED_BY,
+				CREATE_DATE,
+				ACTIVITY,
+				CPNY_ID)
+			VALUES(
+				#EVA_KPI_ID#,
+				#EMPID#,
+				#CREATED_BY#,
+				SYSDATE,
+				1,
+				#CPNY_ID#
+			)
+		]]>
+	</insert>
+	
+	<delete id="deleteKpiManagerInfo" parameterClass="linkMap">
+		<![CDATA[
+			UPDATE EVA_KPI_VALIDATER
+				SET ACTIVITY = 0,
+					UPDATED_BY = #UPDATED_BY#,
+					UPDATE_DATE = SYSDATE
+			WHERE	EVA_KPI_ID = #EVA_KPI_ID#
+			AND		EMPID = #EMPID#
+		]]>
+	</delete>
+	
+	<procedure id="addKpiScoreInfo" parameterClass="linkMap">
+		<![CDATA[
+			{CALL EVA_KPI_ADD_KPISCORE(#EMPID#,#EVA_KPI_ID#,#PA_MONTH#,#SCORE#,#CREATED_BY#,#CPNY_ID#,#DESCRIPTION#,#VALIDATER_ID#)}
+		]]>
+	</procedure>
+	
+	
+	<sql id="getDataScoreByExcelCondition" >
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+				HE.CPNY_ID = #CPNY_ID:VARCHAR#
+			]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="AND" property="DEPTID">
+			<![CDATA[ 
+					EXISTS(
+			 			SELECT *
+						FROM HR_DEPARTMENT
+						WHERE HR_DEPARTMENT.DEPTID = HE.DEPTID
+						START WITH HR_DEPARTMENT.DEPTID = #DEPTID:VARCHAR#
+						CONNECT BY PRIOR HR_DEPARTMENT.DEPTID = HR_DEPARTMENT.PARENT_DEPT_ID
+					)
+			]]>
+		</isNotEmpty>
+	</sql>
+	
+	<select id="getDataScoreByExcel" parameterClass="linkMap" 
+		resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT 
+				HE.EMPID,
+                HE.CHINESENAME,
+                NVL((SELECT SUM(ES.SCORE) FROM EVA_KPI_SCORE ES WHERE ES.PA_MONTH = #PA_MONTH# GROUP BY EMPID HAVING ES.EMPID = HE.EMPID),0) SCORE
+			FROM HR_EMPLOYEE HE
+			WHERE 1=1
+		]]>
+			<include refid="getDataScoreByExcelCondition" />
+		<![CDATA[
+			GROUP BY 
+			HE.EMPID,HE.CHINESENAME
+		]]>
+	</select>
+</sqlMap>

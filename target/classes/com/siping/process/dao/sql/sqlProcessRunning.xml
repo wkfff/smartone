@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap
+    PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+    "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="process.processRunning">
+
+    <resultMap id="processRunningMap" class="processRunning">
+        <result property="no" column="RUNNING_NO" />
+        <result property="state.no" column="STATE_NO" />
+        <result property="state.name" column="STATE_NAME" />
+        <result property="type.no" column="TYPE_NO" />
+        <result property="type.name" column="TYPE_NAME" />
+        <result property="result" column="RESULT" />
+        <result property="dataNo" column="DATA_NO" />
+        <result property="dataClass" column="DATA_CLASS" />
+    </resultMap>
+
+    <select id="getProcessRunning" parameterClass="processRunning" resultMap="processRunningMap">
+        <![CDATA[
+            SELECT  PRI.RUNNING_NO               RUNNING_NO,
+                    PRI.STATE_NO                 STATE_NO,
+                    POTI.OBJECT_TYPE_NAME        TYPE_NAME,
+                    PRI.TYPE_NO                  TYPE_NO,
+                    POSI.STATUS_NAME             STATE_NAME,
+                    DATA_CLASS                   DATA_CLASS,
+                    DATA_NO                      DATA_NO,
+                    RESULT                       RESULT
+            FROM    PROCESS_RUNNING_INFO         PRI,
+                    PROCESS_OBJECT_TYPE_INFO     POTI,
+                    PROCESS_STATUS_INFO          POSI
+            WHERE   PRI.CPNY_ID = #metaData.company.companyId#
+            AND     PRI.STATE_NO = POSI.STATUS_NO(+)
+            AND     PRI.TYPE_NO = POTI.OBJECT_TYPE_NO(+)
+            AND     PRI.DATA_CLASS = #dataClass#
+            AND     PRI.DATA_NO = #dataNo#
+        ]]>
+    </select>
+
+    <insert id="addProcessRunningInfo" parameterClass="processRunning">
+        <selectKey keyProperty="no" resultClass="long"> SELECT PROCESS_RUNNING_SEQ.NEXTVAL AS no FROM DUAL
+        </selectKey>
+        <![CDATA[
+            INSERT INTO PROCESS_RUNNING_INFO (
+                RUNNING_NO,
+                STATE_NO,
+                TYPE_NO,
+                DATA_CLASS,
+                DATA_NO,
+                CREATE_DATE,
+                CREATED_BY,
+                CPNY_ID )
+            VALUES(
+                #no#,
+                #state.no#,
+                #type.no#,
+                #dataClass#,
+                #dataNo#,
+                #metaData.createDate#,
+                #metaData.createUser.adminID#,
+                #metaData.company.companyId#
+                )
+        ]]>
+    </insert>
+
+    <update id="updateProcessRunningInfo" parameterClass="processRunning">
+        <![CDATA[
+            UPDATE PROCESS_RUNNING_INFO SET
+                STATE_NO = #state.no#,
+                TYPE_NO = #type.no#,
+                RESULT = NULL,
+                UPDATE_DATE = #metaData.lastUpdateDate#,
+                UPDATED_BY = #metaData.lastUpdateUser.adminID#
+            WHERE CPNY_ID = #metaData.company.companyId#
+            AND DATA_CLASS = #dataClass#
+            AND DATA_NO = #dataNo#
+        ]]>
+    </update>
+
+    <update id="updateProcessRunningResult" parameterClass="processRunning">
+        <![CDATA[
+            UPDATE PROCESS_RUNNING_INFO SET
+                RESULT = #result#,
+                UPDATE_DATE = #metaData.lastUpdateDate#,
+                UPDATED_BY = #metaData.lastUpdateUser.adminID#
+            WHERE CPNY_ID = #metaData.company.companyId#
+            AND DATA_CLASS = #dataClass#
+            AND DATA_NO = #dataNo#
+        ]]>
+    </update>
+</sqlMap>

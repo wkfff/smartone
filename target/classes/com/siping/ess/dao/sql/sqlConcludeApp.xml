@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="ess.concludeApp">
+	
+	<!-- WH CONCLUSION -->
+	<select id="getAllEmpidList" parameterClass="linkMap" resultClass="string">
+		<![CDATA[
+		SELECT EMPID FROM HR_EMPLOYEE 
+		]]>
+	</select>
+	
+	<select id="getPersonHwConclusionList" parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[
+		SELECT C.WEI_NAME,
+		       C.WEI_NO,
+		       AVG(C.WEI_VALUE) WEI_VALUE, 
+		       SUM(A.WORK_HOUR) WORK_HOUR
+		FROM ESS_APPLY_WH A,
+		     ESS_PROJECT_TYPE_MATCH B,
+		     ESS_PROJECT_WEIGHING C,
+		     ESS_PROJECT D
+		WHERE A.EMPID = #EMPID#
+		  AND A.PRO_NO = D.PRO_NO
+		  AND D.TYPE_CODE = B.PROJECT_TYPE_CODE    
+		  AND B.WEI_NO = C.WEI_NO  
+		  AND A.START_DATE>=str_to_date(#MONTH#,'%Y%m%d')
+          AND A.START_DATE<=LAST_DAY(str_to_date(#MONTH#,'%Y%m%d'))GROUP BY C.WEI_NO, C.WEI_NAME
+		]]>
+	</select>
+	
+	<insert id="addWhConclusion" parameterClass="linkMap">
+		<![CDATA[
+		DECLARE
+		BEGIN
+		DELETE FROM ESS_WH_CONCLUSION WHERE EMPID=#EMPID# AND MONTH = #MONTH#;
+		INSERT INTO ESS_WH_CONCLUSION(WH_CONCLUSION_NO,EMPID,MONTH,TOTAL_WH,TOTAL_WD,
+			WEI_1_HOUR,WEI_1_DAY,
+	        WEI_2_HOUR,WEI_2_DAY,
+	        WEI_3_HOUR,WEI_3_DAY,
+	        WEI_4_HOUR,WEI_4_DAY,
+	        WEI_5_HOUR,WEI_5_DAY,
+	        WEI_6_HOUR,WEI_6_DAY,
+	        WEI_7_HOUR,WEI_7_DAY,
+	        CREATE_DATE,CREATED_BY,ACTIVITY) 
+        VALUES(ESS_WH_CONCLUSION_SEQ.NEXTVAL,#EMPID#,#MONTH#,#TOTAL_WH#,#TOTAL_WD#,
+				#WEI_1_HOUR#,#WEI_1_DAY#,
+	        	#WEI_2_HOUR#,#WEI_2_DAY#,
+	        	#WEI_3_HOUR#,#WEI_3_DAY#,
+	       		#WEI_4_HOUR#,#WEI_4_DAY#,
+	       	    #WEI_5_HOUR#,#WEI_5_DAY#,
+	      	    #WEI_6_HOUR#,#WEI_6_DAY#,
+	       	    #WEI_7_HOUR#,#WEI_7_DAY#,
+	       	    now(),#CREATED_BY#,1);
+	    END;   	    
+		]]>
+	</insert>
+	
+	<select id="getWhConclusionList" parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[
+		SELECT EWC.EMPID,
+		       EWC.MONTH,
+		       HRE.CHINESENAME,
+		       EWC.TOTAL_WH,
+		       EWC.TOTAL_WD,
+			   EWC.WEI_1_HOUR,
+			   EWC.WEI_1_DAY,
+	           EWC.WEI_2_HOUR,
+	           EWC.WEI_2_DAY,
+	           EWC.WEI_3_HOUR,
+	           EWC.WEI_3_DAY,
+	           EWC.WEI_4_HOUR,
+	           EWC.WEI_4_DAY,
+               EWC.WEI_5_DAY,
+               EWC.WEI_6_DAY
+		FROM ESS_WH_CONCLUSION EWC,
+		     HR_EMPLOYEE HRE
+		     WHERE EWC.EMPID = HRE.EMPID
+		       AND EWC.MONTH = #MONTH# 
+		       AND (HRE.LEFT_DATE>= str_to_date(#MONTH#, '%Y%m%d') OR HRE.LEFT_DATE IS NULL)
+		]]>
+	</select>
+	<select id="getWhConclusionListCnt" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+		SELECT COUNT(0) 
+        FROM ESS_WH_CONCLUSION EWC,
+		     HR_EMPLOYEE HRE
+		     WHERE EWC.EMPID = HRE.EMPID
+		       AND EWC.MONTH = #MONTH#
+		       AND (HRE.LEFT_DATE>= str_to_date(#MONTH#, '%Y%m%d') OR HRE.LEFT_DATE IS NULL)
+		]]>
+	</select>
+</sqlMap>

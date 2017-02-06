@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap
+    PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+    "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="bom.bomInfo">
+    <sql id="BOMSearchCondition">
+        <isNotEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+                (
+                    BHI.BOM_NAME            LIKE '%'||TRIM(#keyWord#)||'%'
+                    OR BHI.DESCRIPTION      LIKE '%'||TRIM(#keyWord#)||'%'
+                    OR MI.MAT_ID            LIKE '%'||TRIM(#keyWord#)||'%'
+                    OR MI.MAT_NAME          LIKE '%'||TRIM(#keyWord#)||'%'
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="BOM_STATUS_NO">
+            <![CDATA[
+                PRI.STATE_NO = #BOM_STATUS_NO#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="BOM_TYPE_NO">
+            <![CDATA[
+                PRI.TYPE_NO = #BOM_TYPE_NO#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="E_DATE">
+            <![CDATA[
+               BHI.CREATE_DATE <= TO_DATE(#E_DATE#,'YYYY-MM-DD')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="S_DATE">
+            <![CDATA[
+               BHI.CREATE_DATE >= TO_DATE(#S_DATE#,'YYYY-MM-DD')
+            ]]>
+        </isNotEmpty>
+        <![CDATA[
+            ORDER BY BHI.CREATE_DATE DESC
+        ]]>
+    </sql>
+
+    <resultMap class="bom" id="bomMap">
+        <result property="no" column="BOM_NO"/>
+        <result property="id" column="BOM_ID"/>
+        <result property="material.no" column="MAT_V_NO"/>
+        <result property="material.id" column="MAT_V_ID"/>
+        <result property="factoryId" column="FACTORY_ID"/>
+        <result property="description" column="DESCRIPTION"/>
+        <result property="processRunning.type.no" column="BOM_TYPE_NO"/>
+        <result property="processRunning.type.name" column="BOM_TYPE"/>
+        <result property="processRunning.state.no" column="BOM_STATUS_NO"/>
+        <result property="processRunning.state.name" column="BOM_STATUS"/>
+    </resultMap>
+
+    <select id="getBOMList" parameterClass="linkMap" resultMap="bomMap">
+        <![CDATA[
+            SELECT  BHI.BOM_NO              BOM_NO,
+                    BHI.BOM_ID              BOM_ID,
+                    MI.MAT_ID               MAT_V_ID,
+                    BHI.MAT_V_NO            MAT_V_NO,
+                    PRI.STATE_NO            BOM_STATUS_NO,
+                    PRI.TYPE_NO             BOM_TYPE_NO,
+                    POTI.OBJECT_TYPE_NAME   BOM_TYPE,
+                    PSI.STATUS_NAME         BOM_STATUS,
+                    BHI.FACTORY_ID          FACTORY_ID,
+                    BHI.DESCRIPTION         DESCRIPTION
+            FROM    BOM_HEADER_INFO                 BHI,
+                    MAT_INFO                        MI,
+                    PROCESS_RUNNING_INFO            PRI,
+                    PROCESS_OBJECT_TYPE_INFO        POTI,
+                    PROCESS_STATUS_INFO             PSI
+            WHERE   BHI.ACTIVITY = 1
+            AND     BHI.MAT_V_NO = MI.MAT_NO(+)
+            AND     PRI.TYPE_NO = POTI.OBJECT_TYPE_NO(+)
+            AND     PRI.STATE_NO = PSI.STATUS_NO(+)
+            AND     BHI.RUNNING_NO = PRI.RUNNING_NO(+)
+            AND     BHI.CPNY_ID = #metaData.company.companyId#
+        ]]>
+        <include refid="BOMSearchCondition" />
+    </select>
+
+    <select id="getBOMListCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(0)
+            FROM    BOM_HEADER_INFO                 BHI,
+                    MAT_INFO                        MI,
+                    PROCESS_RUNNING_INFO            PRI,
+                    PROCESS_OBJECT_TYPE_INFO        POTI,
+                    PROCESS_STATUS_INFO             PSI
+            WHERE   BHI.ACTIVITY = 1
+            AND     BHI.MAT_V_NO = MI.MAT_NO(+)
+            AND     PRI.TYPE_NO = POTI.OBJECT_TYPE_NO(+)
+            AND     PRI.STATE_NO = PSI.STATUS_NO(+)
+            AND     BHI.RUNNING_NO = PRI.RUNNING_NO(+)
+            AND     BHI.CPNY_ID = #metaData.company.companyId#
+        ]]>
+        <include refid="BOMSearchCondition" />
+    </select>
+
+    <resultMap class="bom" id="bomDetailMap">
+        <result property="no" column="BOM_NO"/>
+        <result property="id" column="BOM_ID"/>
+        <result property="changeNo.no" column="CHANGE_NO"/>
+        <result property="material.no" column="MAT_V_NO"/>
+        <result property="material.id" column="MAT_V_ID"/>
+        <result property="factoryId" column="FACTORY_ID"/>
+        <result property="description" column="DESCRIPTION"/>
+        <result property="startDate" column="S_DATE"/>
+        <result property="looseRate" column="LOSS_RATE"/>
+        <result property="processRunning.no" column="RUNNING_NO"/>
+    </resultMap>
+
+    <select id="getBOMDetail" parameterClass="bom" resultMap="bomDetailMap" remapResults="true">
+        <![CDATA[
+            SELECT  BHI.BOM_NO              BOM_NO,
+                    BHI.BOM_ID              BOM_ID,
+                    MI.MAT_ID               MAT_V_ID,
+                    BHI.MAT_V_NO            MAT_V_NO,
+                    BHI.CHANGE_NO           CHANGE_NO,
+                    BHI.S_DATE              S_DATE,
+                    BHI.FACTORY_ID          FACTORY_ID,
+                    BHI.LOSS_RATE           LOSS_RATE,
+                    BHI.DESCRIPTION         DESCRIPTION,
+                    BHI.RUNNING_NO              RUNNING_NO
+            FROM    BOM_HEADER_INFO                 BHI,
+                    MAT_INFO                        MI
+            WHERE   BHI.MAT_V_NO = MI.MAT_NO(+)
+            AND     BHI.CPNY_ID = #metaData.company.companyId#
+            AND     BHI.BOM_NO = #no#
+        ]]>
+    </select>
+
+    <sql id="BOMItemSearchCondition">
+        <isNotEmpty prepend="AND" property="changeNo">
+            <![CDATA[
+               BII.CHANGE_NO = #changeNo#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="queryDate">
+            <![CDATA[
+               BII.S_DATE <= TO_DATE(#queryDate#,'YYYY-MM-DD') AND (BII.E_DATE >= TO_DATE(#queryDate#,'YYYY-MM-DD') OR BII.E_DATE IS NULL)
+            ]]>
+        </isNotEmpty>
+        <![CDATA[
+            ORDER BY BII.S_DATE DESC
+        ]]>
+    </sql>
+
+    <resultMap class="bomItem" id="bomItemMap">
+        <result property="no" column="BOM_ITEM_NO"/>
+        <result property="id" column="BOM_ITEM_ID"/>
+        <result property="bom.no" column="BOM_NO"/>
+        <result property="material.no" column="MAT_V_NO"/>
+        <result property="looseRate" column="LOSS_RATE"/>
+        <result property="bomCategory" column="BOM_CATEGORY_CODE"/>
+        <result property="description" column="DESCRIPTION"/>
+        <result property="amount" column="AMOUNT"/>
+        <result property="changeNo.no" column="CHANGE_NO"/>
+        <result property="startDate" column="S_DATE"/>
+        <result property="endDate" column="E_DATE"/>
+        <result property="active" column="ACTIVITY"/>
+    </resultMap>
+
+    <select id="getBOMItemList" parameterClass="linkMap" resultMap="bomItemMap">
+        <![CDATA[
+            SELECT  BII.BOM_ITEM_NO             BOM_ITEM_NO,
+                    BII.BOM_ITEM_ID             BOM_ITEM_ID,
+                    BII.MAT_V_NO                MAT_V_NO,
+                    BII.BOM_NO                  BOM_NO,
+                    BII.LOSS_RATE               LOSS_RATE,
+                    BII.BOM_CATEGORY_CODE       BOM_CATEGORY_CODE,
+                    BII.AMOUNT                  AMOUNT,
+                    BII.CHANGE_NO               CHANGE_NO,
+                    BII.S_DATE                  S_DATE,
+                    BII.E_DATE                  E_DATE,
+                    BII.ACTIVITY                ACTIVITY,
+                    BII.DESCRIPTION             DESCRIPTION
+            FROM    BOM_ITEM_INFO            BII
+            WHERE   BII.ACTIVITY = 1
+            AND     BII.CPNY_ID = #metaData.company.companyId#
+            AND     BII.BOM_NO= #bom.no#
+        ]]>
+        <include refid="BOMItemSearchCondition" />
+    </select>
+
+    <select id="getBOMItemListCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(0)
+            FROM    BOM_ITEM_INFO            BII
+            WHERE   BII.ACTIVITY = 1
+            AND     BII.CPNY_ID = #metaData.company.companyId#
+            AND     BII.BOM_NO= #bom.no#
+        ]]>
+        <include refid="BOMItemSearchCondition" />
+    </select>
+
+    <select id="getBOMTreeList" parameterClass="bom" resultClass="linkMap">
+        <![CDATA[
+            SELECT  BHI.MAT_V_ID                        MAT_V_ID,
+                    ''                                  PARENT_ID,
+                    BHI.MAT_V_ID||BHI.BOM_TYPE_ID       CUR_ID,
+                    BHI.BOM_TYPE_ID                     BOM_CATEGORY_CODE,
+                    1     AS                            ISEXPAND
+            FROM BOM_HEADER_INFO BHI
+            WHERE BHI.ACTIVITY = 1
+                AND BHI.CPNY_ID = #metaData.company.companyId#
+                AND BHI.BOM_NO= #no#
+
+            UNION ALL
+
+            SELECT  MAT_V_ID,
+                    PARENT_ID,
+                    BOM_CATEGORY_CODE,
+                    CUR_ID,ISEXPAND
+            FROM (  SELECT BII.MAT_V_ID          MAT_V_ID,
+                    BHI.MAT_V_ID                PARENT_ID,
+                    BII.MAT_V_ID||BII.BOM_CATEGORY_CODE      CUR_ID,
+                    BII.BOM_CATEGORY_CODE       BOM_CATEGORY_CODE,
+                    BHI.BOM_ID                  ABOM_ID,
+                    BHI2.BOM_ID                 A2BOM_ID,
+                    BOM_IS_ITEM_EXTEND(BII.MAT_V_ID,BII.CPNY_ID)   ISEXPAND
+                FROM BOM_ITEM_INFO BII,
+                     BOM_HEADER_INFO BHI,
+                BOM_HEADER_INFO BHI2
+                WHERE BII.BOM_ID= BHI.BOM_ID
+                AND   BII.MAT_V_ID = BHI2.MAT_V_ID(+)
+                AND   BII.ACTIVITY = 1
+                AND   BII.CPNY_ID = #CPNY_ID#
+        ]]>
+        <include refid="BOMItemSearchCondition" />
+        <![CDATA[
+            )
+            start with ABOM_ID = #BOM_ID#
+            connect by ABOM_ID = prior A2BOM_ID
+        ]]>
+    </select>
+</sqlMap>

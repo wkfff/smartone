@@ -1,0 +1,348 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="eva.infoEmpEva">
+ 
+	<sql id="EvaEmpWorkInfoCondition"> 
+		<isNotEmpty prepend="AND" property="EMPID">
+			<![CDATA[
+				EVEWP.EV_EMPID=#EMPID#
+			]]>
+		</isNotEmpty>  
+		<isNotEmpty prepend="AND" property="TURN_TYPE_CODE">
+			<![CDATA[
+				EVEWP.TURN_TYPE_CODE=#TURN_TYPE_CODE#
+			]]>
+		</isNotEmpty>  
+		   
+		<isNotEmpty prepend="AND" property="ACTIVITY">
+			<![CDATA[
+				EVEWP.ACTIVITY=#ACTIVITY#
+			]]>
+		</isNotEmpty>   
+	</sql>  
+	<!-- 评价期间 -->
+	<insert id="addEvaEmpWorkInfo" parameterClass='linkMap'> 
+	<![CDATA[
+		INSERT INTO EVE_WORK_PLAN 
+		    (	EV_NO, 
+			    EV_EMPID, 
+			    EV_WORK_CONTENT, 
+			    EV_START_DATE, 
+			    EV_END_DATE,
+			    EV_SCORE, 
+			    TURN_TYPE_CODE, 
+			    CREATE_DATE, 
+			    CREATED_BY, 
+			    ACTIVITY,
+			    ORDERNO)
+		VALUES (EVE_WORK_PLAN_SEQ.NEXTVAL, 
+			    #EV_EMPID#, 
+			    #EV_WORK_CONTENT#,  
+			    TO_DATE(#EV_START_DATE#, 'YYYY-MM-DD'), 
+			    TO_DATE(#EV_END_DATE#, 'YYYY-MM-DD'), 
+			    #EV_SCORE#, 
+			    #TURN_TYPE_CODE#, 
+			    SYSDATE, 
+			    #CREATED_BY#, 
+			    1,
+			    #ORDERNO#)
+		]]> 
+	</insert>
+	 <update id="updateEvaEmpWorkInfo" parameterClass="linkMap" >
+		<![CDATA[
+			UPDATE EVE_WORK_PLAN EVEWP
+				SET 
+					EVEWP.EV_WORK_CONTENT = #EV_WORK_CONTENT# , 
+					EVEWP.EV_START_DATE = TO_DATE(#EV_START_DATE#, 'YYYY-MM-DD'), 
+					EVEWP.EV_END_DATE = TO_DATE(#EV_END_DATE#, 'YYYY-MM-DD'), 
+					EVEWP.EV_SCORE = #EV_SCORE#, 
+					EVEWP.ORDERNO = #ORDERNO#,
+					EVEWP.UPDATE_DATE = SYSDATE,
+					EVEWP.UPDATED_BY = #UPDATED_BY:VARCHAR# 
+				WHERE EVEWP.EV_NO = #NO#
+		]]>
+	</update> 
+	
+	<delete id="deleteEvaEmpWorkInfo" parameterClass="linkMap" >
+		<![CDATA[
+			DELETE EVE_WORK_PLAN WHERE EV_NO = #NO#
+		]]>
+	</delete> 
+	<!-- 返回年假 -->
+	<select id="getEvaEmpWorkInfo" parameterClass="linkMap"
+		resultClass="linkMap">
+		<![CDATA[	
+			SELECT EVEWP.EV_NO AS NO,
+			       EVEWP.EV_NO,
+			       EVEWP.EV_EMPID,
+			       EVEWP.EV_WORK_CONTENT,
+			       TO_CHAR(EVEWP.EV_START_DATE,'YYYY-MM-DD'),
+			       TO_CHAR(EVEWP.EV_END_DATE,'YYYY-MM-DD'),
+			       EVEWP.EV_SCORE,
+			       EVEWP.EV_S_WORK,
+			       EVEWP.ACTIVITY,
+			       EVEWP.CPNY_ID,
+       			   EVEWP.ORDERNO
+			  FROM EVE_WORK_PLAN EVEWP
+			 WHERE EVEWP.ACTIVITY = 1
+		]]>
+		<include refid="EvaEmpWorkInfoCondition" />
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		  ORDER BY $sortname$ $sortorder$
+		    ]]>
+		</isNotEmpty>
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+	 		 	ORDER BY EVEWP.ORDERNO
+			 ]]>
+		</isEmpty> 
+	</select>
+	 <select id="getEvaEmpWorkInfoCnt" parameterClass="linkMap"
+		resultClass="int">
+		<![CDATA[	
+		    SELECT COUNT(*)
+			  FROM EVE_WORK_PLAN EVEWP
+			 WHERE EVEWP.ACTIVITY = 1
+		]]>
+		<include refid="EvaEmpWorkInfoCondition" />
+	</select> 
+	
+	 <sql id="EvaEmpItemInfoCondition"> 
+		<isNotEmpty prepend="AND" property="EMPID">
+			<![CDATA[
+				EVEI.EV_EMPID=#EMPID#
+			]]>
+		</isNotEmpty>  
+		<isNotEmpty prepend="AND" property="TURN_TYPE_CODE">
+			<![CDATA[
+				EVEI.TURN_TYPE_CODE=#TURN_TYPE_CODE#
+			]]>
+		</isNotEmpty>  
+		   
+		<isNotEmpty prepend="AND" property="ACTIVITY">
+			<![CDATA[
+				EVEI.ACTIVITY=#ACTIVITY#
+			]]>
+		</isNotEmpty>   
+	</sql>  
+	<!-- 评价期间 -->
+	<insert id="addEvaEmpItemInfo" parameterClass='linkMap'> 
+	<![CDATA[
+		INSERT INTO EVE_EMP_ITEM 
+		    (	EV_ITEM_NO, 
+			    EV_EMPID, 
+			    EV_ITEM,  
+			    EV_PERCENTAGE,
+			    TURN_TYPE_CODE,  
+			    CREATE_DATE, 
+			    CREATED_BY, 
+			    ACTIVITY,
+			    ORDERNO)
+		VALUES (EVE_EMP_ITEM_SEQ.NEXTVAL, 
+			    #EV_EMPID#, 
+			    #EV_ITEM#,   
+			    #EV_PERCENTAGE#,
+			    #TURN_TYPE_CODE#,  
+			    SYSDATE, 
+			    #CREATED_BY#, 
+			    1,
+			    #ORDERNO#)
+		]]> 
+	</insert>
+	 <update id="updateEvaEmpItemInfo" parameterClass="linkMap" >
+		<![CDATA[
+			UPDATE EVE_EMP_ITEM EVEEI
+				SET 
+					EVEEI.EV_ITEM = #EV_ITEM# ,  
+					EVEEI.EV_PERCENTAGE = #EV_PERCENTAGE#, 
+					EVEEI.ORDERNO = #ORDERNO#, 
+					EVEEI.UPDATE_DATE = SYSDATE ,
+					EVEEI.UPDATED_BY = #UPDATED_BY:VARCHAR# 
+				WHERE EVEEI.EV_ITEM_NO = #NO#
+		]]>
+	</update> 
+	
+	<delete id="deleteEvaEmpItemInfo" parameterClass="linkMap" >
+		<![CDATA[
+			DELETE EVE_EMP_ITEM WHERE EV_ITEM_NO = #NO#
+		]]>
+	</delete> 
+	<!-- 返回年假 -->
+	<select id="getEvaEmpItemInfo" parameterClass="linkMap"
+		resultClass="linkMap">
+		<![CDATA[	
+			SELECT EVEI.EV_ITEM_NO AS NO,
+			       EVEI.EV_ITEM_NO,
+			       EVEI.EV_EMPID,
+			       EVEI.EV_ITEM,
+			       EVEI.EV_S_ITEM,
+			       EVEI.EV_M_ITEM,
+			       EVEI.EV_PERCENTAGE,
+			       EVEI.EV_SCORE,
+			       EVEI.EV_S_SCORE,
+			       EVEI.EV_1_SCORE,
+			       EVEI.EV_2_SCORE,
+			       EVEI.EV_3_SCORE,
+			       EVEI.EV_COM_SCORE, 
+			       EVEI.ACTIVITY, 
+       			   EVEI.ORDERNO
+			  FROM EVE_EMP_ITEM EVEI
+			 WHERE EVEI.ACTIVITY = 1
+		]]>
+		<include refid="EvaEmpItemInfoCondition" />
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		  ORDER BY $sortname$ $sortorder$
+		    ]]>
+		</isNotEmpty>
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+	 		 	ORDER BY EVEI.ORDERNO
+			 ]]>
+		</isEmpty> 
+	</select>
+	 <select id="getEvaEmpItemInfoCnt" parameterClass="linkMap"
+		resultClass="int">
+		<![CDATA[	
+		    SELECT COUNT(*)
+			  FROM EVE_EMP_ITEM EVEI
+			 WHERE EVEI.ACTIVITY = 1
+		]]>
+		<include refid="EvaEmpItemInfoCondition" />
+	</select> 
+	
+	 <select id="checkEvaEmpEveInfo" parameterClass="linkMap"
+		resultClass="int">
+		<![CDATA[	
+		    SELECT COUNT(*)
+			  FROM EVE_EMP EVEE
+			 WHERE EVEE.ACTIVITY = 1
+			   AND EVEE.EV_EMPID = #EMPID#
+			   AND EVEE.TURN_TYPE_CODE = #TURN_TYPE_CODE#
+		]]> 
+	</select> 
+	
+	 <select id="getEvaEmpEveInfo" parameterClass="linkMap"
+		resultClass="linkMap">
+		<![CDATA[	
+		    SELECT EVEE.EV_EMPID,
+		           EVEE.TURN_TYPE_CODE,
+		           DECODE(#language#, 'en', A.CODE_EN_NAME, A.CODE_NAME) TURN_TYPE_NAME,  
+		           TO_CHAR(EVEE.END_PROBATION_DATE,'YYYY-MM-DD') END_PROBATION_DATE,
+		           EVEE.EV_S_WORK_FLAG,
+		           DECODE(EVEE.EV_S_WORK_FLAG,0,'未保存',1,'已保存-未提交',2,'已提交') EV_S_WORK_FLAG_NAME,
+		           EVEE.EV_S_ITEM_FLAG,
+		           DECODE(EVEE.EV_S_ITEM_FLAG,0,'未保存',1,'已保存-未提交',2,'已提交') EV_S_ITEM_FLAG_NAME,
+		           EVEE.EV_1_ITEM_FLAG,
+		           DECODE(EVEE.EV_1_ITEM_FLAG,0,'未保存',1,'已保存-未提交',2,'已提交') EV_1_ITEM_FLAG_NAME
+			  FROM EVE_EMP EVEE,SY_CODE A
+			 WHERE EVEE.ACTIVITY = 1
+			   AND EVEE.TURN_TYPE_CODE = A.CODE_ID(+) 
+		]]> 
+		<isNotEmpty prepend="AND" property="EMPID">
+			<![CDATA[
+		 		  EVEE.EV_EMPID = #EMPID# 
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="TURN_TYPE_CODE">
+			<![CDATA[
+		 		  EVEE.TURN_TYPE_CODE = #TURN_TYPE_CODE#
+		    ]]>
+		</isNotEmpty>
+	</select>  
+	
+	 <update id="updateEssWorkFlagInfo" parameterClass="linkMap" >
+		<![CDATA[
+			UPDATE EVE_EMP EVEE
+				SET 
+					EVEE.EV_S_WORK_FLAG = #ACTIVITY#,  
+					EVEE.UPDATE_DATE = SYSDATE,
+					EVEE.UPDATED_BY = #UPDATED_BY# 
+				WHERE EVEE.EV_EMPID = #EMPID# 
+			      AND EVEE.TURN_TYPE_CODE = #TURN_TYPE_CODE# 
+		]]>
+	</update> 
+	 <update id="updateEssItemFlagInfo" parameterClass="linkMap" >
+		<![CDATA[
+			UPDATE EVE_EMP EVEE
+				SET 
+					EVEE.EV_S_ITEM_FLAG = #ACTIVITY#,  
+					EVEE.UPDATE_DATE = SYSDATE,
+					EVEE.UPDATED_BY = #UPDATED_BY# 
+				WHERE EVEE.EV_EMPID = #EMPID# 
+			      AND EVEE.TURN_TYPE_CODE = #TURN_TYPE_CODE# 
+		]]>
+	</update>
+	 <update id="updateEvaItemFlagInfo" parameterClass="linkMap" >
+		<![CDATA[
+			UPDATE EVE_EMP EVEE
+				SET 
+					EVEE.EV_1_ITEM_FLAG = #ACTIVITY#,  
+					EVEE.UPDATE_DATE = SYSDATE,
+					EVEE.UPDATED_BY = #UPDATED_BY# 
+				WHERE EVEE.EV_EMPID = #EMPID# 
+			      AND EVEE.TURN_TYPE_CODE = #TURN_TYPE_CODE# 
+		]]>
+	</update>
+	 
+	<insert id="addEvaEmpEveInfo" parameterClass='linkMap'> 
+	<![CDATA[
+		INSERT INTO EVE_EMP 
+		    (	EV_EMPID, 
+			    TURN_TYPE_CODE, 
+			    END_PROBATION_DATE,  
+			    CREATE_DATE, 
+			    CREATED_BY, 
+			    ACTIVITY)
+		VALUES (#EV_EMPID#, 
+			    #TURN_TYPE_CODE#,   
+			    TO_DATE(#END_PROBATION_DATE#,'YYYY-MM-DD')
+			    SYSDATE, 
+			    #CREATED_BY#, 
+			    1)
+		]]> 
+	</insert>
+	 <update id="updateEvaEmpOngoingItemInfo" parameterClass="linkMap" >
+		<![CDATA[
+			UPDATE EVE_EMP_ITEM EVEEI
+				SET 
+					EVEEI.EV_1_SCORE = #EV_1_SCORE# ,   
+					EVEEI.UPDATE_DATE = SYSDATE ,
+					EVEEI.UPDATED_BY = #UPDATED_BY:VARCHAR# 
+				WHERE EVEEI.EV_ITEM_NO = #NO#
+		]]>
+	</update> 
+	 <update id="updateEvaEmpOngoingWorkInfo" parameterClass="linkMap" >
+		<![CDATA[
+			UPDATE EVE_WORK_PLAN EVEWP
+				SET 
+					EVEWP.EV_S_WORK = #EV_S_WORK#,  
+					EVEWP.UPDATE_DATE = SYSDATE,
+					EVEWP.UPDATED_BY = #UPDATED_BY:VARCHAR# 
+				WHERE EVEWP.EV_NO = #NO#
+		]]>
+	</update> 
+	 <update id="updateEssEmpOngoingItemInfo" parameterClass="linkMap" >
+		<![CDATA[
+			UPDATE EVE_EMP_ITEM EVEEI
+				SET 
+					EVEEI.EV_S_SCORE = #EV_S_SCORE# ,   
+					EVEEI.UPDATE_DATE = SYSDATE ,
+					EVEEI.UPDATED_BY = #UPDATED_BY:VARCHAR# 
+				WHERE EVEEI.EV_ITEM_NO = #NO#
+		]]>
+	</update> 
+	 <update id="updateEssEmpOngoingWorkInfo" parameterClass="linkMap" >
+		<![CDATA[
+			UPDATE EVE_WORK_PLAN EVEWP
+				SET 
+					EVEWP.EV_S_WORK = #EV_S_WORK#,  
+					EVEWP.UPDATE_DATE = SYSDATE,
+					EVEWP.UPDATED_BY = #UPDATED_BY:VARCHAR# 
+				WHERE EVEWP.EV_NO = #NO#
+		]]>
+	</update>  
+</sqlMap>

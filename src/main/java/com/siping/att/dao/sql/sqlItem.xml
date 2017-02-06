@@ -1,0 +1,426 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="att.item">
+
+	<select id="getAppTypeSelectionList" parameterClass="linkMap" 
+	resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT T.CODE_ID ID, T.CODE_NAME NAME, T.CODE_EN_NAME EN_NAME
+			  FROM SY_CODE T
+			 WHERE T.PARENT_CODE = 'LeaveTypeCode'
+			   AND T.ACTIVITY = 1
+			   AND T.CPNY_ID = #CPNY_ID#
+			UNION
+			SELECT T.CODE_ID ID, T.CODE_NAME NAME, T.CODE_EN_NAME EN_NAME
+			  FROM SY_CODE T
+			 WHERE T.PARENT_CODE = 'OTTypeCode'
+			   AND T.ACTIVITY = 1
+			   AND T.CPNY_ID = #CPNY_ID#
+			UNION
+			SELECT T.CODE_ID ID, T.CODE_NAME NAME, T.CODE_EN_NAME EN_NAME
+			  FROM SY_CODE T
+			 WHERE T.PARENT_CODE = 'BTTypeCode'
+			   AND T.ACTIVITY = 1
+			   AND T.CPNY_ID = #CPNY_ID#
+		]]>     
+	</select>
+
+	<select id="checkItemInfo" parameterClass="linkMap" 
+	resultClass="int" remapResults="true">
+		<![CDATA[
+			SELECT COUNT(0)
+			  FROM AR_ITEM T 
+			 WHERE T.ITEM_ID = #ITEM_ID#
+			 
+		]]>	  
+	</select>
+	
+	
+	<select id="getItemGroupInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT T.CODE_ID ITEM_GROUP_CODE, 
+			       DECODE(#language#, 'en', T.CODE_EN_NAME, T.CODE_NAME) ITEM_GROUP_NAME,
+			       '0' DEPTH, 
+			       T.CPNY_ID,
+			       DECODE(#language#, 'en', A.CPNY_EN_NAME, A.CPNY_NAME) CPNY_NAME
+			  FROM SY_CODE T, HR_COMPANY A
+			 WHERE T.PARENT_CODE = 'ATTItemGroup'
+			   AND T.CPNY_ID = A.CPNY_ID(+)
+			   AND T.ACTIVITY = 1
+			   AND T.CPNY_ID = #CPNY_ID#		 
+		]]>	 
+		<![CDATA[
+				ORDER BY T.CODE_ID
+			]]> 
+	</select>
+	
+	<select id="getItemInfoTree" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT T.ITEM_NO,
+			       DECODE(#language#, 'en', T.ITEM_EN_NAME, T.ITEM_NAME) ITEM_NAME, 
+			       '1' DEPTH
+			  FROM AR_ITEM T, HR_COMPANY A,SY_CODE SY
+			 WHERE T.ITEM_GROUP_CODE = SY.CODE_ID
+			   AND T.CPNY_ID = A.CPNY_ID(+)
+			 
+		]]>	  
+		<isNotEmpty prepend="AND" property="ITEM_GROUP_CODE">
+			<![CDATA[
+		 		  T.ITEM_GROUP_CODE = #ITEM_GROUP_CODE#
+		    ]]>
+		</isNotEmpty> 
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+		 		  T.CPNY_ID = #CPNY_ID#
+		    ]]>
+		</isNotEmpty> 
+			<![CDATA[
+				  ORDER BY T.ITEM_ID
+		    ]]>
+	</select>
+	
+	<select id="getItemInfoSelection" parameterClass="linkMap" 
+	resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT T.ITEM_NO ID,
+			       T.ITEM_NAME NAME, 
+			       T.ITEM_EN_NAME EN_NAME 
+			  FROM AR_ITEM T, HR_COMPANY A
+			 WHERE T.ACTIVITY = 1
+			   AND T.CPNY_ID = A.CPNY_ID(+)
+			   AND T.CPNY_ID = #CPNY_ID#
+		]]>	 
+		  <![CDATA[
+				ORDER BY T.ITEM_GROUP_CODE, T.ITEM_ID
+			]]> 
+	</select>
+	  
+	<select id="getItemInfo" parameterClass="linkMap" 
+	resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT AI.ITEM_ID,
+			       'ATT_ITEM.'||AI.ITEM_ID AS ITEM_ID_F,
+			       DECODE(#language#, 'en', AI.ITEM_EN_NAME, AI.ITEM_NAME) ITEM_NAME_F, 
+				   AI.ITEM_NO,
+			       DECODE(#language#, 'en', AI.ITEM_EN_NAME, AI.ITEM_NAME) ITEM_NAME, 
+				   AI.ITEM_EN_NAME,
+			       AI.SHORT_NAME,
+			       AI.ITEM_GROUP_CODE,
+			       DECODE(#language#, 'en', SY.CODE_EN_NAME, SY.CODE_NAME) ITEM_GROUP_NAME,
+			       AI.DESCRIPTION,
+			       AI.CPNY_ID,
+			       DECODE(#language#, 'en', A.CPNY_EN_NAME, A.CPNY_NAME) CPNY_NAME,
+			       AI.ACTIVITY,
+			       '1' DEPTH
+			  FROM AR_ITEM AI, HR_COMPANY A,SY_CODE SY
+			 WHERE AI.ITEM_GROUP_CODE = SY.CODE_ID
+			   AND AI.CPNY_ID = A.CPNY_ID(+)
+			 
+		]]>	
+		<isNotEmpty prepend="AND" property="ITEM_ID">
+			<![CDATA[
+		 		  AI.ITEM_ID = #ITEM_ID#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="ITEM_NO">
+			<![CDATA[
+		 		  AI.ITEM_NO = #ITEM_NO#
+		    ]]>
+		</isNotEmpty> 
+		
+		<isNotEmpty prepend="AND" property="AR_ITEM_NO">
+			<![CDATA[
+		 		  AI.ITEM_NO = #AR_ITEM_NO#
+		    ]]>
+		</isNotEmpty> 
+		
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+		 		  AI.CPNY_ID = #CPNY_ID#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="ITEM_GROUP_CODE">
+			<![CDATA[
+		 		  AI.ITEM_GROUP_CODE = #ITEM_GROUP_CODE#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="ITEM_NAME">
+			<![CDATA[
+		 		  AI.ITEM_NAME LIKE #ITEM_NAME# || '%'
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		  ORDER BY $sortname$ $sortorder$
+		    ]]>
+		</isNotEmpty>
+		
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY AI.ITEM_GROUP_CODE, AI.ITEM_ID
+			]]>
+		</isEmpty>
+		 
+	</select>
+	
+	<select id="getItemInfoCnt" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+			SELECT COUNT(*)
+			  FROM AR_ITEM AI
+		]]>	  
+		
+		<dynamic prepend="WHERE">  
+			
+			<isNotEmpty prepend="AND" property="ITEM_ID">
+				<![CDATA[
+			 		  AI.ITEM_ID = #ITEM_ID#
+			    ]]>
+			</isNotEmpty>
+		
+			<isNotEmpty prepend="AND" property="ITEM_NO">
+				<![CDATA[
+			 		  AI.ITEM_NO = #ITEM_NO#
+			    ]]>
+			</isNotEmpty>
+		
+			<isNotEmpty prepend="AND" property="AR_ITEM_NO">
+				<![CDATA[
+			 		  AI.ITEM_NO = #AR_ITEM_NO#
+			    ]]>
+			</isNotEmpty> 
+		
+			<isNotEmpty prepend="AND" property="CPNY_ID">
+				<![CDATA[
+			 		  AI.CPNY_ID = #CPNY_ID#
+			    ]]>
+			</isNotEmpty>
+			
+			<isNotEmpty prepend="AND" property="ITEM_NAME">
+				<![CDATA[
+			 		  AI.ITEM_NAME LIKE #ITEM_NAME# || '%'
+			    ]]>
+			</isNotEmpty>
+		
+			<isNotEmpty prepend="AND" property="ITEM_GROUP_CODE">
+				<![CDATA[
+			 		  AI.ITEM_GROUP_CODE = #ITEM_GROUP_CODE#
+			    ]]>
+			</isNotEmpty>
+			
+		</dynamic>
+	</select>
+	
+	<insert id="addItemInfo" parameterClass="linkMap" >
+		<![CDATA[
+			INSERT INTO AR_ITEM (
+					ITEM_NO,
+					ITEM_ID,
+					ITEM_NAME,
+					ITEM_EN_NAME,
+					SHORT_NAME,
+					DESCRIPTION,
+					ITEM_GROUP_CODE,
+					CREATE_DATE,
+					CREATED_BY,
+					ACTIVITY,
+					CPNY_ID
+				)
+				VALUES(
+					AR_ITEM_SEQ.NEXTVAL ,
+					'ATT_D_' || AR_ITEM_SEQ.CURRVAL,
+					#ITEM_NAME#,
+					#ITEM_EN_NAME#,
+					#SHORT_NAME:VARCAHR#,
+					#DESCRIPTION#,
+					#ITEM_GROUP_CODE#,
+					SYSDATE,
+					#CREATED_BY#, 
+					#ACTIVITY#,
+					#CPNY_ID#
+				)
+		]]>
+	</insert>
+	
+	<update id="updateItemInfo" parameterClass="linkMap" >
+		<![CDATA[
+			UPDATE AR_ITEM SET
+					ITEM_NAME = #ITEM_NAME#,
+					ITEM_EN_NAME = #ITEM_EN_NAME#,
+					SHORT_NAME = #SHORT_NAME:VARCAHR#,
+					DESCRIPTION = #DESCRIPTION#,
+					ITEM_GROUP_CODE = #ITEM_GROUP_CODE#,
+					ACTIVITY = #ACTIVITY#,
+					UPDATE_DATE = SYSDATE,
+					UPDATED_BY = #UPDATED_BY#, 
+					CPNY_ID = #CPNY_ID#
+
+			WHERE ITEM_ID = #ITEM_ID# 
+		]]>
+	</update>
+	
+	<delete id="deleteItemInfo" parameterClass="linkMap">
+		<![CDATA[
+			DELETE AR_ITEM WHERE ITEM_ID = #ITEM_ID#
+		]]>
+	</delete>
+	
+	<select id="getItemParameterInfo"  parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[
+			SELECT T.AR_PARAM_NO,
+			       T.AR_ITEM_NO,
+			       AI.ITEM_NAME,
+			       T.AR_GROUP_NO, 
+			       DECODE(AR_GROUP.GROUP_NAME,
+			       		  NULL,
+			              DECODE(#language#, 'en', 'Default Group', '默认组'),
+			              DECODE(#language#, 'en', AR_GROUP.GROUP_EN_NAME, AR_GROUP.GROUP_NAME)) AR_GROUP_NAME,
+			       T.UNIT,
+			       T.UNIT_VALUE,
+			       T.MIN_VALUE,
+			       T.MAX_VALUE,
+			       T.DEPEND_ITEM,
+			       T.REPLACE_ITEM,
+			       T.CARD_FLAG, 
+			       DECODE(T.CARD_FLAG,
+			              '1',
+			              DECODE(#language#, 'en', 'Yes', '是'),
+			              DECODE(#language#, 'en', 'No', '否')) CARD_FLAG_NAME,
+			       T.CARD_FROM_FLAG,
+			       T.CARD_FROM_OFFSET,
+			       T.CARD_FROM_RELATION,
+			       T.CARD_TO_FLAG,
+			       T.CARD_TO_OFFSET,
+			       T.CARD_TO_RELATION,
+			       T.APPLY_FLAG,
+			       DECODE(T.APPLY_FLAG,
+			              '1',
+			              DECODE(#language#, 'en', 'Yes', '是'),
+			              DECODE(#language#, 'en', 'No', '否')) APPLY_FLAG_NAME,
+			       T.APPLY_TYPE,
+			       T.APPLY_FULLDAY_VALUE,
+			       T.APPLY_CARD_PRIORITY,
+			       T.DATE_TYPE, 
+			       DECODE(T.DATE_TYPE,
+			              '1',
+			              DECODE(#language#, 'en', 'Weekday', '平日'),
+			              '2',
+			              DECODE(#language#, 'en', 'Weekend', '周末'),
+			              '3',
+			              DECODE(#language#, 'en', 'Holiday', '节假日'),
+			              '1,2',
+			              DECODE(#language#, 'en', 'Weekday,Weekend', '平日,周末'),
+			              '1,3',
+			              DECODE(#language#, 'en', 'Weekday,Holiday', '平日,节假日'),
+			              '2,3',
+			              DECODE(#language#, 'en', 'Weekend,Holiday', '周末,节假日'),
+			              DECODE(#language#, 'en', 'Weekday,Weekend,Holiday', '平日,周末,节假日')) DATE_TYPE_NAME,
+			       T.ACTIVITY
+			  FROM AR_ITEM_PARAM T, AR_DYNAMIC_GROUP AR_GROUP, AR_ITEM AI
+			 WHERE T.AR_GROUP_NO = TO_CHAR(AR_GROUP.GROUP_NO(+))
+			   AND T.AR_ITEM_NO = AI.ITEM_NO
+		]]>
+		<isNotEmpty prepend="AND" property="AR_ITEM_NO">
+			<![CDATA[
+		 		  T.AR_ITEM_NO = #AR_ITEM_NO#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="AR_PARAM_NO">
+			<![CDATA[
+		 		  T.AR_PARAM_NO = #AR_PARAM_NO#
+		    ]]>
+		</isNotEmpty>
+	</select>
+	
+	<insert id="addItemParameterInfo" parameterClass="linkMap" >
+		<![CDATA[
+			INSERT INTO AR_ITEM_PARAM (
+					AR_PARAM_NO,
+					AR_ITEM_NO,
+					AR_GROUP_NO,
+					UNIT,
+					UNIT_VALUE,
+					MIN_VALUE,
+					MAX_VALUE,
+					DEPEND_ITEM,
+					REPLACE_ITEM,
+					CARD_FLAG,
+					CARD_FROM_FLAG,
+					CARD_FROM_OFFSET,
+					CARD_FROM_RELATION,
+					CARD_TO_FLAG,
+					CARD_TO_OFFSET,
+					CARD_TO_RELATION,
+					APPLY_FLAG,
+					APPLY_TYPE,
+					APPLY_FULLDAY_VALUE,
+					APPLY_CARD_PRIORITY,
+					DATE_TYPE,
+					ACTIVITY
+				)
+				VALUES(
+					AR_ITEM_PARAM_SEQ.NEXTVAL ,
+					#AR_ITEM_NO#,
+					NVL(#AR_GROUP_NO#,'constant'),
+					#UNIT#,
+					#UNIT_VALUE#,
+					#MIN_VALUE#,
+					#MAX_VALUE#,
+					#DEPEND_ITEM#,
+					#REPLACE_ITEM#,
+					#CARD_FLAG#,
+					#CARD_FROM_FLAG#,
+					#CARD_FROM_OFFSET#,
+					#CARD_FROM_RELATION#,
+					#CARD_TO_FLAG#,
+					#CARD_TO_OFFSET#,
+					#CARD_TO_RELATION#,
+					#APPLY_FLAG#,
+					#APPLY_TYPE#,
+					#APPLY_FULLDAY_VALUE#,
+					#APPLY_CARD_PRIORITY#,
+					#DATE_TYPE#,
+					#ACTIVITY#
+				)
+		]]>
+	</insert>
+	
+	<update id="updateItemParameterInfo" parameterClass="linkMap" >
+		<![CDATA[
+			UPDATE AR_ITEM_PARAM SET 
+					AR_GROUP_NO = NVL(#AR_GROUP_NO#,'constant'),
+					UNIT = #UNIT#,
+					UNIT_VALUE = #UNIT_VALUE#,
+					MIN_VALUE = #MIN_VALUE#,
+					MAX_VALUE = #MAX_VALUE#,
+					DEPEND_ITEM = #DEPEND_ITEM#,
+					REPLACE_ITEM = #REPLACE_ITEM#,
+					CARD_FLAG = #CARD_FLAG#,
+					CARD_FROM_FLAG = #CARD_FROM_FLAG#,
+					CARD_FROM_OFFSET = #CARD_FROM_OFFSET#,
+					CARD_FROM_RELATION = #CARD_FROM_RELATION#,
+					CARD_TO_FLAG = #CARD_TO_FLAG#,
+					CARD_TO_OFFSET = #CARD_TO_OFFSET#,
+					CARD_TO_RELATION = #CARD_TO_RELATION#,
+					APPLY_FLAG = #APPLY_FLAG#,
+					APPLY_TYPE = #APPLY_TYPE#,
+					APPLY_FULLDAY_VALUE = #APPLY_FULLDAY_VALUE#,
+					APPLY_CARD_PRIORITY = #APPLY_CARD_PRIORITY#,
+					DATE_TYPE = #DATE_TYPE#,
+					ACTIVITY = #ACTIVITY#
+				WHERE AR_PARAM_NO = #AR_PARAM_NO#
+		]]>
+	</update>
+	
+	<delete id="deleteItemParameterInfo" parameterClass="linkMap">
+		<![CDATA[
+			DELETE AR_ITEM_PARAM WHERE AR_PARAM_NO = #AR_PARAM_NO#
+		]]>
+	</delete>
+	
+</sqlMap>

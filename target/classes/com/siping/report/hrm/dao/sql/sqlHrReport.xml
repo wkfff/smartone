@@ -1,0 +1,715 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap
+    PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+    "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="report.hr">
+
+    <procedure id="humanResourcesCal" parameterClass="linkMap">
+        <![CDATA[
+            {call report_hr_hmc(#year#||#month#)}
+        ]]>
+    </procedure>
+    <select id="humanResources" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT *  FROM REPORT_HR_HMC_TEMP
+          ]]>
+    </select>
+
+    <select id="humanResourcesDetail" remapResults="true" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT HE.EMPID,
+                   HE.CHINESENAME,
+                   GET_CODE_NAME(HP.GENDER_CODE) SEX,
+                   CASE
+                      WHEN TO_NUMBER(TO_CHAR(LAST_DAY(TO_DATE(#year#||#month#||'01','YYYYMMDD')),'MMDD')) >= TO_NUMBER(TO_CHAR(HP.BIRTHDAY,'MMDD')) THEN
+                          #year#-TO_CHAR(HP.BIRTHDAY,'YYYY')
+                       ELSE
+                          #year#-TO_CHAR(HP.BIRTHDAY,'YYYY')-1
+                      END AS AGE,
+                   NVL(GET_CODE_NAME(HP.DEGREE_CODE),'未填加') DEGREE,
+                   ROUND(MONTHS_BETWEEN(LAST_DAY(TO_DATE(#year#||#month#||'01','YYYYMMDD')),HE.JOIN_DATE)/12,1) AS WORKAGE,
+                   GET_CODE_NAME(HE.EMP_TYPE_CODE) EMPTYPE,
+                   TO_CHAR(HE.JOIN_DATE,'YYYY-MM-DD') DATESTARTED,
+                   IF(HE.LEFT_DATE,'',' ',TO_CHAR(HE.LEFT_DATE,'YYYY-MM-DD')) DATELEFT
+            FROM HR_EMPLOYEE HE,HR_PERSONAL_INFO HP
+            WHERE HP.EMPID = HE.EMPID
+            AND HE.JOIN_DATE <= LAST_DAY(TO_DATE(#year#||#month#||'01','YYYYMMDD'))
+            AND ( HE.LEFT_DATE >= TO_DATE(#year#||#month#||'01','YYYYMMDD')
+             OR HE.LEFT_DATE IS NULL)
+          ]]>
+          <isEmpty property="sortname">
+            <![CDATA[
+                  ORDER BY HE.DEPTID,HE.EMPID
+            ]]>
+          </isEmpty>
+          <isNotEmpty property="sortname">
+            <![CDATA[
+                  ORDER BY $sortname$ $sortorder$
+            ]]>
+          </isNotEmpty>
+    </select>
+    <select id="humanResourcesDetailCnt" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(HE.EMPID)
+            FROM HR_EMPLOYEE HE,HR_PERSONAL_INFO HP
+            WHERE HP.EMPID = HE.EMPID
+            AND HE.JOIN_DATE <= LAST_DAY(TO_DATE(#year#||#month#||'01','YYYYMMDD'))
+            AND ( HE.LEFT_DATE >= TO_DATE(#year#||#month#||'01','YYYYMMDD')
+             OR HE.LEFT_DATE IS NULL)
+          ]]>
+    </select>
+
+
+    <select id="getEmpInfoColumnInfo" parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT IFT.FIELD_NO,
+                   IFT.FIELD_ID,
+                   IF(#language#='en', NVL(IFT.FIELD_EN_NAME,IFT.FIELD_NAME), IFT.FIELD_NAME) FIELD_NAME,
+                   IFT.TABLE_ID,
+                   IF(#language#='en', IT.TABLE_EN_NAME, IT.TABLE_NAME) TABLE_NAME
+
+              FROM INFO_FIELD_TEMP     IFT,
+                   INFO_TABLE          IT
+             WHERE IFT.TABLE_ID = IT.TABLE_ID
+               AND IT.ACTIVITY = 1
+               AND IT.CPNY_ID = #CPNY_ID#
+               AND IFT.CREATED_BY = #CREATED_BY#
+             ORDER BY IFT.TABLE_ID,IFT.ORDERNO
+            ]]>
+   </select>
+   <select id="getFieldTableInfo"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT DISTINCT IFT.TABLE_ID
+              FROM INFO_FIELD_TEMP IFT, INFO_TABLE IT
+             WHERE IFT.TABLE_ID = IT.TABLE_ID
+               AND IT.ACTIVITY = 1
+        ]]>
+        <isNotEmpty prepend="AND" property="TABLE_ID">
+            <![CDATA[
+                  IT.TABLE_ID = #TABLE_ID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="CPNY_ID">
+            <![CDATA[
+                  IT.CPNY_ID = #CPNY_ID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="CREATED_BY">
+            <![CDATA[
+                  IFT.CREATED_BY = #CREATED_BY#
+            ]]>
+        </isNotEmpty>
+    </select>
+   <select id="getEmpInfoTitleInfo" parameterClass="linkMap"
+        resultClass="string" remapResults="true">
+        <![CDATA[
+        SELECT FIELD_NAME FROM (
+            SELECT IFT.FIELD_ID,
+                   IF(#language#='en', NVL(IFT.FIELD_EN_NAME,IFT.FIELD_NAME), IFT.FIELD_NAME) FIELD_NAME
+              FROM INFO_FIELD_TEMP     IFT,
+                   INFO_TABLE          IT
+             WHERE IFT.TABLE_ID = IT.TABLE_ID
+               AND IT.ACTIVITY = 1
+               AND IT.CPNY_ID = #CPNY_ID#
+               AND IFT.CREATED_BY = #CREATED_BY#)
+            WHERE FIELD_ID = #FIELD_ID#
+        ]]>
+         <![CDATA[
+         ]]>
+    </select>
+    <select id="getDataInfo" parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+        $sqlPiece$
+        ]]>
+    </select>
+    <!--获取每个部门的定编信息-->
+    <sql id = "deptQuotaCondition">
+        <isNotEmpty prepend="AND" property="DEPTID">
+            HDQ.DEPTID = #DEPTID#
+        </isNotEmpty>
+    </sql>
+    <select id="getDeptQuotaList" parameterClass="linkMap"  resultClass="linkMap">
+        <![CDATA[
+            SELECT HDQ.POST_ID                                                       POST_ID,
+                   HDQ.DEPTID                                                        DEPTID,
+                   IF(#language#,'en',HRD.DEPT_EN_NAME,HRD.DEPTNAME)             DEPTNAME,
+                   HDQ.CPNY_ID                                                       CPNY_ID,
+                   IF(#language#,'en',HP.POST_EN_NAME,HP.POST_NAME)              POST_NAME,
+                   HDQ.QUOTA_NUMBER                                                  QUOTA_NUMBER,
+                   HR_GETDEPTQUOTAREALNUMBER(#CPNY_ID#,#DEPTID#,HDQ.POST_ID)         REAL_NUMBER,
+                   HR_GETDEPTQUOTAREALNUMBER(#CPNY_ID#,#DEPTID#,HDQ.POST_ID) - HDQ.QUOTA_NUMBER MINUSNUMBER,
+                   HDQ.DESCRIPTION                                                   DESCRIPTION
+            FROM HR_DEPT_QUOTA HDQ,
+                 HR_POST HP,
+                 HR_DEPARTMENT HRD
+            WHERE HDQ.POST_ID = HP.POST_ID(+)
+            AND   HDQ.DEPTID = HRD.DEPTID(+)
+            AND   HDQ.ACTIVITY = 1
+            AND   HDQ.CPNY_ID = #CPNY_ID#
+        ]]>
+        <include refid="deptQuotaCondition"/>
+    </select>
+    <!-- 员工证书信息搜索条件：关键字、部门、职位 -->
+    <sql id="seachCondition">
+        <isNotEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+                (
+                    HRE.CHINESENAME         LIKE concat('%',TRIM(#keyWord#),'%')
+                    OR HRE.EMPID            LIKE concat('%',TRIM(#keyWord#),'%')
+                    OR upper(HRE.CHINESE_PINYIN) LIKE concat('%',TRIM(#keyWord#),'%')
+                    OR upper(HRE.ENGLISHNAME) LIKE concat('%',TRIM(upper(#keyWord#)),'%')
+                    OR upper((select GROUP_CONCAT(hrq.qual_card_name)
+                        from hr_qualification hrq
+                        where hrq.empid = HRE.EMPID
+                        and hrq.activity = 1)) LIKE concat('%',TRIM(upper(#keyWord#)),'%')
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="DEPTID">
+            <![CDATA[
+                EXISTS (
+                    SELECT * FROM HR_DEPARTMENT B1
+                    WHERE B1.DEPTID=HRE.DEPTID
+                        START WITH B1.DEPTID = #DEPTID#
+                        CONNECT BY PRIOR B1.DEPTID = B1.PARENT_DEPT_ID
+                    )
+             ]]>
+        </isNotEmpty>
+        <!-- <isNotEmpty prepend="AND" property="DEPTID">
+            <![CDATA[
+                EXISTS (
+                    SELECT * FROM HR_DEPARTMENT B1
+                    WHERE B1.DEPTID=HRE.DEPTID
+                        START WITH B1.DEPTID = #DEPTID#
+                        CONNECT BY PRIOR B1.DEPTID = B1.PARENT_DEPT_ID
+                    )
+             ]]>
+        </isNotEmpty> -->
+        <isNotEmpty prepend="AND" property="POST_ID">
+            <![CDATA[
+                HRE.POST_ID = #POST_ID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="CPNY_ID">
+            <![CDATA[
+                HRE.CPNY_ID = #CPNY_ID#
+            ]]>
+        </isNotEmpty>
+    </sql>
+    <!-- 获取员工证书信息 -->
+    <select id="getEmpQualificationInfo" remapResults="true" resultClass="linkMap" parameterClass="linkMap">
+        <![CDATA[
+        SELECT HRE.EMPID,
+               IF(#language#='en', HRE.ENGLISHNAME, HRE.CHINESENAME) CHINESENAME,
+               HRE.DEPTID,
+               IF(#language#='en', HRD.DEPT_EN_NAME, HRD.DEPTNAME) DEPTNAME,
+               HRE.POST_ID POST_ID,
+               IF(#language#='en', HRP.POST_EN_NAME, HRP.POST_NAME) POST_NAME,
+               HR_GETQUALIFICATIONNUMBER(HRE.EMPID) QUALIFICATIONNUMBER,
+               (select GROUP_CONCAT(hrq.qual_card_name)
+               from hr_qualification hrq
+               where hrq.empid = HRE.EMPID
+               and hrq.activity = 1) QUALIFICATIONNAMES,
+               HRE.LEFT_DATE,
+               HRE.STATUS_CODE,
+               M.CODE_NAME,
+               HRE.ACTIVITY
+          FROM HR_EMPLOYEE HRE LEFT JOIN HR_DEPARTMENT HRD ON HRE.DEPTID = HRD.DEPTID
+               LEFT JOIN HR_POST HRP ON HRE.POST_ID = HRP.POST_ID
+               LEFT JOIN SY_CODE M ON HRE.STATUS_CODE = M.CODE_ID
+         WHERE (HRE.LEFT_DATE IS NULL OR HRE.STATUS_CODE!='EmpStatus3')
+           AND HRE.ACTIVITY = 1
+        ]]>
+        <include refid="seachCondition"/>
+
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                  ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY  HRE.deptID,HRE.JOIN_DATE,HRE.EMPID
+             ]]>
+        </isEmpty>
+    </select>
+
+    <select id="getEmpQualificationInfoCnt" remapResults="true"
+        resultClass="int" parameterClass="linkMap">
+        <![CDATA[
+          SELECT COUNT(*)
+          FROM HR_EMPLOYEE HRE LEFT JOIN HR_DEPARTMENT HRD ON HRE.DEPTID = HRD.DEPTID
+               LEFT JOIN HR_POST HRP ON HRE.POST_ID = HRP.POST_ID
+               LEFT JOIN SY_CODE M ON HRE.STATUS_CODE = M.CODE_ID
+         WHERE (HRE.LEFT_DATE IS NULL OR HRE.STATUS_CODE!='EmpStatus3')
+           AND HRE.ACTIVITY = 1
+        ]]>
+        <include refid="seachCondition"/>
+    </select>
+    <!-- 证书详细信息 -->
+    <select id="getEmpQualificationDetailList" remapResults="true" resultClass="linkMap" parameterClass="linkMap">
+        <![CDATA[
+        SELECT HRQ.QUAL_CARD_NO QUAL_CARD_NO,
+               HRQ.QUAL_CARD_NAME QUAL_CARD_NAME,
+               HRQ.QUAL_LOCATION QUAL_LOCATION,
+               TO_CHAR(HRQ.DATE_OBTAINED,'YYYY-MM-DD') DATE_OBTAINED,
+               TO_CHAR(HRQ.END_QUAL_DATE,'YYYY-MM-DD') END_QUAL_DATE,
+               HRQ.REMARK REMARK,
+               TO_CHAR(HRQ.ANNUAL_DATE,'YYYY-MM-DD') ANNUAL_DATE
+        FROM HR_QUALIFICATION HRQ
+        WHERE HRQ.EMPID = #EMPID#
+        AND HRQ.ACTIVITY = 1
+        AND HRQ.CPNY_ID = #CPNY_ID#
+        ]]>
+    </select>
+
+    <select id="getEmpQualificationDetailCnt" remapResults="true"
+        resultClass="int" parameterClass="linkMap">
+        <![CDATA[
+          SELECT COUNT(*)
+            FROM HR_QUALIFICATION HRQ
+            WHERE HRQ.EMPID = #EMPID#
+            AND HRQ.ACTIVITY = 1
+            AND HRQ.CPNY_ID = #CPNY_ID#
+        ]]>
+    </select>
+
+    <sql id="HrSearchEmployeeCondition">
+        <isNotEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+            (
+                HRE.EMPID LIKE '%' || TRIM(#keyWord:VARCHAR#) || '%'
+                OR HRE.CHINESENAME LIKE '%' || TRIM(#keyWord:VARCHAR#) || '%'
+                OR HRE.ENGLISHNAME LIKE '%' || TRIM(#keyWord:VARCHAR#) || '%'
+            )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="CPNY_ID">
+            <![CDATA[
+                HRE.CPNY_ID = #CPNY_ID:VARCHAR#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="STATUS_CODE">
+            <![CDATA[
+                HPR.STATUS_CODE = #STATUS_CODE:VARCHAR#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="EDU_HIS_CODE">
+            <![CDATA[
+                HRPI.EDU_HIS_CODE = #EDU_HIS_CODE#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="EMP_TYPE_CODE">
+            <![CDATA[
+                HRE.EMP_TYPE_CODE = #EMP_TYPE_CODE#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="GENDER_CODE">
+            <![CDATA[
+                HRPI.GENDER_CODE = #GENDER_CODE#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="POST_ID">
+            <![CDATA[
+                HPR.POST_ID = #POST_ID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="DEPTID">
+            <![CDATA[
+                HPR.DEPTID IN (
+                    SELECT DEPTID
+                    FROM HR_DEPARTMENT
+                    WHERE HR_DEPARTMENT.DEPTID = HRE.DEPTID
+                        START WITH HR_DEPARTMENT.DEPTID = #DEPTID:VARCHAR#
+                        CONNECT BY PRIOR HR_DEPARTMENT.DEPTID = HR_DEPARTMENT.PARENT_DEPT_ID
+                )
+            ]]>
+        </isNotEmpty>
+    </sql>
+
+    <!-- 花名册列表 -->
+    <select id="getMenList" remapResults="true" resultClass="linkMap" parameterClass="linkMap">
+        <![CDATA[
+            SELECT HRE.EMPID,
+                   HRE.CHINESENAME,
+                   HRE.CHINESE_PINYIN,
+                   HRE.ENGLISHNAME,
+                   HPR.DEPTID,
+                   HRD.DEPTNAME,
+                   HRD.DEPT_EN_NAME,
+                   HRPI.DEGREE_CODE,
+                   D.CODE_NAME AS DEGREE_NAME,
+                   D.CODE_EN_NAME AS DEGREE_EN_NAME,
+                   HRPI.EDU_HIS_CODE,
+                   R.CODE_NAME AS EDU_HIS_NAME,
+                   R.CODE_EN_NAME AS EDU_HIS_EN_NAME,
+                   HRPI.MAJOR_CODE,
+                   S.CODE_NAME AS MAJOR_NAME,
+                   S.CODE_EN_NAME AS MAJOR_EN_NAME,
+                   HRPI.GENDER_CODE,
+                   F.CODE_NAME AS GENDER_NAME,
+                   F.CODE_EN_NAME AS GENDER_EN_NAME,
+                   TO_CHAR(BIRTHDAY, 'YYYY-MM-DD') BIRTHDAY,
+                   HRPI.RELIGION_CODE,
+                   G.CODE_NAME AS RELIGION_NAME,
+                   G.CODE_EN_NAME AS RELIGION_EN_NAME,
+                   HRPI.NATION_CODE,
+                   H.CODE_NAME AS NATION_NAME,
+                   H.CODE_EN_NAME AS NATION_EN_NAME,
+                   HRPI.NATIONALITY_CODE,
+                   I.CODE_NAME AS NATIONALITY_NAME,
+                   I.CODE_EN_NAME AS NATIONALITY_EN_NAME,
+                   HRPI.BORNPLACE_CODE,
+                   J.CODE_NAME AS BORNPLACE_NAME,
+                   J.CODE_EN_NAME AS BORNPLACE_EN_NAME,
+                   HRPI.POLITY_CODE,
+                   K.CODE_NAME AS POLITY_NAME,
+                   K.CODE_EN_NAME AS POLITY_EN_NAME,
+                   HRPI.MEMBERSHIP,
+                   HRPI.MEMBERSHIP AS MEMBERSHIP_NAME,
+                   HRPI.MEMBERSHIP AS MEMBERSHIP_EN_NAME,
+                   HRPI.MARITAL_STATUS_CODE,
+                   L.CODE_NAME AS MARITAL_STATUS_NAME,
+                   L.CODE_EN_NAME AS MARITAL_STATUS_EN_NAME,
+                   TO_CHAR(WEDDING_DATE, 'YYYY-MM-DD') WEDDING_DATE,
+                   HRPI.IDCARD_NO,
+                   HRPI.IDCARD_PROVINCE,
+                   HRPI.IDCARD_CITY,
+                   HRPI.IDCARD_AREA,
+                   HRPI.IDCARD_ADDRESS,
+                   HRPI.HOME_PROVINCE,
+                   HRPI.HOME_CITY,
+                   HRPI.HOME_AREA,
+                   HRPI.HOME_ADDRESS,
+                   HRPI.IDCARD_POSTALCODE,
+                   HRPI.HOME_POSTALCODE,
+                   HRPI.P_EMAIL,
+                   HRPI.C_EMAIL,
+                   HRPI.OFFICE_PHONE,
+                   HRPI.HOME_PHONE,
+                   HRPI.CELLPHONE,
+                   HRPI.FAX,
+                   FLOOR(MONTHS_BETWEEN(TO_DATE(#S_DATE#,'YYYY-MM-DD'), HRPI.BIRTHDAY) / 12) AGE,
+                   FLOOR(MONTHS_BETWEEN(TO_DATE(#S_DATE#,'YYYY-MM-DD'), HRE.JOIN_DATE)) A_WORKAGE,
+                   HRPI.WORKAGE B_WORKAGE,
+                   FLOOR(MONTHS_BETWEEN(TO_DATE(#S_DATE#,'YYYY-MM-DD'), HRE.JOIN_DATE) + HRPI.WORKAGE) WORKAGE,
+                   HRPI.IDCARD_TYPE_CODE,
+                   Q.CODE_NAME AS IDCARD_TYPE_NAME,
+                   Q.CODE_EN_NAME AS IDCARD_TYPE_EN_NAME,
+                   HRPI.FILE_RELATION_CODE,
+                   N.CODE_EN_NAME AS FILE_RELATION_EN_NAME,
+                   N.CODE_NAME AS FILE_RELATION_NAME,
+                   HRPI.FILE_RELATION_ADDRESS,
+                   HREI.SSN,
+                   HREI.HAFN,
+                   HREI.SI_REMARK,
+                   HREI.FUND_REMARK,
+                   HREI.SHIFT_CODE,
+                   A.CODE_NAME AS SHIFT_NAME,
+                   A.CODE_EN_NAME AS SHIFT_EN_NAME,
+                   HREI.SUPPLIER_CODE,
+                   B.CODE_NAME AS SUPPLIER_NAME,
+                   B.CODE_EN_NAME AS SUPPLIER_EN_NAME,
+                   HRE.DUTY_CODE,
+                   E.CODE_NAME AS DUTY_NAME,
+                   E.CODE_EN_NAME AS DUTY_EN_NAME,
+                   HRE.POSITION_ID,
+                   HRPO.POSITION_NAME,
+                   HRPO.POSITION_EN_NAME,
+                   HPL.POST_GRADE_ID POST_LEVEL_ID,
+                   HPL.POST_GRADE_NAME POST_LEVEL_NAME,
+                   HPR.POST_ID,
+                   HRP.POST_NAME,
+                   HRP.POST_EN_NAME,
+                   HRE.POST_GRADE_ID,
+                   HRPGR.POST_GRADE_NAME,
+                   HRPGR.POST_GRADE_EN_NAME,
+                   HRE.POST_COEF,
+                   HRE.POST_GROUP_ID,
+                   HRPG.POST_GROUP_NAME,
+                   HRPG.POST_GROUP_EN_NAME,
+                   HPR.STATUS_CODE,
+                   O.CODE_NAME AS STATUS_NAME,
+                   O.CODE_EN_NAME AS STATUS_EN_NAME,
+                   HRE.JOIN_TYPE_CODE,
+                   P.CODE_NAME AS JOIN_TYPE_NAME,
+                   P.CODE_EN_NAME AS JOIN_TYPE_EN_NAME,
+                   HRE.JOIN_DATE,
+                   HRE.HIRE_DATE,
+                   HRE.END_PROBATION_DATE,
+                   HRE.LEFT_DATE,
+                   HRE.COSTCENTER,
+                   HRE.EMP_TYPE_CODE,
+                   C.CODE_NAME AS EMP_TYPE_NAME,
+                   C.CODE_EN_NAME AS EMP_TYPE_EN_NAME,
+                   (
+                      SELECT HREPI.CARD_NO FROM HR_EMP_PA_INFO HREPI
+                      WHERE HREPI.EMPID = HRE.EMPID
+                          AND CALC_FLAG = 'Y'
+                          AND ROWNUM = 1
+                   )   AS CARD_NO
+              FROM HR_EMPLOYEE         HRE,
+                   HR_PERSONAL_INFO    HRPI,
+                   HR_POST_RECORDS     HPR,
+                   HR_DEPARTMENT       HRD,
+                   HR_EMP_INFO         HREI,
+                   HR_POSITION         HRPO,
+                   HR_POST             HRP,
+                   HR_POST_GROUP       HRPG,
+                   HR_POST_GRADE       HRPGR,
+                   HR_POST_LEVEL       HPL,
+                   SY_CODE             A,
+                   SY_CODE             B,
+                   SY_CODE             D,
+                   SY_CODE             F,
+                   SY_CODE             G,
+                   SY_CODE             H,
+                   SY_CODE             I,
+                   SY_CODE             J,
+                   SY_CODE             K,
+                   SY_CODE             L,
+                   SY_CODE             M,
+                   SY_CODE             N,
+                   SY_CODE             Q,
+                   SY_CODE             R,
+                   SY_CODE             S,
+                   SY_CODE             E,
+                   SY_CODE             O,
+                   SY_CODE             P,
+                   SY_CODE             C
+             WHERE HRE.EMPID = HRPI.EMPID(+)
+               AND HRE.EMPID = HREI.EMPID(+)
+               AND HPR.POST_LEVEL_ID = HPL.POST_GRADE_ID(+)
+               AND HPR.DEPTID = HRD.DEPTID(+)
+               AND HPR.POST_ID = HRP.POST_ID(+)
+               AND HRP.POST_GROUP_ID = HRPG.POST_GROUP_ID(+)
+               AND HRP.POSITION_ID = HRPO.POSITION_ID(+)
+               AND HRPO.POST_GRADE_ID = HRPGR.POST_GRADE_ID(+)
+               AND HREI.SHIFT_CODE = A.CODE_ID(+)
+               AND HREI.SUPPLIER_CODE = B.CODE_ID(+)
+               AND HRPI.DEGREE_CODE = D.CODE_ID(+)
+               AND HRPI.GENDER_CODE = F.CODE_ID(+)
+               AND HRPI.RELIGION_CODE = G.CODE_ID(+)
+               AND HRPI.NATION_CODE = H.CODE_ID(+)
+               AND HRPI.NATIONALITY_CODE = I.CODE_ID(+)
+               AND HRPI.BORNPLACE_CODE = J.CODE_ID(+)
+               AND HRPI.POLITY_CODE = K.CODE_ID(+)
+               AND HRPI.MARITAL_STATUS_CODE = L.CODE_ID(+)
+               AND HRPI.IDCARD_TYPE_CODE = M.CODE_ID(+)
+               AND HRPI.FILE_RELATION_CODE = N.CODE_ID(+)
+               AND HRPI.IDCARD_TYPE_CODE = Q.CODE_ID(+)
+               AND HRPI.EDU_HIS_CODE = R.CODE_ID(+)
+               AND HRPI.MAJOR_CODE = S.CODE_ID(+)
+               AND HRE.DUTY_CODE = E.CODE_ID(+)
+               AND HPR.STATUS_CODE = O.CODE_ID(+)
+               AND HRE.JOIN_TYPE_CODE = P.CODE_ID(+)
+               AND HRE.EMP_TYPE_CODE = C.CODE_ID(+)
+               AND ( HRE.LEFT_DATE >= TO_DATE(#S_DATE#,'YYYY-MM-DD')
+               OR  HRE.LEFT_DATE IS NULL )
+               AND HRE.JOIN_DATE <= TO_DATE(#S_DATE#,'YYYY-MM-DD')
+               AND HPR.NO = (
+                   SELECT MAX(HPR1.NO)
+                   FROM HR_POST_RECORDS HPR1
+                   WHERE HPR1.EMPID = HRE.EMPID
+                   AND HPR1.START_DATE <= TO_DATE(#S_DATE#,'YYYY-MM-DD')
+                   AND ( HPR1.END_DATE >= TO_DATE(#S_DATE#,'YYYY-MM-DD') OR END_DATE IS NULL )
+               )
+        ]]>
+        <include refid="HrSearchEmployeeCondition" />
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY HRE.DEPTID, HRE.EMPID
+            ]]>
+        </isEmpty>
+    </select>
+
+    <select id="getMenCnt" remapResults="true"
+        resultClass="int" parameterClass="linkMap">
+        <![CDATA[
+            SELECT COUNT(*)
+              FROM HR_EMPLOYEE         HRE,
+                   HR_PERSONAL_INFO    HRPI,
+                   HR_POST_RECORDS     HPR,
+                   HR_DEPARTMENT       HRD,
+                   HR_EMP_INFO         HREI,
+                   HR_POSITION         HRPO,
+                   HR_POST             HRP,
+                   HR_POST_GROUP       HRPG,
+                   HR_POST_GRADE       HRPGR,
+                   HR_POST_LEVEL       HPL,
+                   SY_CODE             A,
+                   SY_CODE             B,
+                   SY_CODE             D,
+                   SY_CODE             F,
+                   SY_CODE             G,
+                   SY_CODE             H,
+                   SY_CODE             I,
+                   SY_CODE             J,
+                   SY_CODE             K,
+                   SY_CODE             L,
+                   SY_CODE             M,
+                   SY_CODE             N,
+                   SY_CODE             Q,
+                   SY_CODE             R,
+                   SY_CODE             S,
+                   SY_CODE             E,
+                   SY_CODE             O,
+                   SY_CODE             P,
+                   SY_CODE             C
+             WHERE HRE.EMPID = HRPI.EMPID(+)
+               AND HRE.EMPID = HREI.EMPID(+)
+               AND HPR.POST_LEVEL_ID = HPL.POST_GRADE_ID(+)
+               AND HPR.DEPTID = HRD.DEPTID(+)
+               AND HPR.POST_ID = HRP.POST_ID(+)
+               AND HRP.POST_GROUP_ID = HRPG.POST_GROUP_ID(+)
+               AND HRP.POSITION_ID = HRPO.POSITION_ID(+)
+               AND HRPO.POST_GRADE_ID = HRPGR.POST_GRADE_ID(+)
+               AND HREI.SHIFT_CODE = A.CODE_ID(+)
+               AND HREI.SUPPLIER_CODE = B.CODE_ID(+)
+               AND HRPI.DEGREE_CODE = D.CODE_ID(+)
+               AND HRPI.GENDER_CODE = F.CODE_ID(+)
+               AND HRPI.RELIGION_CODE = G.CODE_ID(+)
+               AND HRPI.NATION_CODE = H.CODE_ID(+)
+               AND HRPI.NATIONALITY_CODE = I.CODE_ID(+)
+               AND HRPI.BORNPLACE_CODE = J.CODE_ID(+)
+               AND HRPI.POLITY_CODE = K.CODE_ID(+)
+               AND HRPI.MARITAL_STATUS_CODE = L.CODE_ID(+)
+               AND HRPI.IDCARD_TYPE_CODE = M.CODE_ID(+)
+               AND HRPI.FILE_RELATION_CODE = N.CODE_ID(+)
+               AND HRPI.IDCARD_TYPE_CODE = Q.CODE_ID(+)
+               AND HRPI.EDU_HIS_CODE = R.CODE_ID(+)
+               AND HRPI.MAJOR_CODE = S.CODE_ID(+)
+               AND HRE.DUTY_CODE = E.CODE_ID(+)
+               AND HPR.STATUS_CODE = O.CODE_ID(+)
+               AND HRE.JOIN_TYPE_CODE = P.CODE_ID(+)
+               AND HRE.EMP_TYPE_CODE = C.CODE_ID(+)
+               AND ( HRE.LEFT_DATE >= TO_DATE(#S_DATE#,'YYYY-MM-DD')
+               OR  HRE.LEFT_DATE IS NULL )
+               AND HRE.JOIN_DATE <= TO_DATE(#S_DATE#,'YYYY-MM-DD')
+               AND HPR.NO = (
+                   SELECT MAX(HPR1.NO)
+                   FROM HR_POST_RECORDS HPR1
+                   WHERE HPR1.EMPID = HRE.EMPID
+                   AND HPR1.START_DATE <= TO_DATE(#S_DATE#,'YYYY-MM-DD')
+                   AND ( HPR1.END_DATE >= TO_DATE(#S_DATE#,'YYYY-MM-DD') OR END_DATE IS NULL )
+               )
+        ]]>
+        <include refid="HrSearchEmployeeCondition" />
+    </select>
+
+    <select id="getHrTitleInfo" parameterClass="linkMap"
+        resultClass="string" remapResults="true">
+        <![CDATA[
+            SELECT IF(#language#='en', FIELD_EN_NAME, FIELD_NAME) ITEM_NAME
+            FROM PA_DISTINCT_LIST
+            WHERE DISTINCT_FIELD = #ITEM_ID#
+                AND TABLE_NAME = 'HR_MEN_V'
+        ]]>
+    </select>
+
+    <select id="getMenTypeConstructList" parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT '人数'                                                                   AS DATA_NAME,
+                   TO_CHAR(REPORT_GETEMPTYPE_COUNT(#S_DATE#,'EmpDivision1'))                        AS  HAIOD_DATA,
+                   TO_CHAR(REPORT_GETEMPTYPE_COUNT(#S_DATE#,'EmpDivision3'))                        AS  ZHONGL_DATA,
+                   TO_CHAR(REPORT_GETEMPTYPE_COUNT(#S_DATE#,''))                                    AS  TOTAL_DATA
+            FROM DUAL
+
+            UNION ALL
+
+            SELECT '比例'                                                                   AS DATA_NAME,
+                   TO_CHAR(REPORT_GETEMPTYPE_COUNT(#S_DATE#,'EmpDivision1')/REPORT_GETEMPTYPE_COUNT(#S_DATE#,'')*100,'990.9')||'%'                        AS  HAIOD_DATA,
+                   TO_CHAR(REPORT_GETEMPTYPE_COUNT(#S_DATE#,'EmpDivision3')/REPORT_GETEMPTYPE_COUNT(#S_DATE#,'')*100,'990.9')||'%'                        AS  ZHONGL_DATA,
+                   TO_CHAR(100,'990.9')||'%'                                    AS  TOTAL_DATA
+            FROM DUAL
+        ]]>
+    </select>
+
+    <select id="getMenEduConstructList" parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT '人数'                                                                                   AS DATA_NAME,
+                   TO_CHAR(REPORT_GETEMPEDU_COUNT(#S_DATE#,#EMP_TYPE_CODE#,'EduHisCode190'))                        AS  SHUO_COUNT,
+                   TO_CHAR(REPORT_GETEMPEDU_COUNT(#S_DATE#,#EMP_TYPE_CODE#,'EduHisCode200'))                        AS  BEN_COUNT,
+                   TO_CHAR(REPORT_GETEMPEDU_COUNT(#S_DATE#,#EMP_TYPE_CODE#,'EduHisCode230'))                        AS  DA_COUNT,
+                   TO_CHAR(REPORT_GETEMPEDU_COUNT(#S_DATE#,#EMP_TYPE_CODE#,'EduHisCode240'))                        AS  GAO_COUNT,
+                   TO_CHAR(REPORT_GETEMPEDU_COUNT(#S_DATE#,#EMP_TYPE_CODE#,'EduHisCode260'))                        AS  ZHONG_COUNT,
+                   TO_CHAR(REPORT_GETEMPEDU_COUNT(#S_DATE#,#EMP_TYPE_CODE#,'EduHisCode270'))                        AS  CHU_COUNT,
+                   TO_CHAR(REPORT_GETEMPEDU_COUNT(#S_DATE#,#EMP_TYPE_CODE#,'EduHisCode280'))                        AS  XIAO_COUNT,
+                   TO_CHAR(REPORT_GETEMPEDU_COUNT(#S_DATE#,#EMP_TYPE_CODE#,''))                                     AS  TOTAL_DATA
+            FROM DUAL
+
+            UNION ALL
+
+            SELECT '比例'                                                                   AS DATA_NAME,
+                   TO_CHAR(REPORT_GETEMPEDU_COUNT(#S_DATE#,#EMP_TYPE_CODE#,'EduHisCode190')/REPORT_GETEMPEDU_COUNT(#S_DATE#,#EMP_TYPE_CODE#,'')*100,'990.9')||'%'                        AS  SHUO_COUNT,
+                   TO_CHAR(REPORT_GETEMPEDU_COUNT(#S_DATE#,#EMP_TYPE_CODE#,'EduHisCode200')/REPORT_GETEMPEDU_COUNT(#S_DATE#,#EMP_TYPE_CODE#,'')*100,'990.9')||'%'                        AS  BEN_COUNT,
+                   TO_CHAR(REPORT_GETEMPEDU_COUNT(#S_DATE#,#EMP_TYPE_CODE#,'EduHisCode230')/REPORT_GETEMPEDU_COUNT(#S_DATE#,#EMP_TYPE_CODE#,'')*100,'990.9')||'%'                        AS  DA_COUNT,
+                   TO_CHAR(REPORT_GETEMPEDU_COUNT(#S_DATE#,#EMP_TYPE_CODE#,'EduHisCode240')/REPORT_GETEMPEDU_COUNT(#S_DATE#,#EMP_TYPE_CODE#,'')*100,'990.9')||'%'                        AS  GAO_COUNT,
+                   TO_CHAR(REPORT_GETEMPEDU_COUNT(#S_DATE#,#EMP_TYPE_CODE#,'EduHisCode260')/REPORT_GETEMPEDU_COUNT(#S_DATE#,#EMP_TYPE_CODE#,'')*100,'990.9')||'%'                        AS  ZHONG_COUNT,
+                   TO_CHAR(REPORT_GETEMPEDU_COUNT(#S_DATE#,#EMP_TYPE_CODE#,'EduHisCode270')/REPORT_GETEMPEDU_COUNT(#S_DATE#,#EMP_TYPE_CODE#,'')*100,'990.9')||'%'                        AS  CHU_COUNT,
+                   TO_CHAR(REPORT_GETEMPEDU_COUNT(#S_DATE#,#EMP_TYPE_CODE#,'EduHisCode280')/REPORT_GETEMPEDU_COUNT(#S_DATE#,#EMP_TYPE_CODE#,'')*100,'990.9')||'%'                        AS  XIAO_COUNT,
+                   TO_CHAR(100,'990.9')||'%'                                     AS  TOTAL_DATA
+            FROM DUAL
+        ]]>
+    </select>
+
+    <select id="getMenAgeConstructList" parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT '人数'                                                                  AS DATA_NAME,
+                   TO_CHAR(REPORT_GETEMPAGE_COUNT(#S_DATE#,0,25))                         AS  LEVEL1_AGE,
+                   TO_CHAR(REPORT_GETEMPAGE_COUNT(#S_DATE#,26,35))                        AS  LEVEL2_AGE,
+                   TO_CHAR(REPORT_GETEMPAGE_COUNT(#S_DATE#,36,45))                        AS  LEVEL3_AGE,
+                   TO_CHAR(REPORT_GETEMPAGE_COUNT(#S_DATE#,46,55))                        AS  LEVEL4_AGE,
+                   TO_CHAR(REPORT_GETEMPAGE_COUNT(#S_DATE#,56,120))                       AS  LEVEL5_AGE,
+                   TO_CHAR(REPORT_GETEMPAGE_COUNT(#S_DATE#,0,120))                        AS  TOTAL_DATA
+            FROM DUAL
+
+            UNION ALL
+
+            SELECT '比例'                                                                                                            AS DATA_NAME,
+                   TO_CHAR(REPORT_GETEMPAGE_COUNT(#S_DATE#,0,25)/REPORT_GETEMPAGE_COUNT(#S_DATE#,0,120)*100,'990.9')||'%'                        AS  LEVEL1_AGE,
+                   TO_CHAR(REPORT_GETEMPAGE_COUNT(#S_DATE#,26,35)/REPORT_GETEMPAGE_COUNT(#S_DATE#,0,120)*100,'990.9')||'%'                       AS  LEVEL2_AGE,
+                   TO_CHAR(REPORT_GETEMPAGE_COUNT(#S_DATE#,36,45)/REPORT_GETEMPAGE_COUNT(#S_DATE#,0,120)*100,'990.9')||'%'                       AS  LEVEL3_AGE,
+                   TO_CHAR(REPORT_GETEMPAGE_COUNT(#S_DATE#,46,55)/REPORT_GETEMPAGE_COUNT(#S_DATE#,0,120)*100,'990.9')||'%'                       AS  LEVEL4_AGE,
+                   TO_CHAR(REPORT_GETEMPAGE_COUNT(#S_DATE#,56,120)/REPORT_GETEMPAGE_COUNT(#S_DATE#,0,120)*100,'990.9')||'%'                      AS  LEVEL5_AGE,
+                   TO_CHAR(100,'990.9')||'%'                                     AS  TOTAL_DATA
+            FROM DUAL
+        ]]>
+    </select>
+
+    <select id="getMenWAgeConstructList" parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT '人数'                                                                 AS DATA_NAME,
+                   TO_CHAR(REPORT_GETEMPWAGE_COUNT(#S_DATE#,0,1))                        AS  LEVEL1_WAGE,
+                   TO_CHAR(REPORT_GETEMPWAGE_COUNT(#S_DATE#,1,3))                        AS  LEVEL2_WAGE,
+                   TO_CHAR(REPORT_GETEMPWAGE_COUNT(#S_DATE#,3,5))                        AS  LEVEL3_WAGE,
+                   TO_CHAR(REPORT_GETEMPWAGE_COUNT(#S_DATE#,5,10))                       AS  LEVEL4_WAGE,
+                   TO_CHAR(REPORT_GETEMPWAGE_COUNT(#S_DATE#,10,100))                     AS  LEVEL5_WAGE,
+                   TO_CHAR(REPORT_GETEMPWAGE_COUNT(#S_DATE#,0,100))                      AS  TOTAL_DATA
+            FROM DUAL
+
+            UNION ALL
+
+            SELECT '比例'                                                                                                            AS DATA_NAME,
+                   TO_CHAR(REPORT_GETEMPWAGE_COUNT(#S_DATE#,0,1)/REPORT_GETEMPWAGE_COUNT(#S_DATE#,0,100)*100,'990.9')||'%'                       AS  LEVEL1_WAGE,
+                   TO_CHAR(REPORT_GETEMPWAGE_COUNT(#S_DATE#,1,3)/REPORT_GETEMPWAGE_COUNT(#S_DATE#,0,100)*100,'990.9')||'%'                       AS  LEVEL2_WAGE,
+                   TO_CHAR(REPORT_GETEMPWAGE_COUNT(#S_DATE#,3,5)/REPORT_GETEMPWAGE_COUNT(#S_DATE#,0,100)*100,'990.9')||'%'                       AS  LEVEL3_WAGE,
+                   TO_CHAR(REPORT_GETEMPWAGE_COUNT(#S_DATE#,5,10)/REPORT_GETEMPWAGE_COUNT(#S_DATE#,0,100)*100,'990.9')||'%'                      AS  LEVEL4_WAGE,
+                   TO_CHAR(REPORT_GETEMPWAGE_COUNT(#S_DATE#,10,100)/REPORT_GETEMPWAGE_COUNT(#S_DATE#,0,100)*100,'990.9')||'%'                    AS  LEVEL5_WAGE,
+                   TO_CHAR(100,'990.9')||'%'                                     AS  TOTAL_DATA
+            FROM DUAL
+        ]]>
+    </select>
+</sqlMap>

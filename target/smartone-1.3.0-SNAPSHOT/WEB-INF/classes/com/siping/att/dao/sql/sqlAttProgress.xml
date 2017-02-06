@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="att.attProgress">
+	<select id="getAttProgressInfo" parameterClass="linkMap"
+			resultClass="linkMap">
+			<![CDATA[
+			
+				   SELECT MONTH_STR, 
+					      MONTHLY_LOCK_FLAG,
+					      DAILY_LOCK_FLAG,
+						  PA_LOCK_FLAG,
+						  PA_OPEN_FLAG, 
+						  INS_LOCK_FLAG,
+						  BONUS_LOCK_FLAG,
+						  CREATED_BY,
+						  CREATE_DATE,
+						  REMARK
+					 FROM PA_PROGRESS
+		  	]]>
+	     <dynamic prepend="WHERE">  
+			 	<isNotEmpty prepend="AND" property="arMonth">
+				<![CDATA[
+					  MONTH_STR = #arMonth#
+				]]>
+			</isNotEmpty>
+	     </dynamic>
+		
+		</select>
+	   <update id="updateAttProgressInfo" parameterClass="linkMap">
+		<![CDATA[
+			UPDATE PA_PROGRESS SET
+				UPDATED_BY = #UPDATED_BY:VARCHAR# 
+		]]>
+		
+		<isNotEmpty prepend="" property="PA_LOCK_FLAG">
+			<![CDATA[
+		 		  ,PA_LOCK_FLAG = #PA_LOCK_FLAG:NUMERIC#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="" property="MONTHLY_LOCK_FLAG">
+			<![CDATA[
+		 		  ,MONTHLY_LOCK_FLAG = #MONTHLY_LOCK_FLAG:NUMERIC#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="" property="DAILY_LOCK_FLAG">
+			<![CDATA[
+		 		  ,DAILY_LOCK_FLAG = #DAILY_LOCK_FLAG:NUMERIC#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="" property="INS_LOCK_FLAG">
+			<![CDATA[
+		 		  ,INS_LOCK_FLAG = #INS_LOCK_FLAG:NUMERIC#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="" property="PA_OPEN_FLAG">
+			<![CDATA[
+		 		  ,PA_OPEN_FLAG = #PA_OPEN_FLAG:NUMERIC#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="" property="BONUS_LOCK_FLAG">
+			<![CDATA[
+		 		  ,BONUS_LOCK_FLAG = #BONUS_LOCK_FLAG:NUMERIC#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="" property="REMARK">
+			<![CDATA[
+		 		  ,REMARK = #REMARK#
+		    ]]>
+		</isNotEmpty>
+		
+		<![CDATA[		
+				,UPDATE_DATE = SYSDATE
+			WHERE MONTH_STR = #arMonth:VARCHAR#
+		]]>
+	</update>
+</sqlMap>

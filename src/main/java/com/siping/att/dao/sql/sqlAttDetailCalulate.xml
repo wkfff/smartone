@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="att.attDetailCalulate">
+	<select id="getAttSupervisorList" resultClass="linkMap" >
+	SELECT AR_SUPERVISOR.SUPERVISOR_ID,
+		HR_EMPLOYEE.CHINESENAME, HR_EMPLOYEE.CHINESE_PINYIN,
+		HR_EMPLOYEE.ENGLISHNAME,
+		HR_DEPARTMENT.DEPTNAME, HR_DEPARTMENT.DEPT_EN_NAME,
+		to_char(AR_SUPERVISOR.CREATE_DATE,'YYYY-MM-DD')  CREATE_DATE,
+		HE.CHINESENAME CREATED_BY, HE.CHINESE_PINYIN YINPINCREATED_BY,
+		HE.ENGLISHNAME ENCREATED_BY 
+		FROM AR_SUPERVISOR, HR_EMPLOYEE, HR_DEPARTMENT, HR_EMPLOYEE HE
+		WHERE AR_SUPERVISOR.SUPERVISOR_ID = HR_EMPLOYEE.EMPID
+		AND HR_EMPLOYEE.DEPTID = HR_DEPARTMENT.DEPTID(+)
+		AND AR_SUPERVISOR.CREATED_BY = HE.EMPID(+) 
+	</select>
+	<procedure id="detailCalculate" parameterClass="linkMap">
+		<![CDATA[
+			{CALL AR_DETAIL_CAL(#from_date#, #to_date#, #caltype#, #deptID#, #empID,jdbcType=VARCHAR,mode=INOUT#)}
+		]]>
+	</procedure>
+</sqlMap>

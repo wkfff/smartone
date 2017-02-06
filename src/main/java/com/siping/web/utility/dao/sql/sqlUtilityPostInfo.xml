@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="utility.postInfo">
+	<sql id="postInfoCondition" >
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+				( HRP.POST_NAME LIKE concat('%' , TRIM(#keyWord:VARCHAR#) , '%')
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="POSITION_ID">
+			<![CDATA[
+		 		  HRP.POSITION_ID = #POSITION_ID#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+				HRP.CPNY_ID = #CPNY_ID:VARCHAR#
+			]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="AND" property="POST_GROUP_ID">
+			<![CDATA[
+				HRP.POST_GROUP_ID = #POST_GROUP_ID#
+			]]>
+		</isNotEmpty>
+	</sql>
+
+	<select id="getPostInfo" parameterClass="linkMap" 
+		resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT
+				HRP.POST_NO,
+				HRP.POST_ID,
+				HRP.POST_NAME,
+				HRPG.POST_GROUP_ID,
+				HRPG.POST_GROUP_NAME,
+				HPO.POSITION_ID,
+				HPO.POSITION_NAME
+			FROM
+				HR_POST HRP
+				left join HR_POSITION HPO on HRP.POSITION_ID = HPO.POSITION_ID
+				left join HR_POST_GROUP HRPG on HRP.POST_GROUP_ID = HRPG.POST_GROUP_ID
+			WHERE  HRP.ACTIVITY = 1
+		]]>
+		
+		<include refid="postInfoCondition"/>
+		
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY $sortname$ $sortorder$
+			]]>
+		</isNotEmpty>
+		
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY HRP.POST_NO
+			]]>
+		</isEmpty>
+		 
+	</select>
+	
+	<select id="getPostInfoCnt" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+			SELECT
+				COUNT(*)
+			FROM
+				HR_POST HRP
+				left join HR_POSITION HPO on HRP.POSITION_ID = HPO.POSITION_ID
+				left join HR_POST_GROUP HRPG on HRP.POST_GROUP_ID = HRPG.POST_GROUP_ID
+			WHERE  HRP.ACTIVITY = 1
+		]]>
+		
+		<include refid="postInfoCondition"/>
+		 
+	</select>
+</sqlMap>

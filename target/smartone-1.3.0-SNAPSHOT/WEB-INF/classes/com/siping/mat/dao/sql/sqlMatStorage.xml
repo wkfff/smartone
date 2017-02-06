@@ -1,0 +1,333 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="mat.matStorage">
+
+	 <sql id="MatStorageCondition">
+	 	<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+				(	
+					MAST.STORAGE_NAME              LIKE '%'||TRIM(#keyWord#)||'%'
+					OR MAST.ADDRESS                LIKE '%'||TRIM(#keyWord#)||'%'
+					OR MAST.REMARK                 LIKE '%'||TRIM(#keyWord#)||'%'
+				)
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="S_DATE">
+			<![CDATA[
+				MAST.BEGIN_DATE <= TO_DATE(#S_DATE#,'YYYY-MM-DD')
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="E_DATE">
+			<![CDATA[
+				(
+				MAST.END_DATE >= TO_DATE(#E_DATE#,'YYYY-MM-DD')
+				OR MAST.END_DATE IS NULL
+				)
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="ACTIVITY">
+			<![CDATA[
+				MAST.ACTIVITY = #ACTIVITY#
+			]]>
+		</isNotEmpty>
+		<isEmpty prepend="AND" property="ACTIVITY">
+			<![CDATA[
+				MAST.ACTIVITY = 1
+			]]>
+		</isEmpty>
+		<isNotEmpty prepend="AND" property="PLACE_CODE">
+			<![CDATA[
+				MAST.PLACE_CODE = #PLACE_CODE#
+			]]>
+		</isNotEmpty>
+	 </sql>
+
+	<!-- <select id="getStorageList" parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[	
+			SELECT MAST.MAT_STORAGE_ID,
+               MAST.STORAGE_NAME                                              STORAGE_NAME,
+               TO_CHAR(MAST.BEGIN_DATE,'YYYY-MM-DD')                          BEGIN_DATE,
+               TO_CHAR(MAST.END_DATE,'YYYY-MM-DD')                            END_DATE,
+               MAST.ADDRESS                                                   ADDRESS,
+               DECODE(#language#, 'en', A.CODE_EN_NAME, A.CODE_NAME)          PLACE,
+               MAST.PLACE_CODE                                                PLACE_CODE,
+               SYAV.CHINESENAME                                               CHINESENAME,
+               MAST.REMARK                                                    REMARK
+          FROM MAT_STORAGE_INFO       MAST,
+               SY_CODE                A,
+               SY_ADMIN_V             SYAV
+         WHERE MAST.PLACE_CODE = A.CODE_ID(+)
+           AND MAST.CHARGER = SYAV.ADMINID(+)
+		]]> -->
+		
+		<select id="getStorageList" parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[
+		
+		    SELECT MAST.MAT_STORAGE_ID,
+               MAST.STORAGE_NAME                                               STORAGE_NAME,
+              date_format(MAST.BEGIN_DATE,'%Y-%m-%d')                          BEGIN_DATE,
+              date_format(MAST.END_DATE,'%Y-%m-%d')                            END_DATE,
+               MAST.ADDRESS                                                     ADDRESS,
+               if(#language#='en', A.CODE_EN_NAME, A.CODE_NAME)                  PLACE,
+               MAST.PLACE_CODE                                                 PLACE_CODE,
+               SYAV.CHINESENAME                                                CHINESENAME,
+               MAST.REMARK                                                      REMARK
+          FROM MAT_STORAGE_INFO         MAST left join 
+                SY_CODE                  A on MAST.PLACE_CODE = A.CODE_ID
+              left join  SY_ADMIN_V      SYAV on MAST.CHARGER = SYAV.ADMINID	
+		]]>
+		
+		<include refid="MatStorageCondition" />		
+	</select>
+	
+	<select id="getStorageListCnt" parameterClass="linkMap" resultClass="int">
+		<![CDATA[	
+		SELECT COUNT(0)
+          FROM MAT_STORAGE_INFO       MAST,
+               SY_CODE                A,
+               SY_ADMIN_V             SYAV
+         WHERE MAST.PLACE_CODE = A.CODE_ID(+)
+           AND MAST.CHARGER = SYAV.ADMINID(+) 
+		]]>
+		<include refid="MatStorageCondition" />	
+	</select>
+	
+	<select id="getStorageDetail" parameterClass="linkMap"
+		resultClass="linkMap" remapResults="true">
+		<![CDATA[	
+			SELECT MAST.MAT_STORAGE_ID,
+               MAST.STORAGE_NAME                                              STORAGE_NAME,
+               TO_CHAR(MAST.BEGIN_DATE,'YYYY-MM-DD')                          BEGIN_DATE,
+               MAST.END_DATE                                                  END_DATE,
+               MAST.ADDRESS                                                   ADDRESS,
+               DECODE(#language#, 'en', A.CODE_EN_NAME, A.CODE_NAME)          PLACE,
+               MAST.PLACE_CODE                                                PLACE_CODE,
+               SYAV.CHINESENAME                                               CHINESENAME,
+               MAST.REMARK                                                    REMARK
+          FROM MAT_STORAGE_INFO       MAST,
+               SY_CODE                A,
+               SY_ADMIN_V             SYAV
+         WHERE MAST.PLACE_CODE = A.CODE_ID(+)
+           AND MAST.CHARGER = SYAV.ADMINID(+)
+           AND MAST.MAT_STORAGE_ID = #MAT_STORAGE_ID#
+		]]>
+	</select>	
+       
+	<sql id="MatStockCondition">
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+				(	
+					MAST.STORAGE_NAME          LIKE '%'||TRIM(#keyWord#)||'%'
+					OR MASTCK.MAT_STORAGE_ID         LIKE '%'||TRIM(#keyWord#)||'%'
+				)
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="S_DATE">
+			<![CDATA[
+			MASTCK.BEGIN_DATE <= TO_DATE(#S_DATE#,'YYYY-MM-DD HH24:MI')
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="E_DATE">
+			<![CDATA[
+			MASTCK.END_DATE >= TO_DATE(#E_DATE#,'YYYY-MM-DD HH24:MI')
+			OR MASTCK.END_DATE IS NULL
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="MAT_STORAGE_ID">
+			<![CDATA[
+			MASTCK.MAT_STORAGE_ID = #MAT_STORAGE_ID#
+			]]>
+		</isNotEmpty>	
+		<isNotEmpty prepend="AND" property="MAT_ID">
+			<![CDATA[
+			MASTCK.MAT_ID = #MAT_ID#
+			]]>
+		</isNotEmpty>	
+	</sql>   
+    
+    <select id="getStockList" parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[	
+		  SELECT MASTCK.MAT_STORAGE_ID, MASTCK.MAT_ID, MASTCK.MAT_STOCK_NO,
+               DECODE(#language#, 'en', A.CODE_EN_NAME, A.CODE_NAME)          QUANTITY_UNIT,
+               MAST.STORAGE_NAME                                              STORAGE_NAME,
+               MASTCK.MAX_QUANTITY                                            MAX_QUANTITY,
+               MASTCK.LEFT_QUANTITY                                           LEFT_QUANTITY,
+               MI.MAT_NAME                                              MAT_NAME
+          FROM MAT_STOCK_INFO       MASTCK,
+               MAT_STORAGE_INFO     MAST,  
+               MAT_INFO       MI,
+               SY_CODE          A
+         WHERE MASTCK.QUANTITY_UNIT_CODE = A.CODE_ID(+)
+           AND MASTCK.ACTIVITY = 1
+           AND MASTCK.MAT_STORAGE_ID = MAST.MAT_STORAGE_ID
+           AND MASTCK.MAT_ID = MI.MAT_ID
+		]]>
+		<include refid="MatStockCondition" />
+	</select>
+	
+	<select id="getStockListCnt" parameterClass="linkMap" resultClass="int">
+		<![CDATA[	
+		SELECT COUNT(0)
+          FROM MAT_STOCK_INFO       MASTCK,
+               MAT_STORAGE_INFO          MAST,  
+               SY_CODE          A
+         WHERE MASTCK.QUANTITY_UNIT_CODE = A.CODE_ID(+)
+           AND MASTCK.ACTIVITY = 1
+           AND MASTCK.MAT_STORAGE_ID = MAST.MAT_STORAGE_ID
+		]]>
+		<include refid="MatStockCondition" />
+	</select>
+	
+	<insert id="addStorage" parameterClass="linkMap">
+		<![CDATA[
+		INSERT INTO MAT_STORAGE_INFO(MAT_STORAGE_NO,MAT_STORAGE_ID,STORAGE_NAME,PLACE_CODE,ADDRESS,REMARK,CHARGER,BEGIN_DATE,END_DATE,CREATE_DATE,CREATED_BY,ACTIVITY,CPNY_ID)
+		VALUES(MAT_STORAGE_INFO_SEQ.NEXTVAL,#MAT_STORAGE_ID#,#STORAGE_NAME#,#PLACE_CODE#,#ADDRESS#,#REMARK#,#CHARGER#,TO_DATE(#BEGIN_DATE#,'YYYY-MM-DD'),TO_DATE(#END_DATE#,'YYYY-MM-DD'),SYSDATE,#CREATED_BY#,1,'wooribank')
+		]]>
+	</insert>
+	
+	<update id="updateStorage" parameterClass="linkMap">
+		<![CDATA[
+		UPDATE MAT_STORAGE_INFO SET STORAGE_NAME=#STORAGE_NAME#, PLACE_CODE=#PLACE_CODE#, ADDRESS=#ADDRESS#, REMARK=#REMARK#,
+		                            CHARGER=#CHARGER#, BEGIN_DATE=TO_DATE(#BEGIN_DATE#,'YYYY-MM-DD'), END_DATE=TO_DATE(#END_DATE#,'YYYY-MM-DD'),
+		                            UPDATED_BY=#UPDATED_BY#, UPDATE_DATE=SYSDATE 
+		WHERE MAT_STORAGE_ID=#MAT_STORAGE_ID#
+		]]>
+	</update>
+		
+	<sql id="addStockRecord">
+		<![CDATA[
+		INSERT INTO MAT_STOCK_RECORD(MAT_STOCK_REC_NO,MAT_STORAGE_ID,REMARK,ORDER_ID,MAT_ID,MAT_QUANTITY,QUANTITY_UNIT_CODE,TYPE_CODE,CREATE_DATE,CREATED_BY,ACTIVITY) 
+		VALUES(MAT_STOCK_RECORD_SEQ.NEXTVAL,#MAT_STORAGE_ID#,#REMARK#,#ORDER_ID#,#MAT_ID#,#MAT_QUANTITY#,#QUANTITY_UNIT_CODE#,#TYPE_CODE#,SYSDATE,#CREATED_BY#,1);
+		]]>
+	</sql>
+	
+	<insert id="addStock" parameterClass="linkMap">
+		<![CDATA[
+		DECLARE
+		VAR_EXIST NUMBER;
+		BEGIN
+		  SELECT COUNT(0) INTO VAR_EXIST FROM MAT_STOCK_INFO WHERE MAT_ID = #MAT_ID# AND MAT_STORAGE_ID = #MAT_STORAGE_ID#;
+		  IF VAR_EXIST = 0 THEN
+		    INSERT INTO MAT_STOCK_INFO(MAT_STOCK_NO,MAT_STORAGE_ID,MAT_ID,LEFT_QUANTITY,QUANTITY_UNIT_CODE,CREATE_DATE,CREATED_BY,ACTIVITY,CPNY_ID)
+		    VALUES(MAT_STOCK_INFO_SEQ.NEXTVAL,#MAT_STORAGE_ID#,#MAT_ID#,#MAT_QUANTITY#,#QUANTITY_UNIT_CODE#,SYSDATE,#CREATED_BY#,1,'wooribank');
+		  ELSE
+		    UPDATE MAT_STOCK_INFO T SET T.LEFT_QUANTITY=T.LEFT_QUANTITY+TO_NUMBER(#MAT_QUANTITY#),
+		                            UPDATED_BY=#UPDATED_BY#, UPDATE_DATE=SYSDATE 
+		    WHERE T.MAT_ID=#MAT_ID# AND T.MAT_STORAGE_ID=#MAT_STORAGE_ID#;
+		  END IF;  
+		]]>
+		<include refid="addStockRecord"/>
+		<![CDATA[
+		END;
+		]]>	
+	</insert>
+	
+	<insert id="minusStock" parameterClass="linkMap">
+		<![CDATA[
+		DECLARE
+		VAR_QUANTITY NUMBER;
+		BEGIN
+		  UPDATE MAT_STOCK_INFO T SET T.LEFT_QUANTITY=T.LEFT_QUANTITY-TO_NUMBER(#MAT_QUANTITY#),
+		                            UPDATED_BY=#UPDATED_BY#, UPDATE_DATE=SYSDATE 
+		  WHERE T.MAT_ID=#MAT_ID# AND T.MAT_STORAGE_ID=#MAT_STORAGE_ID#;
+		  SELECT LEFT_QUANTITY INTO VAR_QUANTITY FROM MAT_STOCK_INFO WHERE MAT_ID=#MAT_ID# AND MAT_STORAGE_ID=#MAT_STORAGE_ID#;
+          IF VAR_QUANTITY = 0 THEN
+            DELETE FROM MAT_STOCK_INFO WHERE MAT_ID=#MAT_ID# AND MAT_STORAGE_ID=#MAT_STORAGE_ID#;
+          END IF;  
+		]]>
+		<include refid="addStockRecord"/>
+		<![CDATA[
+		END;
+		]]>	
+	</insert>
+	
+	<update id="updateStock" parameterClass="linkMap">
+		<![CDATA[
+		UPDATE MAT_STOCK_INFO SET MAT_STORAGE_ID=#MAT_STORAGE_ID#, MAT_ID=#MAT_ID#, MAX_QUANTITY=#MAX_QUANTITY#, LEFT_QUANTITY=#LEFT_QUANTITY#,
+		                            QUANTITY_UNIT_CODE=#QUANTITY_UNIT_CODE#, UPDATED_BY=#UPDATED_BY#, UPDATE_DATE=SYSDATE 
+		WHERE MAT_STOCK_NO=#MAT_STOCK_NO#
+		]]>
+	</update>
+	
+	<sql id="stockHistoryCondition">
+		<isNotEmpty prepend="AND" property="S_DATE">
+			<![CDATA[
+				MSKR.CREATE_DATE > TO_DATE(#S_DATE#,'YYYY-MM-DD')
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="E_DATE">
+			<![CDATA[
+				MSKR.CREATE_DATE < TO_DATE(#E_DATE#,'YYYY-MM-DD')+1
+			]]>
+		</isNotEmpty>
+		<isEmpty prepend="AND" property="S_DATE">
+			<![CDATA[
+				MSKR.CREATE_DATE > SYSDATE-30
+			]]>
+		</isEmpty>
+		<isEmpty prepend="AND" property="E_DATE">
+			<![CDATA[
+				MSKR.CREATE_DATE < SYSDATE+1
+			]]>
+		</isEmpty>
+		<![CDATA[
+			ORDER BY MSKR.CREATE_DATE DESC
+		]]>
+	</sql>
+	
+	<select id="getStockHistory" parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[	
+			SELECT MSKR.MAT_STORAGE_ID                                        MAT_STORAGE_ID,
+               MSEI.STORAGE_NAME                                              STORAGE_NAME,
+               DECODE(#language#, 'en', A.CODE_EN_NAME, A.CODE_NAME)          TYPE,
+               MI.MAT_NAME                                               MAT_NAME,
+               MSKR.ORDER_ID                                                  ORDER_ID,
+               MSKR.MAT_QUANTITY                                              MAT_QUANTITY,
+               DECODE(#language#, 'en', B.CODE_EN_NAME, B.CODE_NAME)          QUANTITY_UNIT,
+               MSKR.REMARK                                                    REMARK,
+               DECODE(#language#,'en',SAV.CHINESENAME,SAV.ENGLISHNAME)        CREATED_BY,
+               TO_CHAR(MSKR.CREATE_DATE,'YYYY-MM-DD')                         CREATED_DATE
+          FROM MAT_STOCK_RECORD       MSKR,
+               MAT_STORAGE_INFO       MSEI,
+               MAT_INFO         MI,
+               SY_CODE                A,
+               SY_CODE                B,
+               SY_ADMIN_V             SAV
+         WHERE MSKR.TYPE_CODE = A.CODE_ID(+)
+           AND MSKR.MAT_ID = MI.MAT_ID(+)
+           AND MSKR.MAT_STORAGE_ID = MSEI.MAT_STORAGE_ID(+)
+           AND MSKR.QUANTITY_UNIT_CODE = B.CODE_ID(+)
+           AND MSKR.CREATED_BY = SAV.ADMINID(+)
+		]]>
+		<include refid="stockHistoryCondition" />		
+	</select>
+	
+	<select id="getStockHistoryCnt" parameterClass="linkMap" resultClass="int">
+		<![CDATA[	
+          SELECT COUNT(0)
+          FROM MAT_STOCK_RECORD       MSKR,
+               MAT_STORAGE_INFO       MSEI,
+               MAT_INFO         MI,
+               SY_CODE                A,
+               SY_CODE                B,
+               SY_ADMIN_V             SAV
+         WHERE MSKR.TYPE_CODE = A.CODE_ID(+)
+           AND MSKR.MAT_ID = MI.MAT_ID(+)
+           AND MSKR.MAT_STORAGE_ID = MSEI.MAT_STORAGE_ID(+)
+           AND MSKR.QUANTITY_UNIT_CODE = B.CODE_ID(+)
+           AND MSKR.CREATED_BY = SAV.ADMINID(+)
+		]]>
+		<include refid="stockHistoryCondition" />	
+	</select>
+	
+	<select id="getLeftStock" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+		SELECT DECODE(COUNT(0),0,0,MAX(MASTCK.LEFT_QUANTITY))LEFT_QUANTITY
+		FROM MAT_STOCK_INFO MASTCK
+		WHERE MASTCK.MAT_ID = #MAT_ID#
+		  AND MASTCK.MAT_STORAGE_ID = #MAT_STORAGE_ID#
+		]]>
+	</select>
+</sqlMap>

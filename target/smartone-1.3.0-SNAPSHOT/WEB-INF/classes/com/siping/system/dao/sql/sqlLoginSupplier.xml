@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="system.loginSupplier">
+
+<sql id="loginSupplierCondition">
+	<isNotEmpty prepend="AND" property="SUPPLIER_NAME">
+		<![CDATA[
+				SUP.SUPPLIER_NAME LIKE '%'||#SUPPLIER_NAME#||'%'
+			]]>
+	</isNotEmpty>
+	
+	<isNotEmpty prepend="AND" property="ACTIVITY">
+		<![CDATA[
+				SY.ACTIVITY=#ACTIVITY:NUMBER#
+		]]>
+	
+	</isNotEmpty>
+	<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		 ORDER BY   $sortname$  $sortorder$
+		    ]]>
+		</isNotEmpty>
+		
+		<isEmpty prepend="" property="sortname">
+				ORDER BY SY.CREATE_DATE DESC
+		</isEmpty>
+</sql>
+	<select id="getLoginSupplierRolesGroupList" parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[
+			 SELECT LS.SCREEN_GRANT_ID,
+				DECODE(#language#, 'en', LS.SCREEN_GRANT_EN_NAME, LS.SCREEN_GRANT_NAME) SCREEN_GRANT_NAME,
+				T.Supplier_GRANT_NO,
+				(CASE
+					WHEN INSTR(T.Supplier_GRANT_NO, ',' || LS.SCREEN_GRANT_ID || ',') > 0 
+					THEN
+						1
+					ELSE
+						0
+				END) AS CHECKED
+			FROM SY_LOGIN_SCREEN LS,
+				(SELECT ',' || SCREEN_GRANT_ID || ',' AS Supplier_GRANT_NO  FROM SY_ADMIN  WHERE CPNY_ID = #CPNY_ID:VARCHAR# AND ADMINLEVEL=1) T
+				
+				WHERE 1=1
+				
+				
+		]]>
+		<isNotEmpty prepend="AND" property="ACTIVITY">
+			<![CDATA[
+				LS.ACTIVITY = #ACTIVITY#
+			]]>
+		</isNotEmpty>
+		<![CDATA[
+			ORDER BY LS.SCREEN_GRANT_NO
+		]]>
+	</select>
+
+	<select id="getLoginSupplierObj" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT SY.ADMINNO,
+				SUP.SUPPLIER_ID,
+       			SUP.SUPPLIER_NAME,
+				SYS_GET_SCREEN_NAME(SY.ADMINID) AS SCREEN_NAME,
+				SY.ACTIVITY STATUS_ID
+			FROM SY_ADMIN SY, PROSTOR_SUPPLIER SUP
+			 WHERE SY.CPNY_ID=SUP.SUPPLIER_ID
+            AND
+     	      SUP.SUPPLIER_ID=#CPNY_ID#
+     	     AND
+     	     ADMINLEVEL=1
+		]]>
+		
+		
+		
+	</select>
+	
+	<select id="getLoginSupplierInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+		<![CDATA[
+		SELECT SY.ADMINID,
+			SY.CPNY_ID,
+            SUP.SUPPLIER_NAME,
+       		SUP.SUPPLIER_EN_NAME,
+      		SUP.SUPPLIER_CONTACTS,
+       		SY.USERNAME,
+       		SYS_GET_SCREEN_NAME(SY.ADMINID) AS SCREEN_NAME,
+       		SY.ACTIVITY
+      FROM SY_ADMIN SY, PROSTOR_SUPPLIER SUP
+      		WHERE SY.CPNY_ID=SUP.SUPPLIER_ID
+      		AND NOT  USERNAME  IS NULL
+      		AND ADMINLEVEL=1
+		]]>
+		<include refid="loginSupplierCondition" />
+	</select>
+	
+	<select id="getLoginSupplierInfoCnt" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+			SELECT COUNT(*)
+			FROM SY_ADMIN SY ,PROSTOR_SUPPLIER SUP
+			WHERE
+			SY.CPNY_ID=SUP.SUPPLIER_ID
+      			AND NOT  USERNAME  IS NULL 
+      			AND ADMINLEVEL=1
+		]]>
+		<include refid="loginSupplierCondition" />
+	</select>
+	
+	
+	
+	
+	
+	
+	<delete id="deleteLoginSupplierInfo" parameterClass="linkMap">
+		<![CDATA[
+			UPDATE SY_ADMIN SET SCREEN_GRANT_ID='' WHERE CPNY_ID=#CPNY_ID#
+		]]>
+	</delete>
+	
+	<update id="updateLoginSupplierInfo" parameterClass="linkMap" >
+		<![CDATA[
+			UPDATE SY_ADMIN SET
+				SCREEN_GRANT_ID = #SCREEN_GRANT_ID:VARCHAR#,
+				UPDATE_DATE = SYSDATE,
+				UPDATED_BY = #UPDATED_BY:VARCHAR#,
+				ACTIVITY = #ACTIVITY#
+			WHERE
+				CPNY_ID=#SUPPLIER_ID#
+				
+		]]>
+	</update>
+	
+	
+	<select id="getRolesSelectList"   parameterClass="linkMap"
+		resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT T.SCREEN_GRANT_ID ID,  
+			       T.SCREEN_GRANT_NAME NAME, 
+			       T.SCREEN_GRANT_EN_NAME EN_NAME
+			  FROM SY_LOGIN_SCREEN T
+			 WHERE T.ACTIVITY = 1 
+			]]>
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+				T.CPNY_ID = #CPNY_ID:VARCHAR#
+			]]>
+		</isNotEmpty>
+	</select>
+	
+	<select id="checkAdminID"   parameterClass="linkMap"
+		resultClass="int" remapResults="true">
+		<![CDATA[
+			SELECT COUNT(0)
+			FROM SY_ADMIN T
+			WHERE T.ADMINID = #ADMINID#
+		]]>
+	</select>
+</sqlMap>

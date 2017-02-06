@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="pa.wagebase">
+	<sql id="getPaAccountInfoCondition">
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+				(	
+					HRE.CHINESENAME 		LIKE '%'||TRIM(#keyWord#)||'%'
+					OR HRE.EMPID 			LIKE '%'||TRIM(#keyWord#)||'%'
+					OR HRD.DEPTNAME		LIKE '%'||TRIM(#keyWord#)||'%' 
+					OR upper(HRD.DEPT_EN_NAME) LIKE '%'||TRIM(upper(#keyWord#))||'%'
+					OR upper(HRE.CHINESE_PINYIN) LIKE '%'||TRIM(upper(#keyWord#))||'%'
+					OR upper(HRE.ENGLISHNAME) LIKE '%'||TRIM(upper(#keyWord#))||'%'
+				)
+		    ]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="AND" property="DEPTID">
+			<![CDATA[
+				EXISTS (
+					SELECT *
+					FROM HR_DEPARTMENT B1
+					WHERE B1.DEPTID=HRE.DEPTID
+					START WITH B1.DEPTID = #DEPTID#
+					CONNECT BY PRIOR B1.DEPTID = B1.PARENT_DEPT_ID
+				)
+			]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="AND" property="CALC_FLAG">
+			<![CDATA[
+				HREPI.CALC_FLAG = #CALC_FLAG:VARCHAR#
+			]]>
+		</isNotEmpty>
+	</sql>
+
+	<select id="getPaAccountInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+		<![CDATA[
+		SELECT HRE.EMPID,
+		       DECODE(#language#, 'en', HRE.ENGLISHNAME, HRE.CHINESENAME) CHINESENAME,
+		       HRE.DEPTID,
+		       DECODE(#language#, 'en', HRD.DEPT_EN_NAME, HRD.DEPTNAME) DEPTNAME,
+		       HRE.DUTY_CODE,
+		       DECODE(#language#, 'en', J.CODE_EN_NAME, J.CODE_NAME) DUTY_NAME,
+		       HRE.POSITION_ID,
+		       DECODE(#language#, 'en', HRPO.POSITION_EN_NAME, HRPO.POSITION_NAME) POSITION_NAME,
+		       HRE.POST_ID,
+		       DECODE(#language#, 'en', HRP.POST_EN_NAME, HRP.POST_NAME) POST_NAME,
+		       HRE.POST_GRADE_ID,
+		       DECODE(#language#,
+		              'en',
+		              HRPGR.POST_GRADE_EN_NAME,
+		              HRPGR.POST_GRADE_NAME) POST_GRADE_NAME,
+		       HRE.POST_COEF,
+		       HRE.POST_GROUP_ID,
+		       DECODE(#language#,
+		              'en',
+		              HRPG.POST_GROUP_EN_NAME,
+		              HRPG.POST_GROUP_NAME) POST_GROUP_NAME,
+		       HRE.STATUS_CODE,
+		       DECODE(#language#, 'en', M.CODE_EN_NAME, M.CODE_NAME) STATUS_NAME,
+		       HRE.JOIN_TYPE_CODE,
+		       DECODE(#language#, 'en', N.CODE_EN_NAME, N.CODE_NAME) JOIN_TYPE_NAME, 
+		       TO_CHAR(HRE.JOIN_DATE, 'YYYY-MM-DD') JOIN_DATE,
+		       TO_CHAR(HRE.HIRE_DATE, 'YYYY-MM-DD') HIRE_DATE,
+		       TO_CHAR(HRE.END_PROBATION_DATE, 'YYYY-MM-DD') END_PROBATION_DATE,
+		       TO_CHAR(HRE.LEFT_DATE, 'YYYY-MM-DD') LEFT_DATE,  
+		       HRE.COSTCENTER,
+		       HRE.EMP_TYPE_CODE,
+		       DECODE(#language#, 'en', A.CODE_EN_NAME, A.CODE_NAME) EMP_TYPE_NAME, 
+		       HREPI.BANK_CODE BANK_NAME, 
+		       HREPI.BANK_CITY_CODE,
+		       DECODE(#language#, 'en', C.CODE_EN_NAME, C.CODE_NAME) BANK_CITY_NAME, 
+		       HREPI.BANK_AREA_CODE,
+		       DECODE(#language#, 'en', D.CODE_EN_NAME, D.CODE_NAME) BANK_AREA_NAME, 
+		       HREPI.COST_CENTER COST_CENTER_CODE,
+		       DECODE(#language#, 'en', E.CODE_EN_NAME, E.CODE_NAME) COST_CENTER_NAME, 
+		       TO_CHAR(HREPI.CREATE_DATE, 'YYYY-MM-DD') CREATE_DATE,
+		       HREPI.CREATED_BY,
+		       TO_CHAR(HREPI.UPDATE_DATE, 'YYYY-MM-DD') UPDATE_DATE,
+		       HREPI.UPDATED_BY,
+		       HREPI.CALC_FLAG CALC_FLAG_ID,
+		       DECODE(HREPI.CALC_FLAG,
+			              'Y',
+			              DECODE(#language#, 'en', 'Yes', '是'),
+			              'N',
+			              DECODE(#language#, 'en', 'No', '否'),
+			              '') CALC_FLAG_NAME,
+		       HREPI.CARD_NO,
+		       HREPI.PA_NO,
+		       HREPI.REMARK
+		FROM HR_EMPLOYEE           HRE,
+		       HR_EMP_PA_INFO 	   HREPI,
+		       HR_DEPARTMENT       HRD,
+		       HR_POSITION         HRPO,
+		       HR_POST             HRP,
+		       HR_POST_GROUP       HRPG,
+		       HR_POST_GRADE       HRPGR,  
+		       SY_CODE             J, 
+		       SY_CODE             M,
+		       SY_CODE             N,
+		       SY_CODE             A,
+		       SY_CODE             C,
+		       SY_CODE             D,
+		       SY_CODE             E
+		WHERE HRE.EMPID = HREPI.EMPID
+		   AND HRE.DEPTID = HRD.DEPTID(+)
+		   AND HRE.POST_ID = HRP.POST_ID(+)
+		   AND HRE.POST_GROUP_ID = HRPG.POST_GROUP_ID(+)
+		   AND HRE.POSITION_ID = HRPO.POSITION_ID(+)
+		   AND HRE.POST_GRADE_ID = HRPGR.POST_GRADE_ID(+)
+		   AND HRE.DUTY_CODE = J.CODE_ID(+)  
+		   AND HRE.STATUS_CODE = M.CODE_ID(+)  
+		   AND HRE.JOIN_TYPE_CODE = N.CODE_ID(+)  
+		   AND HRE.EMP_TYPE_CODE = A.CODE_ID(+)  
+		   AND HREPI.BANK_CITY_CODE = C.CODE_ID(+)   
+		   AND HREPI.BANK_AREA_CODE = D.CODE_ID(+)   
+		   AND HREPI.COST_CENTER = E.CODE_ID(+)
+		   AND HREPI.ACTIVITY = 1
+		   AND HREPI.CPNY_ID = #CPNY_ID#
+		]]>
+		<include refid="getPaAccountInfoCondition" />
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY $sortname$ $sortorder$
+			]]>
+		</isNotEmpty>
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY EMPID
+			]]>
+		</isEmpty>
+	</select>
+
+	<select id="getPaAccountInfoCnt" parameterClass="linkMap"
+		resultClass="int">
+		<![CDATA[
+			SELECT COUNT(*)
+			FROM HR_EMPLOYEE           HRE,
+			       HR_EMP_PA_INFO 	   HREPI,
+			       HR_DEPARTMENT       HRD,
+			       HR_POSITION         HRPO,
+			       HR_POST             HRP,
+			       HR_POST_GROUP       HRPG,
+			       HR_POST_GRADE       HRPGR,  
+			       SY_CODE             J, 
+			       SY_CODE             M,
+			       SY_CODE             N,
+			       SY_CODE             A,
+			       SY_CODE             C,
+			       SY_CODE             D,
+			       SY_CODE             E 
+			WHERE HRE.EMPID = HREPI.EMPID
+			   AND HRE.DEPTID = HRD.DEPTID(+)
+			   AND HRE.POST_ID = HRP.POST_ID(+)
+			   AND HRE.POST_GROUP_ID = HRPG.POST_GROUP_ID(+)
+			   AND HRE.POSITION_ID = HRPO.POSITION_ID(+)
+			   AND HRE.POST_GRADE_ID = HRPGR.POST_GRADE_ID(+)
+			   AND HRE.DUTY_CODE = J.CODE_ID(+)
+			   AND HRE.STATUS_CODE = M.CODE_ID(+)
+			   AND HRE.JOIN_TYPE_CODE = N.CODE_ID(+)
+			   AND HRE.EMP_TYPE_CODE = A.CODE_ID(+)  
+			   AND HREPI.BANK_CITY_CODE = C.CODE_ID(+) 
+			   AND HREPI.BANK_AREA_CODE = D.CODE_ID(+) 
+			   AND HREPI.COST_CENTER = E.CODE_ID(+)  
+			   AND HREPI.ACTIVITY = 1
+			   AND HREPI.CPNY_ID = #CPNY_ID#
+		]]>
+		<include refid="getPaAccountInfoCondition" />
+	</select>
+
+	<update id="updatePaAccountInfo" parameterClass="linkMap">
+		<![CDATA[
+	 		UPDATE HR_EMP_PA_INFO SET
+				BANK_CODE = #BANK_NAME:VARCHAR# , 
+				CARD_NO = #CARD_NO:VARCHAR# ,
+				CALC_FLAG = #CALC_FLAG_ID:VARCHAR#,
+				UPDATE_DATE = SYSDATE,
+				UPDATED_BY  = #UPDATED_BY#,
+				REMARK      = #REMARK#
+			WHERE PA_NO = #PA_NO# 
+		]]>
+	</update>
+
+	<sql id="getPaWhCondition">
+		<isNotEmpty prepend="AND" property="PA_MONTH">
+			<![CDATA[
+				(
+					EAW.START_DATE >= ar_get_startdate(#PA_MONTH#)
+					AND EAW.START_DATE <= ar_get_enddate(#PA_MONTH#)
+				)
+			]]>
+		</isNotEmpty>
+	</sql>
+
+	<select id="getPaWhInfoList" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT HRE.EMPID,
+			       DECODE('', 'en', HRE.ENGLISHNAME, HRE.CHINESENAME) CHINESENAME,
+			       HRE.DEPTID,
+			       DECODE('', 'en', HRD.DEPT_EN_NAME, HRD.DEPTNAME) DEPTNAME,
+			       HRE.POST_ID,
+			       DECODE('', 'en', HRP.POST_EN_NAME, HRP.POST_NAME) POST_NAME,
+			       HRE.STATUS_CODE,
+			       DECODE('', 'en', M.CODE_EN_NAME, M.CODE_NAME) STATUS_NAME,
+			       EAW.PROJ_PROS_TYPE_CODE,
+			       DECODE('', 'en', N.CODE_EN_NAME, N.CODE_NAME) PROJ_PROS_TYPE_NAME,
+	             TO_CHAR(HRE.JOIN_DATE, 'YYYY-MM-DD') JOIN_DATE,
+	             TO_CHAR(HRE.HIRE_DATE, 'YYYY-MM-DD') HIRE_DATE,
+	             TO_CHAR(HRE.END_PROBATION_DATE, 'YYYY-MM-DD') END_PROBATION_DATE,
+	             TO_CHAR(HRE.LEFT_DATE, 'YYYY-MM-DD') LEFT_DATE, 
+	             HRE.COSTCENTER,
+	             HRE.EMP_TYPE_CODE,
+	             DECODE('', 'en', A.CODE_EN_NAME, A.CODE_NAME) EMP_TYPE_NAME, 
+	             EAW.PROD_NO,
+	             EAW.WH_NO,
+	             TO_CHAR(EAW.START_DATE, 'YYYY-MM-DD') START_DATE,
+	             TO_CHAR(EAW.END_DATE, 'YYYY-MM-DD') END_DATE,
+	             EAW.WORK_CONTENT,
+	             EAW.REMARK,
+	             EAW.WORK_HOUR    QUANTITY,
+	             EAW.CREATE_DATE,
+	             EAW.CREATED_BY,
+	             EAW.UPDATED_BY,
+	             EAW.UPDATE_DATE,
+	             EAW.CANCEL_REMARK,
+	               EAW.CON_REMARK,
+	               EPO.PROD_ID PROD_ID,
+	               EPO.DRAWING_NO DRAWING_NO,
+	               EP.PRO_NO PRO_NO,
+	               DECODE('', 'en', EP.PRO_EN_NAME, EP.PRO_NAME) PRO_NAME
+	        FROM HR_EMPLOYEE         HRE,
+	               ESS_APPLY_WH        EAW,
+	               HR_DEPARTMENT       HRD,
+	               HR_POST             HRP,
+	               SY_CODE             M,
+	               SY_CODE             A,
+	               SY_CODE             N,
+	               ESS_PRODUCTION_ORDER EPO,
+	               ESS_PROJECT EP
+	        WHERE EAW.EMPID = HRE.EMPID(+)
+	           AND EAW.ACTIVITY = 1
+	           AND HRE.DEPTID = HRD.DEPTID(+)
+	           AND HRE.POST_ID = HRP.POST_ID(+)
+	           AND HRE.STATUS_CODE = M.CODE_ID(+)
+	           AND HRE.EMP_TYPE_CODE = A.CODE_ID(+)
+	           AND EAW.PROJ_PROS_TYPE_CODE = N.CODE_ID(+)
+	           AND EAW.PROD_NO = EPO.PROD_NO(+)
+	           AND EPO.PRO_NO = EP.PRO_NO(+)
+		]]>
+		<include refid="getPaWhCondition" />
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY $sortname$ $sortorder$
+			]]>
+		</isNotEmpty>
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY EAW.START_DATE DESC
+			]]>
+		</isEmpty>
+	</select>
+
+	<select id="getPaWhInfoListCnt" parameterClass="linkMap"
+		resultClass="int">
+		<![CDATA[
+			SELECT COUNT(HRE.EMPID)
+	        FROM HR_EMPLOYEE         HRE,
+	               ESS_APPLY_WH        EAW,
+	               HR_DEPARTMENT       HRD,
+	               HR_POST             HRP,
+	               SY_CODE             M,
+	               SY_CODE             A,
+	               SY_CODE             N,
+	               ESS_PRODUCTION_ORDER EPO,
+	               ESS_PROJECT EP
+	        WHERE EAW.EMPID = HRE.EMPID(+)
+	           AND EAW.ACTIVITY = 1
+	           AND HRE.DEPTID = HRD.DEPTID(+)
+	           AND HRE.POST_ID = HRP.POST_ID(+)
+	           AND HRE.STATUS_CODE = M.CODE_ID(+)
+	           AND HRE.EMP_TYPE_CODE = A.CODE_ID(+)
+	           AND EAW.PROJ_PROS_TYPE_CODE = N.CODE_ID(+)
+	           AND EAW.PROD_NO = EPO.PROD_NO(+)
+	           AND EPO.PRO_NO = EP.PRO_NO(+)
+		]]>
+		<include refid="getPaWhCondition" />
+	</select>
+</sqlMap>

@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap
+    PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+    "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="report.sales">
+
+    <select id="getDataInfo" parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+        SELECT $sqlPiece$
+          FROM SALES_REPORT_HISTORY_$SALES_MONTH$ SRHM,
+               HR_EMPLOYEE,
+               HR_DEPARTMENT
+         WHERE SRHM.EMP_ID = HR_EMPLOYEE.EMPID
+           AND HR_EMPLOYEE.DEPTID = HR_DEPARTMENT.DEPTID
+        ]]>
+        <isNotEmpty prepend="AND" property="SALES_MONTH">
+            <![CDATA[
+                  SRHM.MONTH = #SALES_MONTH#
+            ]]>
+        </isNotEmpty>
+
+        <isNotEmpty prepend="AND" property="DEPTID">
+            <![CDATA[
+                          EXISTS (
+                          SELECT     *
+                            FROM HR_DEPARTMENT B1
+                            WHERE B1.DEPTID=HR_EMPLOYEE.DEPTID
+                        START WITH B1.DEPTID = #DEPTID:VARCHAR#
+                        CONNECT BY PRIOR B1.DEPTID = B1.PARENT_DEPT_ID
+                    )
+            ]]>
+        </isNotEmpty>
+    </select>
+    <sql id="salesMonthColumnInfo">
+        <![CDATA[
+                SELECT 'MONTH' AS "COLUMN_NAME",
+                        DECODE(#language#, 'en', 'Month', '月份') ITEM_NAME,
+                       1 AS CALCU_ORDER
+                  FROM DUAL
+                UNION ALL
+                SELECT 'CHINESENAME' AS "COLUMN_NAME",
+                        DECODE(#language#, 'en', 'Name', '姓名') ITEM_NAME,
+                       2 AS CALCU_ORDER
+                  FROM DUAL
+                UNION ALL
+                SELECT 'EMP_ID' AS "COLUMN_NAME",
+                        DECODE(#language#, 'en', 'Emp ID', '工号') ITEM_NAME,
+                       3 AS CALCU_ORDER
+                  FROM DUAL
+                UNION ALL
+                SELECT 'DEPTNAME' AS "COLUMN_NAME",
+                        DECODE(#language#, 'en', 'Department', '部门') ITEM_NAME,
+                       4 AS CALCU_ORDER
+                  FROM DUAL
+                UNION ALL
+                SELECT 'SALES_SUMMERY' AS "COLUMN_NAME",
+                        DECODE(#language#, 'en', 'Sales Summary', '销售额总计') ITEM_NAME,
+                       5 AS CALCU_ORDER
+                  FROM DUAL
+                UNION ALL
+                SELECT 'NEW_CUSTOMER' AS "COLUMN_NAME",
+                        DECODE(#language#, 'en', 'New Customer', '新增客户') ITEM_NAME,
+                       6 AS CALCU_ORDER
+                  FROM DUAL
+                UNION ALL
+                SELECT 'ACTION_COUNT' AS "COLUMN_NAME",
+                        DECODE(#language#, 'en', 'Action Count', '本月活动数') ITEM_NAME,
+                       7 AS CALCU_ORDER
+                  FROM DUAL
+                UNION ALL
+                SELECT 'SALARY_NETWORK' AS "COLUMN_NAME",
+                        DECODE(#language#, 'en', 'Network Salary', '下级销售提成') ITEM_NAME,
+                       8 AS CALCU_ORDER
+                  FROM DUAL
+                 ORDER BY CALCU_ORDER
+            ]]>
+    </sql>
+    <select id="getSalesMonthColumnInfo" parameterClass="linkMap" resultClass="linkMap">
+        <include refid="salesMonthColumnInfo"/>
+   </select>
+    <select id="getSalesMonthTitleInfo" parameterClass="linkMap"
+        resultClass="string" remapResults="true">
+        <![CDATA[
+        SELECT ITEM_NAME FROM (
+         ]]>
+         <include refid="salesMonthColumnInfo"/>
+        <![CDATA[
+                )
+            WHERE COLUMN_NAME = #ITEM_ID#
+        ]]>
+
+    </select>
+
+   <select id="getSalesInfoColumnInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+                SELECT RI.TABLE_NAME,
+                       RI.ITEM_ID,
+                       DECODE(#language#, 'en', RIR.ITEM_EN_NAME, RIR.ITEM_NAME) ITEM_NAME
+                  FROM REPORT_ITEM RI,REPORT_TABLE RT,REPORT_ITEM_REFERENCE RIR
+                 WHERE RI.RT_NO = RT.RT_NO(+)
+                   AND RI.ITEM_ID = RIR.ITEM_ID(+)
+                   AND RT.MENU_CODE = #MENU_CODE#
+                   AND RT.CPNY_ID = #CPNY_ID#
+                 ORDER BY RI.ORDERNO
+            ]]>
+   </select>
+   <select id="getSalesInfoTitleInfo" parameterClass="linkMap"
+        resultClass="string" remapResults="true">
+        <![CDATA[
+        SELECT ITEM_NAME FROM (
+                SELECT RI.TABLE_NAME,
+                       RI.ITEM_ID,
+                       DECODE(#language#, 'en', RIR.ITEM_EN_NAME, RIR.ITEM_NAME) ITEM_NAME
+                  FROM REPORT_ITEM RI,REPORT_TABLE RT,REPORT_ITEM_REFERENCE RIR
+                 WHERE RI.RT_NO = RT.RT_NO(+)
+                   AND RI.ITEM_ID = RIR.ITEM_ID(+)
+                   AND RT.MENU_CODE = #MENU_CODE#
+                   AND RT.CPNY_ID = #CPNY_ID#)
+            WHERE ITEM_ID = #ITEM_ID#
+        ]]>
+         <![CDATA[
+         ]]>
+    </select>
+    <insert id="addComputerInfo" parameterClass="linkMap">
+        <![CDATA[
+            INSERT INTO COMPUTER
+                (
+                    ID,BRAND,CPU,GPU,MEMORY,PRICE
+                )
+            VALUES(
+                    PA_INS_EMP_SEQ.NEXTVAL ,
+                    #BRAND:VARCHAR#,
+                    #CPU:VARCHAR#,
+                    #GPU:VARCHAR#,
+                    #MEMORY:VARCHAR#,
+                    #PRICE:VARCHAR#
+                )
+        ]]>
+    </insert>
+
+    <select id="getCustomerMonthlySalesList" parameterClass="linkMap"  resultClass="linkMap">
+        <![CDATA[
+            SELECT CBI.CUST_NAME,
+                   GET_CUST_MONTH_TOTAL(CUST_NO,'JAN', #PA_YEAR#) JAN_SUM,
+                   GET_CUST_MONTH_TOTAL(CUST_NO,'FEB', #PA_YEAR#) FEB_SUM,
+                   GET_CUST_MONTH_TOTAL(CUST_NO,'MAR', #PA_YEAR#) MAR_SUM,
+                   GET_CUST_MONTH_TOTAL(CUST_NO,'APR', #PA_YEAR#) APR_SUM,
+                   GET_CUST_MONTH_TOTAL(CUST_NO,'MAY', #PA_YEAR#) MAY_SUM,
+                   GET_CUST_MONTH_TOTAL(CUST_NO,'JUN', #PA_YEAR#) JUN_SUM,
+                   GET_CUST_MONTH_TOTAL(CUST_NO,'JUL', #PA_YEAR#) JUL_SUM,
+                   GET_CUST_MONTH_TOTAL(CUST_NO,'AUG', #PA_YEAR#) AUG_SUM,
+                   GET_CUST_MONTH_TOTAL(CUST_NO,'SEP', #PA_YEAR#) SEP_SUM,
+                   GET_CUST_MONTH_TOTAL(CUST_NO,'OCT', #PA_YEAR#) OCT_SUM,
+                   GET_CUST_MONTH_TOTAL(CUST_NO,'NOV', #PA_YEAR#) NOV_SUM,
+                   GET_CUST_MONTH_TOTAL(CUST_NO,'DEC', #PA_YEAR#) DEC_SUM,
+                   GET_CUST_MONTH_TOTAL(CUST_NO,'JAN', #PA_YEAR#)+GET_CUST_MONTH_TOTAL(CUST_NO,'FEB', #PA_YEAR#)
+                   +GET_CUST_MONTH_TOTAL(CUST_NO,'MAR', #PA_YEAR#)+GET_CUST_MONTH_TOTAL(CUST_NO,'APR', #PA_YEAR#)
+                   +GET_CUST_MONTH_TOTAL(CUST_NO,'MAY', #PA_YEAR#)+GET_CUST_MONTH_TOTAL(CUST_NO,'JUN', #PA_YEAR#)
+                   +GET_CUST_MONTH_TOTAL(CUST_NO,'JUL', #PA_YEAR#)+GET_CUST_MONTH_TOTAL(CUST_NO,'AUG', #PA_YEAR#)
+                   +GET_CUST_MONTH_TOTAL(CUST_NO,'SEP', #PA_YEAR#)+GET_CUST_MONTH_TOTAL(CUST_NO,'OCT', #PA_YEAR#)
+                   +GET_CUST_MONTH_TOTAL(CUST_NO,'NOV', #PA_YEAR#)+GET_CUST_MONTH_TOTAL(CUST_NO,'DEC', #PA_YEAR#) total
+            FROM CUST_BASIC_INFO CBI
+            WHERE CBI.ACTIVITY = 1
+        ]]>
+        <isNotEmpty prepend="" property="orderby">
+            <![CDATA[
+                ORDER BY $orderby$
+            ]]>
+        </isNotEmpty>
+    </select>
+
+    <select id="getCustomerMonthlySalesCnt" remapResults="true"
+        resultClass="int" parameterClass="linkMap">
+        <![CDATA[
+            SELECT COUNT(*)
+            FROM CUST_BASIC_INFO CBI
+            WHERE CBI.ACTIVITY = 1
+        ]]>
+    </select>
+
+    <select id="getCustomerYearlySalesList" parameterClass="linkMap"  resultClass="linkMap">
+        <![CDATA[
+            SELECT CBI.CUST_NAME,
+                   GET_CUST_YEAR_TOTAL(CUST_NO, #PA_YEAR#-4) FOU_AGO_SUM,
+                   GET_CUST_YEAR_TOTAL(CUST_NO, #PA_YEAR#-3) THR_AGO_SUM,
+                   GET_CUST_YEAR_TOTAL(CUST_NO, #PA_YEAR#-2) TWO_AGO_SUM,
+                   GET_CUST_YEAR_TOTAL(CUST_NO, #PA_YEAR#-1) ONE_AGO_SUM,
+                   GET_CUST_YEAR_TOTAL(CUST_NO, #PA_YEAR#)   ZER_AGO_SUM,
+                   GET_CUST_YEAR_TOTAL(CUST_NO, #PA_YEAR#-4)+GET_CUST_YEAR_TOTAL(CUST_NO, #PA_YEAR#-3)
+                   +GET_CUST_YEAR_TOTAL(CUST_NO, #PA_YEAR#-2)+GET_CUST_YEAR_TOTAL(CUST_NO, #PA_YEAR#-1)
+                   +GET_CUST_YEAR_TOTAL(CUST_NO, #PA_YEAR#) total
+            FROM CUST_BASIC_INFO CBI
+            WHERE CBI.ACTIVITY = 1
+        ]]>
+        <isNotEmpty prepend="" property="orderby">
+            <![CDATA[
+                ORDER BY $orderby$
+            ]]>
+        </isNotEmpty>
+    </select>
+
+    <select id="getCustomerYearlySalesCnt" remapResults="true"
+        resultClass="int" parameterClass="linkMap">
+        <![CDATA[
+            SELECT COUNT(*)
+            FROM CUST_BASIC_INFO CBI
+            WHERE CBI.ACTIVITY = 1
+        ]]>
+    </select>
+
+    <select id="getProductMonthlySalesList" parameterClass="linkMap"  resultClass="linkMap">
+        <![CDATA[
+            SELECT PP.PRODUCT_NAME,
+                   GET_PRODUCT_MONTH_TOTAL(PRODUCT_NO,'JAN', #PA_YEAR#) JAN_SUM,
+                   GET_PRODUCT_MONTH_TOTAL(PRODUCT_NO,'FEB', #PA_YEAR#) FEB_SUM,
+                   GET_PRODUCT_MONTH_TOTAL(PRODUCT_NO,'MAR', #PA_YEAR#) MAR_SUM,
+                   GET_PRODUCT_MONTH_TOTAL(PRODUCT_NO,'APR', #PA_YEAR#) APR_SUM,
+                   GET_PRODUCT_MONTH_TOTAL(PRODUCT_NO,'MAY', #PA_YEAR#) MAY_SUM,
+                   GET_PRODUCT_MONTH_TOTAL(PRODUCT_NO,'JUN', #PA_YEAR#) JUN_SUM,
+                   GET_PRODUCT_MONTH_TOTAL(PRODUCT_NO,'JUL', #PA_YEAR#) JUL_SUM,
+                   GET_PRODUCT_MONTH_TOTAL(PRODUCT_NO,'AUG', #PA_YEAR#) AUG_SUM,
+                   GET_PRODUCT_MONTH_TOTAL(PRODUCT_NO,'SEP', #PA_YEAR#) SEP_SUM,
+                   GET_PRODUCT_MONTH_TOTAL(PRODUCT_NO,'OCT', #PA_YEAR#) OCT_SUM,
+                   GET_PRODUCT_MONTH_TOTAL(PRODUCT_NO,'NOV', #PA_YEAR#) NOV_SUM,
+                   GET_PRODUCT_MONTH_TOTAL(PRODUCT_NO,'DEC', #PA_YEAR#) DEC_SUM,
+                   GET_PRODUCT_MONTH_TOTAL(PRODUCT_NO,'JAN', #PA_YEAR#)+GET_PRODUCT_MONTH_TOTAL(PRODUCT_NO,'FEB', #PA_YEAR#)
+                   +GET_PRODUCT_MONTH_TOTAL(PRODUCT_NO,'MAR', #PA_YEAR#)+GET_PRODUCT_MONTH_TOTAL(PRODUCT_NO,'APR', #PA_YEAR#)
+                   +GET_PRODUCT_MONTH_TOTAL(PRODUCT_NO,'MAY', #PA_YEAR#)+GET_PRODUCT_MONTH_TOTAL(PRODUCT_NO,'JUN', #PA_YEAR#)
+                   +GET_PRODUCT_MONTH_TOTAL(PRODUCT_NO,'JUL', #PA_YEAR#)+GET_PRODUCT_MONTH_TOTAL(PRODUCT_NO,'AUG', #PA_YEAR#)
+                   +GET_PRODUCT_MONTH_TOTAL(PRODUCT_NO,'SEP', #PA_YEAR#)+GET_PRODUCT_MONTH_TOTAL(PRODUCT_NO,'OCT', #PA_YEAR#)
+                   +GET_PRODUCT_MONTH_TOTAL(PRODUCT_NO,'NOV', #PA_YEAR#)+GET_CUST_MONTH_TOTAL(PRODUCT_NO,'DEC', #PA_YEAR#) total
+            FROM PROSTOR_PRODUCT PP
+            WHERE PP.ACTIVITY = 1
+        ]]>
+        <isNotEmpty prepend="" property="orderby">
+            <![CDATA[
+                ORDER BY $orderby$
+            ]]>
+        </isNotEmpty>
+    </select>
+
+    <select id="getProductMonthlySalesCnt" remapResults="true"
+        resultClass="int" parameterClass="linkMap">
+        <![CDATA[
+            SELECT COUNT(*)
+            FROM PROSTOR_PRODUCT PP
+            WHERE PP.ACTIVITY = 1
+        ]]>
+    </select>
+
+    <select id="getProductYearlySalesList" parameterClass="linkMap"  resultClass="linkMap">
+        <![CDATA[
+            SELECT PP.PRODUCT_NAME,
+                   GET_PRODUCT_YEAR_TOTAL(PRODUCT_NO, #PA_YEAR#-4) FOU_AGO_SUM,
+                   GET_PRODUCT_YEAR_TOTAL(PRODUCT_NO, #PA_YEAR#-3) THR_AGO_SUM,
+                   GET_PRODUCT_YEAR_TOTAL(PRODUCT_NO, #PA_YEAR#-2) TWO_AGO_SUM,
+                   GET_PRODUCT_YEAR_TOTAL(PRODUCT_NO, #PA_YEAR#-1) ONE_AGO_SUM,
+                   GET_PRODUCT_YEAR_TOTAL(PRODUCT_NO, #PA_YEAR#)   ZER_AGO_SUM,
+                   GET_PRODUCT_YEAR_TOTAL(PRODUCT_NO, #PA_YEAR#-4)+GET_PRODUCT_YEAR_TOTAL(PRODUCT_NO, #PA_YEAR#-3)
+                   +GET_PRODUCT_YEAR_TOTAL(PRODUCT_NO, #PA_YEAR#-2)+GET_PRODUCT_YEAR_TOTAL(PRODUCT_NO, #PA_YEAR#-1)
+                   +GET_PRODUCT_YEAR_TOTAL(PRODUCT_NO, #PA_YEAR#) total
+            FROM PROSTOR_PRODUCT PP
+            WHERE PP.ACTIVITY = 1
+        ]]>
+        <isNotEmpty prepend="" property="orderby">
+            <![CDATA[
+                ORDER BY $orderby$
+            ]]>
+        </isNotEmpty>
+    </select>
+
+    <select id="getProductYearlySalesCnt" remapResults="true"
+        resultClass="int" parameterClass="linkMap">
+        <![CDATA[
+            SELECT COUNT(*)
+            FROM PROSTOR_PRODUCT PP
+            WHERE PP.ACTIVITY = 1
+        ]]>
+    </select>
+</sqlMap>

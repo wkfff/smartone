@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="att.empCalendar">
+
+  <select id="getEmpCalendarList" parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[
+		SELECT AR_CALENDER.DDATE,
+			AR_CALENDER.DDATE_STR,
+			AR_CALENDER.IYEAR,
+			AR_CALENDER.IMONTH,
+			AR_CALENDER.IDAY,
+			AR_CALENDER.IWEEK,
+			AR_CALENDER.TYPEID,
+			AR_CALENDER.OVERTYPEID,
+			AR_CALENDER.WORKDAYFLAG,
+			AR_CALENDER.SHIFT_NO,
+			T_SCHEDULE.SCHEDULE_SHIFT_NO,
+			T_SCHEDULE.DATE_TYPE_ID,
+			ACT.TYPE_NAME,
+			TYPEID_DEFAULT,
+			AR_CALENDER.SHIFT_NO,
+			AR_SHIFT.SHIFT_NAME,
+			Ar_Get_DatetypeName(ar_get_datetype(#EMPID#,to_char( AR_CALENDER.DDATE,'YYYY-MM-DD'))) DATETYPENAME
+		FROM AR_CALENDER,
+			(SELECT AR_SCHEDULE.SHIFT_NO SCHEDULE_SHIFT_NO,
+				AR_SCHEDULE.AR_DATE_STR,
+				AR_SHIFT010.DATE_TYPE_ID
+				FROM AR_SCHEDULE, AR_SHIFT010
+				WHERE AR_SCHEDULE.SHIFT_NO = AR_SHIFT010.SHIFT_NO
+				AND AR_SCHEDULE.EMPID = #EMPID#) T_SCHEDULE,
+				AR_CALENDER_TYPE ACT,
+				AR_SHIFT010 AR_SHIFT
+		WHERE TO_CHAR(AR_CALENDER.DDATE, 'YYYY/MM/DD') = T_SCHEDULE.AR_DATE_STR(+)
+			AND AR_CALENDER.DDATE BETWEEN
+				AR_GET_STARTDATE_empid(#AR_MONTH:VARCHAR#, #EMPID#) AND
+				AR_GET_ENDDATE_empid(#AR_MONTH:VARCHAR#, #EMPID#)
+			AND AR_CALENDER.TYPEID = ACT.TYPE_ID
+			AND AR_CALENDER.SHIFT_NO = AR_SHIFT.SHIFT_NO
+		ORDER BY AR_CALENDER.DDATE 
+		]]> 
+	</select> 
+
+	<delete id="DeleteEmpCalendarInfo" parameterClass="linkMap">
+		DELETE FROM AR_SCHEDULE T
+			 WHERE T.EMPID = #EMPID#
+			 AND T.AR_DATE_STR = TO_CHAR(TO_DATE(#DDATE_STR#, 'YYYY-MM-DD'), 'YYYY/MM/DD')
+			 AND T.LOCK_YN ='N'
+	</delete>
+	<select id="checkEmpCalendarInfo" parameterClass="linkMap" resultClass="int">
+		SELECT COUNT(T.EMPID) FROM AR_SCHEDULE T WHERE T.EMPID = #EMPID#
+			AND T.AR_DATE_STR = TO_CHAR(TO_DATE(#DDATE_STR#, 'YYYY-MM-DD'), 'YYYY/MM/DD')
+	</select>
+	<insert id="insertEmpCalendarInfo" parameterClass="linkMap">
+		INSERT INTO AR_SCHEDULE  
+			(PK_NO, EMPID, SHIFT_NO, AR_DATE_STR, LOCK_YN) 
+			VALUES (Ar_Schedule_Seq.NEXTVAL, #EMPID#, #SHIFT_NO#, TO_CHAR(TO_DATE(#DDATE_STR#,'YYYY/MM/DD'),'YYYY/MM/DD'), 'N' )
+	</insert>
+</sqlMap>

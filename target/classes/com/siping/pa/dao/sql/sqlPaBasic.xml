@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="pa.basic">
+	<sql id="paSearchEmployeeListCondition">
+		<isNotEmpty prepend="AND" property="KEY">
+			<![CDATA[
+				(	HR.EMPID                   LIKE #KEY:VARCHAR# || '%' 
+					OR HR.CHINESENAME            LIKE '%' || #KEY:VARCHAR# || '%' 
+					OR HR.CHINESE_PINYIN         LIKE '%' || #KEY:VARCHAR# || '%'
+				) 
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="DEPTID">
+			<![CDATA[
+				EXISTS(
+					SELECT *
+					FROM HR_DEPARTMENT
+					WHERE HR_DEPARTMENT.DEPTID = HR.DEPTID
+					START WITH HR_DEPARTMENT.DEPTID = #DEPTID:VARCHAR#
+					CONNECT BY PRIOR HR_DEPARTMENT.DEPTID = HR_DEPARTMENT.PARENT_DEPT_ID
+				)
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="SELECT_TYPE">
+			<isEqual property="SELECT_TYPE" compareValue="PA_INSURANCE">
+				<![CDATA[
+					NOT EXISTS(SELECT *
+								 FROM PA_INS_EMP
+								WHERE PA_INS_EMP.PA_MONTH = #PA_MONTH:VARCHAR#
+								  AND PA_INS_EMP.EMPID = HR.EMPID)
+				]]>
+			</isEqual>
+			<isEqual property="SELECT_TYPE" compareValue="PA_BONUS">
+				<![CDATA[
+					NOT EXISTS(SELECT *
+								 FROM PA_BONUS_PERSONNEL
+								WHERE PA_BONUS_PERSONNEL.PA_MONTH = #PA_MONTH:VARCHAR#
+								  AND PA_BONUS_PERSONNEL.EMPID = HR.EMPID)
+				]]>
+			</isEqual>
+		</isNotEmpty>
+	</sql>
+
+	<select id="getPaSearchEmployeeList" parameterClass="linkMap"
+		resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT HR.EMPID,
+				HR.CHINESENAME,
+				HR.CHINESE_PINYIN,
+				HR.STATUS_CODE,
+				SY0.CODE_NAME AS STATUS_NAME,
+				HR.DEPTID,
+				HD.DEPTNAME,
+				HR.POST_ID,
+				SY1.POST_NAME,
+				HR.POST_GRADE_ID
+			FROM HR_EMPLOYEE HR, HR_DEPARTMENT HD, SY_CODE SY0, HR_POST SY1
+			WHERE HR.DEPTID = HD.DEPTID(+)
+				AND HR.STATUS_CODE = SY0.CODE_ID(+)
+				AND HR.POST_ID = SY1.POST_ID(+)
+		]]>
+		<include refid="paSearchEmployeeListCondition" />
+		
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+				  ORDER BY $sortname$ $sortorder$
+			]]>
+		</isNotEmpty>
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY HR.DEPTID, HR.EMPID
+			]]>
+		</isEmpty>
+	</select>
+
+	<select id="getPaSearchEmployeeCnt" parameterClass="linkMap"
+		resultClass="int">
+		<![CDATA[
+			SELECT COUNT(*)
+			FROM HR_EMPLOYEE HR, HR_DEPARTMENT HD, SY_CODE SY0, HR_POST SY1
+			WHERE HR.DEPTID = HD.DEPTID(+)
+				AND HR.STATUS_CODE = SY0.CODE_ID(+)
+				AND HR.POST_ID = SY1.POST_ID(+)
+		]]>
+		<include refid="paSearchEmployeeListCondition" />
+	</select>
+
+</sqlMap>

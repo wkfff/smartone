@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="att.attReport">
+    
+	<select id="getDataInfo" parameterClass="linkMap" 
+	    resultClass="linkMap" remapResults="true">
+		<![CDATA[
+        SELECT $sqlPiece$ 
+          FROM AR_HISTORY, 
+			   HR_EMPLOYEE,
+			   HR_DEPARTMENT
+		 WHERE AR_HISTORY.EMPID = HR_EMPLOYEE.EMPID
+		   AND HR_EMPLOYEE.DEPTID = HR_DEPARTMENT.DEPTID 
+		]]> 
+		<isNotEmpty prepend="AND" property="ATT_MONTH">
+			<![CDATA[
+		 		  AR_HISTORY.AR_MONTH = #ATT_MONTH# 
+		    ]]>
+		</isNotEmpty> 
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[  
+			    (
+			    	HR_EMPLOYEE.EMPID LIKE '%' || TRIM(#keyWord:VARCHAR#) || '%'
+		         OR HR_EMPLOYEE.CHINESENAME LIKE '%' || TRIM(#keyWord:VARCHAR#) || '%'
+		         OR HR_DEPARTMENT.DEPTNAME LIKE '%' || TRIM(#keyWord:VARCHAR#) || '%'
+		         OR UPPER(AR_HISTORY.CHINESE_PINYIN) LIKE '%' || TRIM(UPPER(#keyWord:VARCHAR#)) || '%'
+		       )	
+		    ]]>
+		</isNotEmpty> 
+		<isNotEmpty prepend="AND" property="EMPID">
+			<![CDATA[
+				AR_HISTORY.EMPID = #EMPID#
+		    ]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="AND" property="DEPTID">
+			<![CDATA[
+			      	      EXISTS (
+						  SELECT     *
+	                     	FROM HR_DEPARTMENT B1
+	                     	WHERE B1.DEPTID=HR_EMPLOYEE.DEPTID
+	                 	START WITH B1.DEPTID = #DEPTID:VARCHAR#
+	                 	CONNECT BY PRIOR B1.DEPTID = B1.PARENT_DEPT_ID
+	                )
+		    ]]>
+		</isNotEmpty>
+	</select>
+	<select id="getAttMonthColumnInfo" parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[
+				SELECT 'AR_MONTH' AS "COLUMN_NAME", 
+				       	DECODE(#language#, 'en', 'Attendance Month', '考勤月份') ITEM_NAME,
+				       1 AS CALCU_ORDER
+				  FROM DUAL
+				UNION ALL
+				SELECT 'CHINESENAME' AS "COLUMN_NAME", 
+				       	DECODE(#language#, 'en', 'Name', '姓名') ITEM_NAME,
+				       2 AS CALCU_ORDER
+				  FROM DUAL
+				UNION ALL
+				SELECT 'EMPID' AS "COLUMN_NAME",
+				       	DECODE(#language#, 'en', 'Emp ID', '工号') ITEM_NAME, 
+				       3 AS CALCU_ORDER
+				  FROM DUAL
+				UNION ALL
+				SELECT 'DEPTNAME' AS "COLUMN_NAME",
+				       	DECODE(#language#, 'en', 'Department', '部门') ITEM_NAME,  
+				       4 AS CALCU_ORDER
+				  FROM DUAL
+				UNION ALL
+				SELECT COLUMN_NAME,
+				       DECODE(#language#, 'en', ITEM_EN_NAME, ITEM_NAME) ITEM_NAME,  
+				       CALCU_ORDER + 100 AS CALCU_ORDER
+				  FROM USER_TAB_COLUMNS, AR_STA_ITEM
+				 WHERE TABLE_NAME = 'AR_HISTORY'
+				   AND DATA_TYPE = 'NUMBER'
+				   AND COLUMN_NAME = ITEM_ID
+				   AND AR_STA_ITEM.ACTIVITY = 1
+				   AND AR_STA_ITEM.CPNY_ID = #CPNY_ID#
+				   AND NOT EXISTS (SELECT *
+				          FROM PA_DISTINCT_LIST
+				         WHERE COLUMN_NAME = FIELD_NAME
+				           AND TABLE_NAME = 'PA_HR_V')
+				 ORDER BY CALCU_ORDER
+			]]>
+   </select>
+	<select id="getAttMonthTitleInfo" parameterClass="linkMap" 
+	    resultClass="string" remapResults="true">
+		<![CDATA[
+		SELECT ITEM_NAME FROM (
+		SELECT 'AR_MONTH' AS "COLUMN_NAME", 
+				       	DECODE(#language#, 'en', 'Attendance Month', '考勤月份') ITEM_NAME,
+				       1 AS CALCU_ORDER
+				  FROM DUAL
+				UNION ALL
+				SELECT 'CHINESENAME' AS "COLUMN_NAME", 
+				       	DECODE(#language#, 'en', 'Name', '姓名') ITEM_NAME,
+				       2 AS CALCU_ORDER
+				  FROM DUAL
+				UNION ALL
+				SELECT 'EMPID' AS "COLUMN_NAME",
+				       	DECODE(#language#, 'en', 'Emp ID', '工号') ITEM_NAME, 
+				       3 AS CALCU_ORDER
+				  FROM DUAL
+				UNION ALL
+				SELECT 'DEPTNAME' AS "COLUMN_NAME",
+				       	DECODE(#language#, 'en', 'Department', '部门') ITEM_NAME,  
+				       4 AS CALCU_ORDER
+				  FROM DUAL
+				UNION ALL
+				SELECT COLUMN_NAME,
+				       DECODE(#language#, 'en', ITEM_EN_NAME, ITEM_NAME) ITEM_NAME,  
+				       CALCU_ORDER + 100 AS CALCU_ORDER
+				  FROM USER_TAB_COLUMNS, AR_STA_ITEM
+				 WHERE TABLE_NAME = 'AR_HISTORY'
+				   AND DATA_TYPE = 'NUMBER'
+				   AND COLUMN_NAME = ITEM_ID
+				   AND AR_STA_ITEM.ACTIVITY = 1
+				   AND AR_STA_ITEM.CPNY_ID = #CPNY_ID#
+				   AND NOT EXISTS (SELECT *
+				          FROM PA_DISTINCT_LIST
+				         WHERE COLUMN_NAME = FIELD_NAME
+				           AND TABLE_NAME = 'PA_HR_V')
+				 ORDER BY CALCU_ORDER)
+		    WHERE COLUMN_NAME = #ITEM_ID# 
+		]]> 
+		 <![CDATA[
+		 ]]> 
+	</select>
+	
+   <select id="getAttInfoColumnInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+		<![CDATA[ 
+				SELECT RI.TABLE_NAME, 
+				       RI.ITEM_ID,
+					   DECODE(#language#, 'en', RIR.ITEM_EN_NAME, RIR.ITEM_NAME) ITEM_NAME  
+				  FROM REPORT_ITEM RI,REPORT_TABLE RT,REPORT_ITEM_REFERENCE RIR
+				 WHERE RI.RT_NO = RT.RT_NO(+)
+				   AND RI.ITEM_ID = RIR.ITEM_ID(+) 
+				   AND RT.MENU_CODE = #MENU_CODE#
+				   AND RT.CPNY_ID = #CPNY_ID#
+				 ORDER BY RI.ORDERNO
+			]]>
+   </select>
+   <select id="getAttInfoTitleInfo" parameterClass="linkMap" 
+	    resultClass="string" remapResults="true">
+		<![CDATA[
+		SELECT ITEM_NAME FROM ( 
+				SELECT RI.TABLE_NAME, 
+				       RI.ITEM_ID,
+					   DECODE(#language#, 'en', RIR.ITEM_EN_NAME, RIR.ITEM_NAME) ITEM_NAME  
+				  FROM REPORT_ITEM RI,REPORT_TABLE RT,REPORT_ITEM_REFERENCE RIR
+				 WHERE RI.RT_NO = RT.RT_NO(+)
+				   AND RI.ITEM_ID = RIR.ITEM_ID(+) 
+				   AND RT.MENU_CODE = #MENU_CODE#
+				   AND RT.CPNY_ID = #CPNY_ID#)
+		    WHERE ITEM_ID = #ITEM_ID# 
+		]]> 
+		 <![CDATA[
+		 ]]> 
+	</select>
+	<insert id="addComputerInfo" parameterClass="linkMap">
+		<![CDATA[
+			INSERT INTO COMPUTER
+				(
+					ID,BRAND,CPU,GPU,MEMORY,PRICE
+				)
+			VALUES(
+					PA_INS_EMP_SEQ.NEXTVAL ,
+					#BRAND:VARCHAR#,
+					#CPU:VARCHAR#,
+					#GPU:VARCHAR#,
+					#MEMORY:VARCHAR#, 
+					#PRICE:VARCHAR# 
+				)
+		]]>
+	</insert>
+</sqlMap>

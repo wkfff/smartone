@@ -1,0 +1,401 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap
+    PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+    "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="doc.docInfo">
+    <sql id="DocSearchCondition">
+        <isNotEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+                (
+                    DI.DOC_NAME              LIKE '%'||TRIM(#keyWord#)||'%'
+                    OR DI.DESCRIPTION        LIKE '%'||TRIM(#keyWord#)||'%'
+                    OR DI.DOC_ID             LIKE '%'||TRIM(#keyWord#)||'%'
+                    OR DI.DOC_PART           LIKE '%'||TRIM(#keyWord#)||'%'
+                    OR DI.DOC_VERSION        LIKE '%'||TRIM(#keyWord#)||'%'
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="DOC_TYPE_NO">
+            <![CDATA[
+                PRI.TYPE_NO= #DOC_TYPE_NO#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="DOC_STATUS_NO">
+            <![CDATA[
+                PRI.STATE_NO= #DOC_STATUS_NO#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="E_DATE" >
+            <![CDATA[
+               DI.CREATE_DATE <= TO_DATE(#E_DATE#,'YYYY-MM-DD')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="S_DATE" >
+            <![CDATA[
+               DI.CREATE_DATE >= TO_DATE(#S_DATE#,'YYYY-MM-DD')
+            ]]>
+        </isNotEmpty>
+    </sql>
+
+    <resultMap id="documentMap" class="document">
+        <result property="no" column="DOC_NO" />
+        <result property="id" column="DOC_ID" />
+        <result property="name" column="DOC_NAME" />
+        <result property="description" column="DESCRIPTION" />
+        <result property="version" column="DOC_VERSION" />
+        <result property="part" column="DOC_PART" />
+        <result property="active" column="ACTIVITY" />
+        <result property="processRunning.type.no" column="DOC_TYPE_NO" />
+        <result property="processRunning.type.name" column="DOC_TYPE" />
+        <result property="processRunning.state.no" column="DOC_STATUS_NO" />
+        <result property="processRunning.state.name" column="DOC_STATUS" />
+
+    </resultMap>
+
+    <select id="getDocumentList" parameterClass="linkMap" resultMap="documentMap">
+        <![CDATA[
+            SELECT  DI.DOC_NO           DOC_NO,
+                    DI.DOC_ID           DOC_ID,
+                    DI.ORI_NO           ORI_NO,
+                    DI.DOC_NAME         DOC_NAME,
+                    PRI.TYPE_NO         DOC_TYPE_NO,
+                    DI.DOC_PART         DOC_PART,
+                    POTI.OBJECT_TYPE_NAME    DOC_TYPE,
+                    PRI.STATE_NO         DOC_STATUS_NO,
+                    PSI.STATUS_NAME          DOC_STATUS,
+                    DI.DOC_VERSION      DOC_VERSION,
+                    DI.DESCRIPTION      DESCRIPTION,
+                    DI.ACTIVITY         ACTIVITY
+            FROM    DOC_INFO            DI,
+                    PROCESS_RUNNING_INFO         PRI,
+                    PROCESS_OBJECT_TYPE_INFO       POTI,
+                    HR_EMPLOYEE         HE,
+                    PROCESS_STATUS_INFO             PSI
+            WHERE   DI.ACTIVITY = 1
+            AND     PRI.TYPE_NO = POTI.OBJECT_TYPE_NO(+)
+            AND     PRI.STATE_NO = PSI.STATUS_NO(+)
+            AND     DI.CREATED_BY = HE.EMPID(+)
+            AND     DI.RUNNING_NO = PRI.RUNNING_NO(+)
+            AND     DI.CPNY_ID = #CPNY_ID#
+        ]]>
+        <include refid="DocSearchCondition" />
+    </select>
+
+
+    <select id="getDocumentListCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT  COUNT(*)
+            FROM    DOC_INFO            DI,
+                    PROCESS_OBJECT_TYPE_INFO       POTI,
+                    HR_EMPLOYEE         HE,
+                    PROCESS_STATUS_INFO             PSI,
+                    PROCESS_RUNNING_INFO            PRI
+            WHERE   DI.ACTIVITY = 1
+            AND     PRI.TYPE_NO = POTI.OBJECT_TYPE_NO(+)
+            AND     PRI.STATE_NO = PSI.STATUS_NO(+)
+            AND     DI.CREATED_BY = HE.EMPID(+)
+            AND     DI.RUNNING_NO = PRI.RUNNING_NO(+)
+            AND     DI.CPNY_ID = #CPNY_ID#
+        ]]>
+        <include refid="DocSearchCondition" />
+    </select>
+
+    <resultMap id="detailMap" class="document">
+        <result property="no" column="DOC_NO" />
+        <result property="id" column="DOC_ID" />
+        <result property="oriNo" column="ORI_NO" />
+        <result property="name" column="DOC_NAME" />
+        <result property="description" column="DESCRIPTION" />
+        <result property="version" column="DOC_VERSION" />
+        <result property="part" column="DOC_PART" />
+        <result property="active" column="ACTIVITY" />
+        <!-- <result property="processRunning.type.no" column="DOC_TYPE_NO" />
+        <result property="processRunning.type.name" column="DOC_TYPE" />
+        <result property="processRunning.state.no" column="DOC_STATUS_NO" />
+        <result property="processRunning.state.name" column="DOC_STATUS" /> -->
+        <result property="processRunning.no" column="RUNNING_NO"/>
+    </resultMap>
+
+    <select id="getDocumentDetail" parameterClass="document" resultMap="detailMap" remapResults="true">
+        <![CDATA[
+            SELECT  DI.DOC_NO           DOC_NO,
+                    DI.DOC_ID           DOC_ID,
+                    DI.ORI_NO           ORI_NO,
+                    DI.DOC_NAME         DOC_NAME,
+                    DI.DOC_PART         DOC_PART,
+                    DI.ACTIVITY         ACTIVITY,
+                    PRI.TYPE_NO      DOC_TYPE_NO,
+                    POTI.OBJECT_TYPE_NAME      DOC_TYPE,
+                    PRI.STATE_NO        DOC_STATUS_NO,
+                    PSI.STATUS_NAME     DOC_STATUS,
+                    DI.DOC_VERSION      DOC_VERSION,
+                    DI.DESCRIPTION      DESCRIPTION,
+                    DI.CPNY_ID          CPNY_ID,
+                    DI.RUNNING_NO       RUNNING_NO
+            FROM    DOC_INFO            DI,
+                    PROCESS_OBJECT_TYPE_INFO       POTI,
+                    HR_EMPLOYEE         HE,
+                    PROCESS_RUNNING_INFO           PRI,
+                    PROCESS_STATUS_INFO            PSI
+            WHERE   PRI.TYPE_NO = POTI.OBJECT_TYPE_NO(+)
+            AND     DI.RUNNING_NO = PRI.RUNNING_NO(+)
+            AND     PRI.STATE_NO = PSI.STATUS_NO(+)
+            AND     DI.CREATED_BY = HE.EMPID(+)
+            AND     DI.CPNY_ID = #metaData.company.companyId#
+            AND     DI.DOC_NO = #no#
+        ]]>
+    </select>
+
+    <select id="getDocumentDetailById" parameterClass="document" resultMap="detailMap" remapResults="true">
+        <![CDATA[
+            SELECT  DI.DOC_NO           DOC_NO,
+                    DI.DOC_ID           DOC_ID,
+                    DI.ORI_NO           ORI_NO,
+                    DI.DOC_NAME         DOC_NAME,
+                    DI.DOC_PART         DOC_PART,
+                    DI.ACTIVITY         ACTIVITY,
+                    PRI.TYPE_NO      DOC_TYPE_NO,
+                    POTI.OBJECT_TYPE_NAME      DOC_TYPE,
+                    PRI.STATE_NO        DOC_STATUS_NO,
+                    PSI.STATUS_NAME     DOC_STATUS,
+                    DI.DOC_VERSION      DOC_VERSION,
+                    DI.DESCRIPTION      DESCRIPTION,
+                    DI.CPNY_ID          CPNY_ID,
+                    DI.RUNNING_NO       RUNNING_NO
+            FROM    DOC_INFO            DI,
+                    PROCESS_OBJECT_TYPE_INFO       POTI,
+                    HR_EMPLOYEE         HE,
+                    PROCESS_RUNNING_INFO           PRI,
+                    PROCESS_STATUS_INFO            PSI
+            WHERE   PRI.TYPE_NO = POTI.OBJECT_TYPE_NO(+)
+            AND     DI.RUNNING_NO = PRI.RUNNING_NO(+)
+            AND     PRI.STATE_NO = PSI.STATUS_NO(+)
+            AND     DI.CREATED_BY = HE.EMPID(+)
+            AND     DI.CPNY_ID = #metaData.company.companyId#
+            AND     DI.DOC_ID = #id#
+        ]]>
+    </select>
+
+    <!-- file part -->
+    <resultMap id="documentFileMap" class="documentFile">
+        <result property="no" column="FILE_NO" />
+        <result property="id" column="FILE_ID" />
+        <result property="name" column="FILE_NAME" />
+        <result property="description" column="DESCRIPTION" />
+        <result property="version" column="FILE_VERSION" />
+        <result property="path" column="FILE_PATH" />
+        <result property="active" column="ACTIVITY" />
+        <result property="locked" column="LOCKED" />
+        <result property="lockUser.chineseName" column="CHECKED_BY_NAME" />
+        <result property="lockUser.adminNo" column="CHECKED_BY" />
+        <result property="lockUser.adminID" column="CHECKED_BY_ID" />
+    </resultMap>
+
+    <select id="getFileInfo" parameterClass="documentFile" resultMap="documentFileMap" remapResults="true">
+        <![CDATA[
+            SELECT  DFI.FILE_NO           FILE_NO,
+                    DFI.FILE_ID           FILE_ID,
+                    DFI.FILE_NAME         FILE_NAME,
+                    DFI.FILE_PATH         FILE_PATH,
+                    DFI.DOC_NO            DOC_NO,
+                    DFI.CHECKED_BY        CHECKED_BY,
+                    HE.CHINESENAME        CHECKED_BY_NAME,
+                    HE.EMPID              CHECKED_BY_ID,
+                    DFI.LOCKED            LOCKED,
+                    DFI.FILE_VERSION      FILE_VERSION,
+                    DFI.ACTIVITY          ACTIVITY,
+                    DFI.DESCRIPTION       DESCRIPTION
+            FROM    DOC_FILE_INFO            DFI,
+                    HR_EMPLOYEE              HE
+            WHERE   DFI.CHECKED_BY    = HE.EMPID(+)
+            AND     DFI.FILE_NO = #no#
+            AND     DFI.CPNY_ID = #document.metaData.company.companyId#
+        ]]>
+    </select>
+
+    <sql id="FileSearchCondition">
+        <isNotEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+                (
+                        DFI.FILE_NAME           LIKE '%'||TRIM(#keyWord#)||'%'
+                        OR DFI.DESCRIPTION      LIKE '%'||TRIM(#keyWord#)||'%'
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="E_DATE" >
+            <![CDATA[
+               DFI.CREATE_DATE <= TO_DATE(#E_DATE#,'YYYY-MM-DD')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="S_DATE" >
+            <![CDATA[
+               DFI.CREATE_DATE >= TO_DATE(#S_DATE#,'YYYY-MM-DD')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="ACTIVITY">
+            <![CDATA[
+               DFI.ACTIVITY = #ACTIVITY#
+            ]]>
+        </isNotEmpty>
+        <![CDATA[
+            ORDER BY DFI.FILE_VERSION DESC
+        ]]>
+    </sql>
+
+    <sql id="documentFileSearchCondition">
+        <isNotEmpty prepend="AND" property="active">
+                <![CDATA[
+                    DFI.ACTIVITY = #active#
+                ]]>
+        </isNotEmpty>
+    </sql>
+
+    <select id="getFileList" parameterClass="linkMap" resultMap="documentFileMap">
+        <![CDATA[
+            SELECT  DFI.FILE_NO           FILE_NO,
+                    DFI.FILE_ID           FILE_ID,
+                    DFI.FILE_NAME         FILE_NAME,
+                    DFI.FILE_PATH         FILE_PATH,
+                    HE.CHINESENAME        CHECKED_BY_NAME,
+                    DFI.CHECKED_BY        CHECKED_BY,
+                    HE.EMPID              CHECKED_BY_ID,
+                    DFI.LOCKED            LOCKED,
+                    DFI.ACTIVITY          ACTIVITY,
+                    DFI.FILE_VERSION      FILE_VERSION,
+                    DFI.DESCRIPTION       DESCRIPTION
+            FROM    DOC_FILE_INFO            DFI,
+                    HR_EMPLOYEE         HE
+            WHERE   DFI.CHECKED_BY    = HE.EMPID(+)
+            AND     DFI.CPNY_ID = #document.metaData.company.companyId#
+            AND     DFI.DOC_NO = #document.no#
+        ]]>
+        <include refid="documentFileSearchCondition" />
+    </select>
+
+    <select id="getFileListCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(*)
+            FROM    DOC_FILE_INFO            DFI,
+                    HR_EMPLOYEE              HE
+            WHERE   DFI.CHECKED_BY    = HE.EMPID(+)
+            AND     DFI.CPNY_ID = #document.metaData.company.companyId#
+            AND     DFI.DOC_NO= #document.no#
+        ]]>
+        <include refid="documentFileSearchCondition" />
+    </select>
+
+    <sql id="DocObjectSearchCondition">
+        <isNotEmpty prepend="AND" property="OBJECT_ID" >
+            <![CDATA[
+               OBJECT_ID = #OBJECT_ID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="DOC_ID" >
+            <![CDATA[
+               DOC_ID = #DOC_ID#
+            ]]>
+        </isNotEmpty>
+    </sql>
+
+    <select id="getDocObjectList" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT  DOC_NO          AS    DOC_NO,
+                    OBJECT_ID       AS    OBJ_ID
+            FROM    DOC_OBJECT_REL
+            WHERE   ACTIVITY = 1
+            AND     CPNY_ID = #CPNY_ID#
+            AND     OBJECT_TYPE_ID = #OBJ_TYPE#
+        ]]>
+        <include refid="DocObjectSearchCondition" />
+    </select>
+
+    <select id="getDocObjectListCnt" parameterClass="linkMap" resultClass="int" remapResults="true">
+        <![CDATA[
+            SELECT COUNT(0)
+            FROM    DOC_OBJECT_REL
+            WHERE   ACTIVITY = 1
+            AND     CPNY_ID = #CPNY_ID#
+            AND     OBJECT_TYPE_ID = #OBJ_TYPE#
+        ]]>
+        <include refid="DocObjectSearchCondition" />
+    </select>
+
+    <select id="getDocumentDetailB" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT  DI.DOC_ID           DOC_ID,
+                    DI.DOC_NAME         DOC_NAME,
+                    DI.DOC_TYPE_ID      DOC_TYPE_ID,
+                    DI.DOC_STATUS_ID  DOC_STATUS_ID,
+                    DI.DOC_PART         DOC_PART,
+                    DECODE(#language#,'en',DTI.DOC_TYPE_EN_NAME,DTI.DOC_TYPE_NAME)      DOC_TYPE,
+                    DECODE(#language#,'en',A.CODE_EN_NAME,A.CODE_NAME)                  DOC_STATUS,
+                    DI.DOC_VERSION      DOC_VERSION,
+                    DI.DESCRIPTION      DESCRIPTION
+            FROM    DOC_INFO            DI,
+                    DOC_TYPE_INFO       DTI,
+                    SY_CODE             A,
+                    HR_EMPLOYEE         HE
+            WHERE   DI.DOC_NAME = #DOC_NAME#
+            AND     DI.DOC_TYPE_ID = #DOC_TYPE_ID#
+            AND     DI.DOC_VERSION = #DOC_VERSION#
+            AND     DI.DOC_PART = #DOC_PART#
+            AND     DI.DOC_TYPE_ID = DTI.DOC_TYPE_ID(+)
+            AND     DI.DOC_STATUS_ID = A.CODE_ID(+)
+            AND     DI.CREATED_BY    = HE.EMPID(+)
+            AND     DI.CPNY_ID = #CPNY_ID#
+        ]]>
+    </select>
+
+    <select id="getWorkDocumentList" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT  DI.DOC_ID           DOC_ID,
+                    DI.ORI_ID           ORI_ID,
+                    DI.DOC_NAME         DOC_NAME,
+                    DI.DOC_TYPE_ID      DOC_TYPE_ID,
+                    DECODE(#language#,'en',POTI.OBJECT_TYPE_EN_NAME,POTI.OBJECT_TYPE_NAME)      DOC_TYPE,
+                    DI.DOC_STATUS_ID  DOC_STATUS_ID,
+                    DECODE(#language#,'en',PSI.STATUS_EN_NAME,PSI.STATUS_NAME)       DOC_STATUS,
+                    DI.DOC_VERSION      DOC_VERSION,
+                    DI.DESCRIPTION      DESCRIPTION
+            FROM    DOC_INFO            DI,
+                    PROCESS_OBJECT_TYPE_INFO       POTI,
+                    HR_EMPLOYEE         HE,
+                    PROCESS_STATUS_INFO             PSI
+            WHERE   DI.ACTIVITY = 1
+            AND     DI.DOC_TYPE_ID = POTI.OBJECT_TYPE_ID(+)
+            AND     DI.DOC_STATUS_ID = PSI.STATUS_ID(+)
+            AND     DI.CREATED_BY = HE.EMPID(+)
+            AND     DI.CPNY_ID = #CPNY_ID#
+            AND     DI.DOC_ID IN (
+            SELECT  O.DOC_ID from DOC_OBJECT_REL O
+            WHERE   O.OBJECT_ID = #OBJECT_ID#
+            AND     O.OBJECT_TYPE_ID = #OBJECT_TYPE_ID#
+            AND     O.ACTIVITY = 1
+            )
+        ]]>
+        <include refid="DocSearchCondition" />
+    </select>
+
+
+    <select id="getWorkDocumentListCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(0)
+            FROM    DOC_INFO            DI,
+                    PROCESS_OBJECT_TYPE_INFO       POTI,
+                    HR_EMPLOYEE         HE,
+                    PROCESS_STATUS_INFO             PSI
+            WHERE   DI.ACTIVITY = 1
+            AND     DI.DOC_TYPE_ID = POTI.OBJECT_TYPE_ID(+)
+            AND     DI.DOC_STATUS_ID = PSI.STATUS_ID(+)
+            AND     DI.CREATED_BY = HE.EMPID(+)
+            AND     DI.CPNY_ID = #CPNY_ID#
+            AND     DI.DOC_ID IN (
+            SELECT  O.DOC_ID from DOC_OBJECT_REL O
+            WHERE   O.OBJECT_ID = #OBJECT_ID#
+            AND     O.OBJECT_TYPE_ID = #OBJECT_TYPE_ID#
+            AND     O.ACTIVITY = 1
+            )
+        ]]>
+        <include refid="DocSearchCondition" />
+    </select>
+</sqlMap>

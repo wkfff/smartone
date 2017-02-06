@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="att.attMonth">
+
+	<select id="getAttSqlColumns" parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[
+				SELECT COLUMN_NAME
+					FROM USER_TAB_COLUMNS, AR_STA_ITEM
+				WHERE TABLE_NAME = 'AR_HISTORY'
+					AND DATA_TYPE = 'NUMBER'
+					AND COLUMN_NAME = ITEM_ID
+					AND AR_STA_ITEM.ACTIVITY = 1
+					AND AR_STA_ITEM.CPNY_ID = #CPNY_ID#
+					AND NOT EXISTS (SELECT *
+						FROM PA_DISTINCT_LIST
+						WHERE COLUMN_NAME = FIELD_NAME
+							AND TABLE_NAME = 'PA_HR_V')
+				ORDER BY CALCU_ORDER
+			]]>
+	</select>
+
+	<select id="getAttColumns" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+		<![CDATA[
+				SELECT 'CHINESENAME' AS "COLUMN_NAME", 
+						DECODE(#language#, 'en', 'Name', '姓名') ITEM_NAME,
+					1 AS CALCU_ORDER
+				FROM DUAL
+				UNION ALL
+				SELECT 'EMPID' AS "COLUMN_NAME",
+					DECODE(#language#, 'en', 'Emp ID', '工号') ITEM_NAME, 
+					2 AS CALCU_ORDER
+				FROM DUAL
+				UNION ALL
+				SELECT 'DEPTNAME' AS "COLUMN_NAME",
+						DECODE(#language#, 'en', 'Department', '部门') ITEM_NAME,  
+					3 AS CALCU_ORDER
+				FROM DUAL
+				UNION ALL
+				SELECT COLUMN_NAME,
+					DECODE(#language#, 'en', ITEM_EN_NAME, ITEM_NAME) ITEM_NAME,  
+					CALCU_ORDER + 100 AS CALCU_ORDER
+				FROM USER_TAB_COLUMNS, AR_STA_ITEM
+				WHERE TABLE_NAME = 'AR_HISTORY'
+					AND DATA_TYPE = 'NUMBER'
+					AND COLUMN_NAME = ITEM_ID
+					AND AR_STA_ITEM.ACTIVITY = 1
+					AND AR_STA_ITEM.CPNY_ID = #CPNY_ID#
+					AND NOT EXISTS (SELECT *
+						FROM PA_DISTINCT_LIST
+						WHERE COLUMN_NAME = FIELD_NAME
+						AND TABLE_NAME = 'PA_HR_V')
+				 ORDER BY CALCU_ORDER
+			]]>
+	</select>
+
+	<sql id="getAttMonthInfoCondition" >
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[  
+				(
+					HR_EMPLOYEE.EMPID LIKE '%' || TRIM(#keyWord:VARCHAR#) || '%'
+					OR HR_EMPLOYEE.CHINESENAME LIKE '%' || TRIM(#keyWord:VARCHAR#) || '%'
+					OR HR_DEPARTMENT.DEPTNAME LIKE '%' || TRIM(#keyWord:VARCHAR#) || '%'
+					OR UPPER(AR_HISTORY.CHINESE_PINYIN) LIKE '%' || TRIM(UPPER(#keyWord:VARCHAR#)) || '%'
+				)	
+			]]>
+		</isNotEmpty> 
+		
+		<isNotEmpty prepend="AND" property="empId">
+			<![CDATA[
+				HR_EMPLOYEE.EMPID = #empId#
+			]]>
+		</isNotEmpty> 
+		<isNotEmpty prepend="AND" property="DEPTID">
+			<![CDATA[
+					EXISTS (
+						SELECT     *
+							FROM HR_DEPARTMENT B1
+							WHERE B1.DEPTID=HR_EMPLOYEE.DEPTID
+						START WITH B1.DEPTID = #DEPTID:VARCHAR#
+						CONNECT BY PRIOR B1.DEPTID = B1.PARENT_DEPT_ID
+					)
+			]]>
+		</isNotEmpty>
+
+	</sql>
+	<select id="getAttMonthInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+		<![CDATA[	
+		SELECT AR_HISTORY.AR_MONTH,
+			AR_HISTORY.CHINESENAME,
+			AR_HISTORY.EMPID,
+			AR_HISTORY.DEPTID,
+			AR_HISTORY.DEPTNAME, 
+			$sqlStatement$
+		FROM AR_HISTORY, 
+			HR_EMPLOYEE,
+			HR_DEPARTMENT
+		WHERE AR_HISTORY.EMPID = HR_EMPLOYEE.EMPID
+			AND HR_EMPLOYEE.DEPTID = HR_DEPARTMENT.DEPTID
+			AND AR_HISTORY.AR_MONTH = #ATT_MONTH:VARCHAR# 
+		]]>
+
+		<include refid="getAttMonthInfoCondition"/>
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY $sortname$ $sortorder$
+			]]>
+		</isNotEmpty>
+		
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+			ORDER BY	AR_HISTORY.DEPTID DESC,HR_EMPLOYEE.EMPID 
+			]]>
+		</isEmpty>
+	</select>
+
+	<select id="getAttMonthInfoCnt" parameterClass="linkMap"
+		resultClass="int">
+		<![CDATA[	
+		SELECT COUNT(*) CNT
+			FROM AR_HISTORY, 
+				HR_EMPLOYEE,
+				HR_DEPARTMENT
+		WHERE AR_HISTORY.EMPID = HR_EMPLOYEE.EMPID
+			AND HR_EMPLOYEE.DEPTID = HR_DEPARTMENT.DEPTID
+			AND AR_HISTORY.AR_MONTH = #ATT_MONTH:VARCHAR# 
+		]]>
+		<include refid="getAttMonthInfoCondition"/>
+	</select>
+	
+	<update id="updateAttMonthInfo"  parameterClass="linkMap" >
+		$sql$ 
+	</update>
+	
+</sqlMap>

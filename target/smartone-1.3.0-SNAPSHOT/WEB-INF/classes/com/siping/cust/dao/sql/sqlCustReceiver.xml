@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap
+        PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+        "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="cust.custReceiver">
+    <insert id="addReceiver" parameterClass="linkMap">
+        <!-- <selectKey keyProperty="receiverId" resultClass="string"> 
+        SELECT CUST_RECEIVER_SEQ.NEXTVAL AS receiverId FROM DUAL 
+        </selectKey> -->
+        <selectKey resultClass="int" keyProperty="receiverId"> 
+            SELECT Auto_increment AS receiverId
+				FROM information_schema.`TABLES`
+				WHERE Table_Schema='smartone_v1'
+				AND table_name = 'CUST_RECEIVER'
+        </selectKey>
+        <![CDATA[
+            INSERT INTO CUST_RECEIVER(
+                RECEIVER_ID,
+                RECEIVER_NAME,
+                RECEIVER_TELEPHONE,
+                RECEIVER_MOBILE1,
+                RECEIVER_EMAIL,
+                RECEIVER_PROVINCE,
+                RECEIVER_CITY,
+                RECEIVER_AREA,
+                RECEIVER_ADDRESS,
+                CUST_ID,
+                CPNY_ID
+            )
+            VALUES(
+                #receiverId#,
+                #receiver.receiverName#,
+                #receiver.telePhone#,
+                #receiver.mobilePhone#,
+                #receiver.email#,
+                #receiver.address.province.codeNo#,
+                #receiver.address.city.codeNo#,
+                #receiver.address.area.codeNo#,
+                #receiver.address.address#,
+                #receiver.customer.customerId#,
+                #admin.cpnyId#
+            )
+        ]]>
+    </insert>
+    
+    <insert id="addReceiverByWizard" parameterClass="linkMap">
+        <![CDATA[
+           INSERT INTO CUST_RECEIVER(
+                        
+                        RECEIVER_NAME,
+                        RECEIVER_TELEPHONE,
+                        RECEIVER_MOBILE1,
+                        RECEIVER_EMAIL,
+                        RECEIVER_PROVINCE,
+                        RECEIVER_CITY,
+                        RECEIVER_AREA,
+                        RECEIVER_ADDRESS,
+                        CUST_ID,
+                        CPNY_ID
+                    )
+                    VALUES(
+                        
+                        #customer.receiver.receiverName#,
+                        #customer.receiver.telePhone#,
+                        #customer.receiver.mobilePhone#,
+                        #customer.receiver.email#,
+                        #customer.receiver.address.province.codeNo#,
+                        #customer.receiver.address.city.codeNo#,
+                        #customer.receiver.address.area.codeNo#,
+                        #customer.receiver.address.address#,
+                        #CUST_ID#,
+                        #admin.cpnyId#
+                    )
+        ]]>
+    </insert>
+
+    <update id="updateReceiver" parameterClass="linkMap">
+        <![CDATA[
+            UPDATE CUST_RECEIVER
+            SET   RECEIVER_NAME=#receiver.receiverName#,
+                  RECEIVER_TELEPHONE=#receiver.telePhone#,
+                  RECEIVER_MOBILE1=#receiver.mobilePhone#,
+                  RECEIVER_EMAIL=#receiver.email#,
+                  RECEIVER_PROVINCE=#receiver.address.province.codeNo#,
+                  RECEIVER_CITY=#receiver.address.city.codeNo#,
+                  RECEIVER_AREA=#receiver.address.area.codeNo#,
+                  RECEIVER_ADDRESS=#receiver.address.address#
+            WHERE RECEIVER_ID=#receiver.receiverId#
+            AND   CPNY_ID =#admin.cpnyId#
+        ]]>
+    </update>
+
+    <delete id="deleteReceiver" parameterClass="linkMap">
+        <![CDATA[
+            DELETE FROM CUST_RECEIVER
+            WHERE RECEIVER_ID=#receiverId#
+            AND CPNY_ID =#admin.cpnyId#
+        ]]>
+    </delete>
+
+    <resultMap id="receiverListMap" class="receiver">
+        <result property="receiverId" column="RECEIVER_ID" />
+        <result property="receiverName" column="RECEIVER_NAME" />
+        <result property="address.province.codeNo" column="RECEIVER_PROVINCE_CODE" />
+        <result property="address.city.codeNo" column="RECEIVER_CITY_CODE" />
+        <result property="address.area.codeNo" column="RECEIVER_AREA_CODE" />
+        <result property="address.province.codeName" column="RECEIVER_PROVINCE" />
+        <result property="address.city.codeName" column="RECEIVER_CITY" />
+        <result property="address.area.codeName" column="RECEIVER_AREA" />
+        <result property="address.address" column="ADDRESS" />
+        <result property="telePhone" column="TELEPHONE" />
+        <result property="mobilePhone" column="MOBILEPHONE" />
+        <result property="email" column="EMAIL" />
+    </resultMap>
+
+    <select id="getReceiverList" parameterClass="linkMap" resultMap="receiverListMap">
+        <![CDATA[
+            SELECT RECEIVER_ID                                 RECEIVER_ID,
+                RECEIVER_NAME                                  RECEIVER_NAME,
+                RECEIVER_MOBILE1                               MOBILEPHONE,
+                RECEIVER_TELEPHONE                             TELEPHONE,
+                RECEIVER_EMAIL                                 EMAIL,
+                IFNULL(CR.RECEIVER_PROVINCE,' ')                           RECEIVER_PROVINCE_CODE ,
+                IFNULL(IF(#language# ='en',PR.CODE_EN_NAME,PR.CODE_NAME),' ')    RECEIVER_PROVINCE,
+                IFNULL(CR.RECEIVER_CITY,' ')                               RECEIVER_CITY_CODE ,
+                IFNULL(IF(#language# = 'en',CI.CODE_EN_NAME,CI.CODE_NAME),' ')    RECEIVER_CITY,
+                IFNULL(CR.RECEIVER_AREA,' ')                               RECEIVER_AREA_CODE ,
+                IFNULL(IF(#language# ='en',AR.CODE_EN_NAME,AR.CODE_NAME),' ')    RECEIVER_AREA,
+                RECEIVER_ADDRESS                               ADDRESS
+            FROM CUST_RECEIVER CR LEFT JOIN SY_CODE          PR ON(CR.RECEIVER_PROVINCE = PR.CODE_ID)
+                 LEFT JOIN SY_CODE          CI ON(CR.RECEIVER_CITY     = CI.CODE_ID)
+                 LEFT JOIN SY_CODE          AR ON(CR.RECEIVER_AREA     = AR.CODE_ID)
+            WHERE CUST_ID= #CUST_ID#
+                
+        ]]>
+    </select>
+
+    <select id="getReceiverCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(*) FROM CUST_RECEIVER
+            WHERE CUST_ID=(SELECT CUST_ID FROM CUST_BASIC_INFO WHERE CUST_NAME=#CUST_NAME#)
+        ]]>
+    </select>
+
+    <select id="getReceiver" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT *
+            FROM CUST_RECEIVER
+            WHERE RECEIVER_ID=#RECEIVER_ID#
+        ]]>
+    </select>
+</sqlMap>

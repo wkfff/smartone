@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="system.menu">
+
+	<select id="getSystemMenuInfo" parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[
+			SELECT T.MENU_NO,
+			       T.MENU_CODE,
+			       T.MENU_INTRO,
+			       NVL(T.MENU_EN_INTRO, ' ') AS MENU_EN_INTRO, 
+			       T.MENU_PARENT_CODE,
+			       T.DESCRIPTION,
+			       '0' AS SELECTR,
+			       '0' AS SAVER,
+			       '0' AS INSERTR,
+			       '0' AS UPDATER,
+			       '0' AS DELETER,
+			       '0' AS CANCELR,
+			       T.DEPTH + 1 DEPTH
+			  FROM SY_MENU T
+			  WHERE T.ACTIVITY = 1
+			    AND T.CPNY_ID = #CPNY_ID#
+			 
+		]]>
+		<isNotEmpty prepend="AND" property="MENU_CODE">
+			<![CDATA[
+		 		  T.MENU_CODE LIKE #MENU_CODE# || '%'
+		    ]]>
+		</isNotEmpty>  
+		<![CDATA[
+		 		  START WITH T.DEPTH = 0
+					CONNECT BY PRIOR T.MENU_CODE = T.MENU_PARENT_CODE
+					 ORDER SIBLINGS BY T.ORDERNO 
+		    ]]>
+	</select>
+	<select id="getSystemMenuInfoCnt" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+			SELECT COUNT(*) 
+			  FROM SY_MENU T
+			  WHERE T.ACTIVITY = 1
+			    AND T.CPNY_ID = #CPNY_ID#
+			   
+		]]>	    
+		<isNotEmpty prepend="AND" property="MENU_CODE">
+			<![CDATA[
+		 		  T.MENU_CODE LIKE #MENU_CODE# || '%'
+		    ]]>
+		</isNotEmpty>   
+	</select>
+	
+</sqlMap>

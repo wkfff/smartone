@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="pa.paItem">
+
+	<sql id="getPaItemInfoCondition">
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+				(	
+					PI.ITEM_NAME				LIKE '%'||TRIM(#keyWord#)||'%' 
+					OR PI.DESCRIPTION			LIKE '%'||TRIM(#keyWord#)||'%' 
+					OR upper(PI.ITEM_EN_NAME)	LIKE '%'||TRIM(upper(#keyWord#))||'%'
+				)
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="ITEM_ID">
+			<![CDATA[
+				  PI.ITEM_ID = #ITEM_ID# 
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="ITEM_NO">
+			<![CDATA[
+				  PI.ITEM_NO = #ITEM_NO# 
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="ACTIVITY">
+			<![CDATA[
+				  PI.ACTIVITY = #ACTIVITY# 
+			]]>
+		</isNotEmpty>
+	</sql>
+
+	<select id="getPaItemInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT PI.ITEM_NO,
+			   PI.ITEM_ID,
+			   IF(#language#='en', PI.ITEM_EN_NAME, PI.ITEM_NAME) ITEM_NAME,
+			   PI.ITEM_EN_NAME, 
+			   PI.ITEM_NO ID, 
+			   IF(#language#='en', PI.ITEM_EN_NAME, PI.ITEM_NAME) NAME,
+			   PI.DATATYPE DATA_TYPE_CODE,
+			   IF(#language#='en', A.CODE_EN_NAME, A.CODE_NAME) DATA_TYPE_NAME, 
+			   PI.CALCU_ORDER ORDERNO, 
+			   PI.CALCU_ORDER ORDERNO_NAME,
+			   (SELECT COUNT(T.CALCU_ORDER) FROM PA_ITEM T) MAX_INDEX,
+			   PI.PRECISIONS,
+			   PI.CARRY_BIT, 
+			   date_format(PI.CREATE_DATE, '%Y-%m-%d') CREATE_DATE,
+			   PI.CREATED_BY,
+			   date_format(PI.UPDATE_DATE, '%Y-%m-%d') UPDATE_DATE,
+			   PI.UPDATED_BY,
+			   PI.DESCRIPTION,
+			   PI.CPNY_ID,
+			   PI.ACTIVITY STATUS_ID,
+			   IF(PI.ACTIVITY='1',
+					IF(#language#='en', 'Available', '可用'),
+					IF(#language#='en', 'Unavailable', '不可用')) STATUS
+			FROM PA_ITEM PI left join SY_CODE A on PI.DATATYPE = A.CODE_ID
+			WHERE PI.CPNY_ID = #CPNY_ID# 
+		]]>
+		<include refid="getPaItemInfoCondition" />
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY $sortname$ $sortorder$
+			]]>
+		</isNotEmpty>
+
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY CALCU_ORDER
+			]]>
+		</isEmpty>
+	</select>
+
+	<select id="getPaItemInfoCnt" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+			SELECT COUNT(*)
+			FROM PA_ITEM PI left join SY_CODE A on PI.DATATYPE = A.CODE_ID
+			WHERE PI.CPNY_ID = #CPNY_ID#  
+		]]>
+		<include refid="getPaItemInfoCondition" />
+	</select>
+
+	<insert id="addPaItemInfo" parameterClass="linkMap">
+	    <selectKey resultClass="int" keyProperty="ITEM_NO"> 
+           SELECT Auto_increment 
+				FROM information_schema.`TABLES`
+				WHERE Table_Schema='smartone_v1'
+				AND table_name = 'PA_ITEM'
+        </selectKey>
+		<![CDATA[
+			INSERT INTO PA_ITEM
+				(
+				ITEM_NO,
+				ITEM_ID,
+				ITEM_NAME,
+				ITEM_EN_NAME,
+				DESCRIPTION,
+				DATATYPE,
+				CALCU_ORDER,
+				PRECISIONS,
+				CARRY_BIT, 
+				CREATE_DATE,
+				CREATED_BY, 
+				ACTIVITY,
+				CPNY_ID
+			)
+			VALUES( 
+				#ITEM_NO#,
+				concat('PA_',#ITEM_NO#),
+				#ITEM_NAME#,
+				#ITEM_EN_NAME#,
+				#DESCRIPTION#,
+				#DATATYPE#,
+				#CALCU_ORDER#,	
+				#PRECISION#,
+				#CARRY_BIT#,  
+				now(),
+				#CREATED_BY#, 
+				#STATUS_ID#,
+				#CPNY_ID#
+			)
+		]]>
+	</insert>
+
+	<update id="updatePaItemInfo" parameterClass="linkMap">
+		<![CDATA[
+			UPDATE PA_ITEM SET
+				ITEM_NAME = #ITEM_NAME#,
+				ITEM_EN_NAME = #ITEM_EN_NAME#,
+				DESCRIPTION = #DESCRIPTION#,
+				DATATYPE = #DATATYPE#,
+				PRECISIONS = #PRECISION#,
+				CARRY_BIT = #CARRY_BIT#, 
+				ACTIVITY = #STATUS_ID#, 
+				UPDATE_DATE = now(),
+				UPDATED_BY = #UPDATED_BY# 
+			WHERE ITEM_NO = #ITEM_NO#
+		]]>
+	</update>
+
+	<select id="checkDeletePaItemInfo" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+			SELECT ( SELECT COUNT(*) FROM PA_FORMULAR WHERE ITEM_NO = #ITEM_NO#) + 
+				( SELECT COUNT(*) FROM USER_TAB_COLS WHERE TABLE_NAME = 'PA_HISTORY' AND COLUMN_NAME = #ITEM_ID# ) 
+				AS ITEM_COUNT
+			FROM DUAL
+		]]>
+	</select>
+
+	<delete id="deletePaItemInfo" parameterClass="linkMap">
+		<![CDATA[
+			DELETE PA_ITEM WHERE ITEM_NO = #ITEM_NO#
+		]]>
+	</delete>
+
+	<update id="updatePaItemInfoCalOrder" parameterClass="linkMap">
+		<![CDATA[
+			UPDATE PA_ITEM SET
+				CALCU_ORDER = #CALCU_ORDER#,
+				UPDATE_DATE = SYSDATE,
+				UPDATED_BY = #UPDATED_BY#
+			WHERE ITEM_NO = #ITEM_NO#
+		]]>
+	</update>
+</sqlMap>

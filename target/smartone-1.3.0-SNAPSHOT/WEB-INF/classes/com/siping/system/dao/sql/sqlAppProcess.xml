@@ -1,0 +1,705 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="system.appProcess">
+	  
+	<select id="getAppProcessPInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT T.ADMINNO,
+				   HR.EMPID,
+			       HR.CHINESENAME,
+			       HR.ENGLISHNAME,
+			       HD.DEPTNAME,
+			       HR.DEPTID,
+			       HD.CPNY_ID,
+			       DECODE(#language#, 'en', A.CPNY_EN_NAME, A.CPNY_NAME) CPNY_NAME,
+			       T.SET_APP,
+			       DECODE(#language#, 'en', B.CODE_EN_NAME, B.CODE_NAME) SET_APP_NAME,
+			       T.ACTIVITY STATUS_ID,
+			       DECODE(T.ACTIVITY,
+			              '1',
+			              DECODE(#language#, 'en', 'Available', '可用'),
+			              DECODE(#language#, 'en', 'Unavailable', '不可用')) STATUS
+			  FROM SY_ADMIN T, HR_EMPLOYEE HR, HR_DEPARTMENT HD,HR_COMPANY A,SY_CODE B
+			 WHERE T.ADMINID = HR.EMPID
+			   AND HR.DEPTID = HD.DEPTID
+			   AND HD.CPNY_ID = A.CPNY_ID(+)
+			   AND T.SET_APP = B.CODE_ID(+)
+			 
+		]]>	 
+		
+		<isNotEmpty prepend="AND" property="EMPID">
+			<![CDATA[
+		 		   HR.EMPID = #EMPID#
+		    ]]>
+		</isNotEmpty> 
+		<isNotEmpty prepend="AND" property="AREA_CODE">
+			<![CDATA[
+		 		  HD.AREA_CODE = #AREA_CODE:VARCHAR#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="NAME">
+			<![CDATA[
+		 		   (UPPER(replace(HR.CHINESENAME,' ','')) LIKE '%' || UPPER(replace(#NAME:VARCHAR#,' ','')) || '%' 
+		 		  OR UPPER(replace(HR.ENGLISHNAME,' ','')) LIKE '%' || UPPER(replace(#NAME:VARCHAR#,' ','')) || '%' 
+		 		  OR UPPER(replace(HR.ENGLISHNAME,' ','')) LIKE '%' || UPPER(replace(#NAME:VARCHAR#,' ','')) || '%')
+		    ]]>
+		</isNotEmpty> 
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+		 		  (UPPER(replace(HR.CHINESENAME,' ','')) LIKE '%' || UPPER(replace(#keyWord:VARCHAR#,' ','')) || '%' 
+		 		  OR UPPER(replace(HR.ENGLISHNAME,' ','')) LIKE '%' || UPPER(replace(#keyWord:VARCHAR#,' ','')) || '%' 
+		 		  OR UPPER(replace(HR.EMPID,' ','')) LIKE '%' || UPPER(replace(#keyWord:VARCHAR#,' ','')) || '%')
+		    ]]>
+		</isNotEmpty> 
+		<isNotEmpty prepend="AND" property="DEPTID">
+			<![CDATA[
+				EXISTS (
+					SELECT     *
+	                     	FROM HR_DEPARTMENT B1
+	                     	WHERE B1.DEPTID=HR.DEPTID
+	                 	START WITH B1.DEPTID = #DEPTID#
+	                 	CONNECT BY PRIOR B1.DEPTID = B1.PARENT_DEPT_ID
+	                )
+             ]]>   
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="AFFIRM_TYPE_ID">
+			<![CDATA[
+		 		  EXISTS (SELECT E.AFFIRM_OBJECT
+				          FROM SY_AFFIRM_RELATION E
+				         WHERE E.AFFIRM_TYPE_ID = #AFFIRM_TYPE_ID#
+				         AND E.AFFIRM_OBJECT = HR.EMPID)
+		    ]]>
+		</isNotEmpty> 
+		<isNotEmpty prepend="AND" property="AFFIRMORID">
+			<![CDATA[
+		 		  EXISTS (SELECT E.AFFIRM_OBJECT
+				          FROM SY_AFFIRM_RELATION E
+				         WHERE E.AFFIRMOR_ID = #AFFIRMORID#
+				         AND E.AFFIRM_OBJECT = HR.EMPID)
+		    ]]>
+		</isNotEmpty> 
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+		 		  HD.CPNY_ID = #CPNY_ID:VARCHAR#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="SET_APP">
+			<![CDATA[
+		 		  T.SET_APP = #SET_APP:VARCHAR#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="ACTIVITY">
+			<![CDATA[
+		 		  T.ACTIVITY = #ACTIVITY#
+		    ]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		  ORDER BY $sortname$ $sortorder$
+		    ]]>
+		</isNotEmpty>
+		
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY HD.DEPTID, HR.EMPID
+			]]>
+		</isEmpty>
+		 
+	</select>
+	
+	<select id="getAppProcessPInfoCnt" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+			SELECT COUNT(*)
+			  FROM SY_ADMIN T, HR_EMPLOYEE HR, HR_DEPARTMENT HD,HR_COMPANY A,SY_CODE B
+			 WHERE T.ADMINID = HR.EMPID
+			   AND HR.DEPTID = HD.DEPTID
+			   AND HD.CPNY_ID = A.CPNY_ID(+)
+			   AND T.SET_APP = B.CODE_ID(+)
+		]]>	  
+		
+		<isNotEmpty prepend="AND" property="EMPID">
+			<![CDATA[
+		 		   HR.EMPID = #EMPID#
+		    ]]>
+		</isNotEmpty> 
+		<isNotEmpty prepend="AND" property="AREA_CODE">
+			<![CDATA[
+		 		  HD.AREA_CODE = #AREA_CODE:VARCHAR#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="NAME">
+			<![CDATA[
+		 		   (UPPER(replace(HR.CHINESENAME,' ','')) LIKE '%' || UPPER(replace(#NAME:VARCHAR#,' ','')) || '%' 
+		 		  OR UPPER(replace(HR.ENGLISHNAME,' ','')) LIKE '%' || UPPER(replace(#NAME:VARCHAR#,' ','')) || '%' 
+		 		  OR UPPER(replace(HR.ENGLISHNAME,' ','')) LIKE '%' || UPPER(replace(#NAME:VARCHAR#,' ','')) || '%')
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+		 		  (UPPER(replace(HR.CHINESENAME,' ','')) LIKE '%' || UPPER(replace(#keyWord:VARCHAR#,' ','')) || '%' 
+		 		  OR UPPER(replace(HR.ENGLISHNAME,' ','')) LIKE '%' || UPPER(replace(#keyWord:VARCHAR#,' ','')) || '%' 
+		 		  OR UPPER(replace(HR.EMPID,' ','')) LIKE '%' || UPPER(replace(#keyWord:VARCHAR#,' ','')) || '%')
+		    ]]>
+		</isNotEmpty> 
+		<isNotEmpty prepend="AND" property="DEPTID">
+			<![CDATA[
+				EXISTS (
+					SELECT     *
+	                     	FROM HR_DEPARTMENT B1
+	                     	WHERE B1.DEPTID=HR.DEPTID
+	                 	START WITH B1.DEPTID = #DEPTID#
+	                 	CONNECT BY PRIOR B1.DEPTID = B1.PARENT_DEPT_ID
+	                )
+             ]]>   
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="AFFIRM_TYPE_ID">
+			<![CDATA[
+		 		  EXISTS (SELECT E.AFFIRM_OBJECT
+				          FROM SY_AFFIRM_RELATION E
+				         WHERE E.AFFIRM_TYPE_ID = #AFFIRM_TYPE_ID#
+				         AND E.AFFIRM_OBJECT = HR.EMPID)
+		    ]]>
+		</isNotEmpty> 
+		<isNotEmpty prepend="AND" property="AFFIRMORID">
+			<![CDATA[
+		 		  EXISTS (SELECT E.AFFIRM_OBJECT
+				          FROM SY_AFFIRM_RELATION E
+				         WHERE E.AFFIRMOR_ID = #AFFIRMORID#
+				         AND E.AFFIRM_OBJECT = HR.EMPID)
+		    ]]>
+		</isNotEmpty> 
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+		 		  HD.CPNY_ID = #CPNY_ID:VARCHAR#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="SET_APP">
+			<![CDATA[
+		 		  T.SET_APP = #SET_APP:VARCHAR#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="ACTIVITY">
+			<![CDATA[
+		 		  T.ACTIVITY = #ACTIVITY#
+		    ]]>
+		</isNotEmpty>
+
+	</select>
+	 
+	 
+	 <select id="getAppProcessPAInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+		<![CDATA[
+		SELECT A.AFFIRMOR_ID,
+		       DECODE(#language#, 'en', B.ENGLISHNAME, B.CHINESENAME) NAME
+		  FROM SY_AFFIRM_RELATION A, HR_EMPLOYEE B,HR_DEPARTMENT HD, SY_CODE T
+		 WHERE A.AFFIRMOR_ID = B.EMPID
+		   AND B.DEPTID = HD.DEPTID
+		   AND A.AFFIRM_TYPE_ID = T.CODE_ID(+) 
+		   AND T.ACTIVITY = 1
+		]]>	  
+		<isNotEmpty prepend="AND" property="EMPID">
+			<![CDATA[
+		 		  A.AFFIRM_OBJECT = #EMPID#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+		         HD.CPNY_ID = #CPNY_ID#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="AFFIRM_LEVEL">
+			<![CDATA[
+		         A.AFFIRM_LEVEL = #AFFIRM_LEVEL#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="AFFIRM_TYPE_ID">
+			<![CDATA[
+		         A.AFFIRM_TYPE_ID = #AFFIRM_TYPE_ID#
+		    ]]>
+		</isNotEmpty>
+		 
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		  ORDER BY $sortname$ $sortorder$
+		    ]]>
+		</isNotEmpty>
+		
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		ORDER BY A.AFFIRM_TYPE_ID, A.AFFIRM_LEVEL 
+			]]>
+		</isEmpty>
+		 
+	</select>
+	
+	<select id="getAppProcessDAInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+		<![CDATA[
+		SELECT A.AFFIRMOR_ID,
+		       DECODE(#language#, 'en', B.ENGLISHNAME, B.CHINESENAME) NAME
+		  FROM SY_AFFIRM_RELATION A, HR_EMPLOYEE B,HR_DEPARTMENT HD, SY_CODE T
+		 WHERE A.AFFIRMOR_ID = B.EMPID
+		   AND B.DEPTID = HD.DEPTID
+		   AND A.AFFIRM_TYPE_ID = T.CODE_ID(+) 
+		   AND T.ACTIVITY = 1
+		]]>	  
+		<isNotEmpty prepend="AND" property="DEPTID">
+			<![CDATA[
+		 		  A.AFFIRM_OBJECT = #DEPTID#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+		         HD.CPNY_ID = #CPNY_ID#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="AFFIRM_LEVEL">
+			<![CDATA[
+		         A.AFFIRM_LEVEL = #AFFIRM_LEVEL#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="AFFIRM_TYPE_ID">
+			<![CDATA[
+		         A.AFFIRM_TYPE_ID = #AFFIRM_TYPE_ID#
+		    ]]>
+		</isNotEmpty>
+		 
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		  ORDER BY $sortname$ $sortorder$
+		    ]]>
+		</isNotEmpty>
+		
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		ORDER BY A.AFFIRM_TYPE_ID, A.AFFIRM_LEVEL 
+			]]>
+		</isEmpty>
+		 
+	</select>
+	
+	<select id="getAppProcessPAInfoCnt" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+		   SELECT COUNT(*)
+				  FROM SY_AFFIRM_RELATION A, HR_EMPLOYEE B,HR_DEPARTMENT HD, SY_CODE T
+				 WHERE A.AFFIRMOR_ID = B.EMPID
+				   AND B.DEPTID = HD.DEPTID
+				   AND A.AFFIRM_TYPE_ID = T.CODE_ID(+)
+				   AND A.AFFIRM_OBJECT = #EMPID#
+				   AND T.ACTIVITY = 1
+				   AND HD.CPNY_ID = #CPNY_ID#
+		]]>	  
+		
+		<isNotEmpty prepend="AND" property="EMPID">
+			<![CDATA[
+		 		  A.AFFIRM_OBJECT = #EMPID:VARCHAR#
+		    ]]>
+		</isNotEmpty> 
+	</select>
+	 
+	<insert id="addAppProcessInfo" parameterClass="linkMap" >
+		<![CDATA[
+			INSERT INTO SY_AFFIRM_RELATION(
+					AFFIRM_RELATION_NO,
+					CPNY_ID,
+					AFFIRMOR_ID,
+					AFFIRM_TYPE_ID,
+					AFFIRM_LEVEL,
+					AFFIRM_OBJECT,
+					CREATE_DATE,
+					CREATED_BY,
+					ACTIVITY
+				)
+			VALUES(
+					SY_AFFIRM_RELATION_SEQ.NEXTVAL,
+					#CPNY_ID:VARCHAR#,
+					#AFFIRMOR_ID:VARCHAR#,
+					#AFFIRM_TYPE_ID:VARCHAR#,
+					#AFFIRM_LEVEL:VARCHAR#,
+					#AFFIRM_OBJECT:VARCHAR#,
+					SYSDATE,
+					#CREATED_BY:VARCHAR#,
+					1
+				)
+		]]>
+	</insert>
+	 
+	<update id="updateAppAdminFlag" parameterClass="linkMap" >
+		<![CDATA[
+		UPDATE SY_ADMIN A
+		   SET A.SET_APP = 'yes',
+		       A.UPDATE_DATE = SYSDATE,
+		       A.UPDATED_BY = #CREATED_BY:VARCHAR#
+		 WHERE A.ADMINID = #AFFIRM_OBJECT:VARCHAR#
+		]]>
+	</update>
+	<update id="updateAppProcessPflag" parameterClass="linkMap" >
+		<![CDATA[
+			UPDATE SY_ADMIN A
+			   SET A.SET_APP = 'yes'
+			 WHERE EXISTS (SELECT B.AFFIRM_OBJECT
+			          FROM SY_AFFIRM_RELATION B
+			         WHERE B.AFFIRM_OBJECT = A.ADMINID)
+		]]>
+	</update>
+	<update id="updateAppDeptFlag" parameterClass="linkMap" >
+		<![CDATA[
+		UPDATE HR_DEPARTMENT A
+		   SET A.SET_APP = 'yes',
+		       A.UPDATE_DATE = SYSDATE,
+		       A.UPDATED_BY = #CREATED_BY:VARCHAR#
+		 WHERE A.DEPTID = #AFFIRM_OBJECT:VARCHAR#
+		]]>
+	</update>
+	<update id="updateAppProcessDflag" parameterClass="linkMap" >
+		<![CDATA[
+			UPDATE HR_DEPARTMENT A
+			   SET A.SET_APP = 'yes'
+			 WHERE EXISTS (SELECT B.AFFIRM_OBJECT
+			          FROM SY_AFFIRM_RELATION B
+			         WHERE B.AFFIRM_OBJECT = A.DEPTID)
+		]]>
+	</update>
+	
+	<select id="getAppProcessInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+		<![CDATA[
+		SELECT     A.AFFIRM_RELATION_NO,
+				   A.AFFIRMOR_ID,
+				   B.CHINESENAME,
+				   B.ENGLISHNAME, 
+		           A.AFFIRM_LEVEL,
+				   DECODE(#language#, 'en', C.DEPT_EN_NAME, C.DEPTNAME) DEPTNAME,
+				   A.AFFIRM_TYPE_ID,
+				   DECODE(#language#, 'en', T.CODE_EN_NAME, T.CODE_NAME) AFFIRM_TYPE_NAME
+				  FROM SY_AFFIRM_RELATION A, HR_EMPLOYEE B, SY_CODE T,HR_DEPARTMENT C
+				 WHERE A.AFFIRMOR_ID = B.EMPID
+				   AND A.AFFIRM_TYPE_ID = T.CODE_ID(+) 
+		           AND B.DEPTID = C.DEPTID
+				   AND T.ACTIVITY = 1
+		]]>	  
+		<isNotEmpty prepend="AND" property="AFFIRM_OBJECT">
+			<![CDATA[
+		 		  A.AFFIRM_OBJECT = #AFFIRM_OBJECT#
+		    ]]>
+		</isNotEmpty>  
+		<isNotEmpty prepend="AND" property="AFFIRM_TYPE_ID">
+			<![CDATA[
+		         A.AFFIRM_TYPE_ID = #AFFIRM_TYPE_ID#
+		    ]]>
+		</isNotEmpty>
+		 
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		  ORDER BY $sortname$ $sortorder$
+		    ]]>
+		</isNotEmpty>
+		
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		ORDER BY A.AFFIRM_TYPE_ID, A.AFFIRM_LEVEL 
+			]]>
+		</isEmpty>
+		 
+	</select>
+	
+	<delete id="deleteAppProcessInfo" parameterClass="linkMap" >
+		<![CDATA[
+			DELETE SY_AFFIRM_RELATION A 
+		]]>
+		<dynamic prepend="WHERE">
+		<isNotEmpty prepend="" property="AFFIRM_RELATION_NO">
+			<![CDATA[
+		 		  A.AFFIRM_RELATION_NO = #AFFIRM_RELATION_NO# 
+		    ]]>
+		</isNotEmpty>
+		</dynamic> 
+	</delete>
+	
+	
+	<select id="getAppProcessDInfoObj" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT A.DEPTNO,
+			       A.DEPTID,
+			       A.DEPTNAME,
+			       A.DEPT_EN_NAME, 
+			       A.DATE_CREATED,
+			       A.DATE_ENDED,
+			       A.PARENT_DEPT_ID,
+			       A.DEPT_LEVEL,
+			       A.MANAGER_EMP_ID,
+			       A.DEPTCODE,
+			       A.CPNY_ID,
+			       DECODE(#language#, 'en', C.CPNY_EN_NAME, C.CPNY_NAME) CPNY_NAME,
+			       A.AREA_CODE,
+			       DECODE(#language#, 'en', B.CODE_EN_NAME, B.CODE_NAME) AREA,
+			       A.DESCRIPTION,
+			       A.SET_APP,
+			       DECODE(#language#, 'en', D.CODE_EN_NAME, D.CODE_NAME) SET_APP_NAME,
+			       A.ACTIVITY STATUS_ID,
+			       DECODE(A.ACTIVITY,
+			              '1',
+			              DECODE(#language#, 'en', 'Available', '可用'),
+			              DECODE(#language#, 'en', 'Unavailable', '不可用')) STATUS
+			  FROM HR_DEPARTMENT A, SY_CODE B,HR_COMPANY C, SY_CODE D
+			 WHERE A.AREA_CODE = B.CODE_ID(+)
+			   AND A.CPNY_ID = C.CPNY_ID(+)
+			   AND A.SET_APP = D.CODE_ID(+)
+			   AND (A.DATE_CREATED < SYSDATE AND
+						 A.DATE_ENDED > SYSDATE OR
+						 A.DATE_ENDED IS NULL)
+		]]>	    
+		<isNotEmpty prepend="AND" property="DEPTID">
+			<![CDATA[
+					A.DEPTID = #DEPTID#  
+             ]]>   
+		</isNotEmpty> 
+	</select>
+	<select id="getAppProcessDInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT A.DEPTNO,
+			       A.DEPTID,
+			       DECODE(A.DEPT_LEVEL,
+			              1,
+			              A.DEPTNAME,
+			              2,
+			              '&nbsp;&nbsp;' || A.DEPTNAME,
+			              3,
+			              '&nbsp;&nbsp;&nbsp;&nbsp;' || A.DEPTNAME,
+			              4,
+			              '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' || A.DEPTNAME,
+			              5,
+			              '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' || A.DEPTNAME,
+			              6,
+			              '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' || A.DEPTNAME,
+			              '') DEPTNAME,
+			       DECODE(A.DEPT_LEVEL,
+			              1,
+			              A.DEPT_EN_NAME,
+			              2,
+			              '&nbsp;&nbsp;' || A.DEPT_EN_NAME,
+			              3,
+			              '&nbsp;&nbsp;&nbsp;&nbsp;' || A.DEPT_EN_NAME,
+			              4,
+			              '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' || A.DEPT_EN_NAME,
+			              5,
+			              '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' || A.DEPT_EN_NAME,
+			              6,
+			              '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' || A.DEPT_EN_NAME,
+			              '') DEPT_EN_NAME, 
+			       A.DATE_CREATED,
+			       A.DATE_ENDED,
+			       A.PARENT_DEPT_ID,
+			       A.DEPT_LEVEL,
+			       A.MANAGER_EMP_ID,
+			       A.DEPTCODE,
+			       A.CPNY_ID,
+			       DECODE(#language#, 'en', C.CPNY_EN_NAME, C.CPNY_NAME) CPNY_NAME,
+			       A.AREA_CODE,
+			       DECODE(#language#, 'en', B.CODE_EN_NAME, B.CODE_NAME) AREA,
+			       A.DESCRIPTION,
+			       A.SET_APP,
+			       DECODE(#language#, 'en', D.CODE_EN_NAME, D.CODE_NAME) SET_APP_NAME,
+			       A.ACTIVITY STATUS_ID,
+			       DECODE(A.ACTIVITY,
+			              '1',
+			              DECODE(#language#, 'en', 'Available', '可用'),
+			              DECODE(#language#, 'en', 'Unavailable', '不可用')) STATUS
+			  FROM HR_DEPARTMENT A, SY_CODE B,HR_COMPANY C, SY_CODE D
+			 WHERE A.AREA_CODE = B.CODE_ID(+)
+			   AND A.CPNY_ID = C.CPNY_ID(+)
+			   AND A.SET_APP = D.CODE_ID(+)
+			   AND (A.DATE_CREATED < SYSDATE AND
+						 A.DATE_ENDED > SYSDATE OR
+						 A.DATE_ENDED IS NULL)
+		]]>	   
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+		 		  (UPPER(replace(A.DEPTNAME,' ','')) LIKE '%' || UPPER(replace(#keyWord:VARCHAR#,' ','')) || '%' 
+		 		  OR UPPER(replace(A.DEPT_EN_NAME,' ','')) LIKE '%' || UPPER(replace(#keyWord:VARCHAR#,' ','')) || '%' 
+		 		  OR UPPER(replace(A.DEPTID,' ','')) LIKE '%' || UPPER(replace(#keyWord:VARCHAR#,' ','')) || '%')
+		    ]]>
+		</isNotEmpty> 
+		<isNotEmpty prepend="AND" property="DEPTID">
+			<![CDATA[
+				EXISTS (
+					SELECT     *
+	                     	FROM HR_DEPARTMENT B1
+	                     	WHERE B1.DEPTID=A.DEPTID
+	                 	START WITH B1.DEPTID = #DEPTID#
+	                 	CONNECT BY PRIOR B1.DEPTID = B1.PARENT_DEPT_ID
+	                )
+             ]]>   
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="AFFIRM_TYPE_ID">
+			<![CDATA[
+		 		  EXISTS (SELECT E.AFFIRM_OBJECT
+				          FROM SY_AFFIRM_RELATION E
+				         WHERE E.AFFIRM_TYPE_ID = #AFFIRM_TYPE_ID#
+				         AND E.AFFIRM_OBJECT = A.DEPTID)
+		    ]]>
+		</isNotEmpty> 
+		<isNotEmpty prepend="AND" property="AFFIRMORID">
+			<![CDATA[
+		 		  EXISTS (SELECT E.AFFIRM_OBJECT
+				          FROM SY_AFFIRM_RELATION E
+				         WHERE E.AFFIRMOR_ID = #AFFIRMORID#
+				         AND E.AFFIRM_OBJECT = A.DEPTID)
+		    ]]>
+		</isNotEmpty> 
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+		 		  A.CPNY_ID = #CPNY_ID:VARCHAR#
+		    ]]>
+		</isNotEmpty> 
+		<isNotEmpty prepend="AND" property="AREA_CODE">
+			<![CDATA[
+		 		  A.AREA_CODE = #AREA_CODE:VARCHAR#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="SET_APP">
+			<![CDATA[
+		 		  A.SET_APP = #SET_APP:VARCHAR#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="ACTIVITY">
+			<![CDATA[
+		 		  A.ACTIVITY = #ACTIVITY#
+		    ]]>
+		</isNotEmpty>
+			<![CDATA[
+				 START WITH A.DEPT_LEVEL = 1
+				CONNECT BY PRIOR A.DEPTID = A.PARENT_DEPT_ID
+				 ORDER SIBLINGS BY A.DEPT_LEVEL 
+			]]>
+	</select>
+	
+	<select id="getAppProcessDInfoCnt" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+		   SELECT COUNT(*)
+				  FROM HR_DEPARTMENT A, SY_CODE B,HR_COMPANY C
+					 WHERE A.AREA_CODE = B.CODE_ID(+)
+					   AND A.CPNY_ID = C.CPNY_ID(+)
+					   AND (A.DATE_CREATED < SYSDATE AND
+								 A.DATE_ENDED > SYSDATE OR
+								 A.DATE_ENDED IS NULL)
+		]]>	   
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+		 		  (UPPER(replace(A.DEPTNAME,' ','')) LIKE '%' || UPPER(replace(#keyWord:VARCHAR#,' ','')) || '%' 
+		 		  OR UPPER(replace(A.DEPT_EN_NAME,' ','')) LIKE '%' || UPPER(replace(#keyWord:VARCHAR#,' ','')) || '%' 
+		 		  OR UPPER(replace(A.DEPTID,' ','')) LIKE '%' || UPPER(replace(#keyWord:VARCHAR#,' ','')) || '%')
+		    ]]>
+		</isNotEmpty> 
+		<isNotEmpty prepend="AND" property="DEPTID">
+			<![CDATA[
+				EXISTS (
+					SELECT     *
+	                     	FROM HR_DEPARTMENT B1
+	                     	WHERE B1.DEPTID=A.DEPTID
+	                 	START WITH B1.DEPTID = #DEPTID#
+	                 	CONNECT BY PRIOR B1.DEPTID = B1.PARENT_DEPT_ID
+	                )
+             ]]>   
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="AFFIRM_TYPE_ID">
+			<![CDATA[
+		 		  EXISTS (SELECT E.AFFIRM_OBJECT
+				          FROM SY_AFFIRM_RELATION E
+				         WHERE E.AFFIRM_TYPE_ID = #AFFIRM_TYPE_ID#
+				         AND E.AFFIRM_OBJECT = A.DEPTID)
+		    ]]>
+		</isNotEmpty> 
+		<isNotEmpty prepend="AND" property="AFFIRMORID">
+			<![CDATA[
+		 		  EXISTS (SELECT E.AFFIRM_OBJECT
+				          FROM SY_AFFIRM_RELATION E
+				         WHERE E.AFFIRMOR_ID = #AFFIRMORID#
+				         AND E.AFFIRM_OBJECT = A.DEPTID)
+		    ]]>
+		</isNotEmpty> 
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+		 		  A.CPNY_ID = #CPNY_ID:VARCHAR#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="SET_APP">
+			<![CDATA[
+		 		  A.SET_APP = #SET_APP:VARCHAR#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="AREA_CODE">
+			<![CDATA[
+		 		  A.AREA_CODE = #AREA_CODE:VARCHAR#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="ACTIVITY">
+			<![CDATA[
+		 		  A.ACTIVITY = #ACTIVITY#
+		    ]]>
+		</isNotEmpty>
+		<![CDATA[
+					 START WITH A.DEPT_LEVEL = 1
+					CONNECT BY PRIOR A.DEPTID = A.PARENT_DEPT_ID 
+		    ]]>
+	</select>
+	
+	<select id="getSendEmailInfo" parameterClass="linkMap" resultClass="linkMap">
+	<![CDATA[
+	SELECT SANI.LIST_ID, 
+	       SANI.ADDRESS,
+	       SANI.CPNY_ID,
+		   DECODE(#language#, 'en', A.CODE_EN_NAME, A.CODE_NAME) APPLY_TYPE,
+		   DECODE(#language#, 'en', B.CODE_EN_NAME, B.CODE_NAME) ADDRESS_TYPE
+	FROM SY_APPLY_NOTIFY_LIST SANI, 
+	     SY_CODE A,
+	     SY_CODE B
+	WHERE SANI.APPLY_TYPE_CODE = A.CODE_ID(+)
+	  AND SANI.ADDRESS_TYPE_CODE = B.CODE_ID(+) 
+	  AND SANI.ACTIVITY = 1
+	]]>			
+	</select>
+	<select id="getSendEmailInfoCnt" parameterClass="linkMap" resultClass="int">
+	<![CDATA[
+	SELECT COUNT(0)
+	FROM SY_APPLY_NOTIFY_LIST SANI, 
+	     SY_CODE A,
+	     SY_CODE B
+	WHERE SANI.APPLY_TYPE_CODE = A.CODE_ID(+)
+	  AND SANI.ADDRESS_TYPE_CODE = B.CODE_ID(+) 
+	  AND SANI.ACTIVITY = 1
+	]]>
+	</select>
+	
+	<update id="updateSendEmailInfo" parameterClass="linkMap">
+		<![CDATA[
+		UPDATE SY_APPLY_NOTIFY_LIST SET 
+		]]>
+		<isNotEmpty property="APPLY_TYPE_CODE" >
+			 APPLY_TYPE_CODE=#APPLY_TYPE_CODE#, 
+		</isNotEmpty>
+		<isNotEmpty property="ADDRESS_TYPE_CODE" >
+			 ADDRESS_TYPE_CODE=#ADDRESS_TYPE_CODE#, 
+		</isNotEmpty>		
+		<![CDATA[
+		ADDRESS=#ADDRESS#
+				WHERE LIST_ID=#LIST_ID#
+		]]>
+	</update>
+	
+	<insert id="addSendEmailInfo" parameterClass="linkMap">
+		<![CDATA[
+		INSERT INTO SY_APPLY_NOTIFY_LIST(LIST_ID, ADDRESS, CPNY_ID, APPLY_TYPE_CODE, ADDRESS_TYPE_CODE)
+		VALUES( SY_APPLY_NOTIFY_SEQ.NEXTVAL, #ADDRESS#, #CPNY_ID#, #APPLY_TYPE_CODE#, #ADDRESS_TYPE_CODE#)
+		]]>
+	</insert>
+	
+	<update id="deleteSendEmailInfo" parameterClass="linkMap">
+		<![CDATA[
+		DELETE FROM SY_APPLY_NOTIFY_LIST 
+		WHERE LIST_ID=#LIST_ID#
+		]]>
+	</update>
+	
+</sqlMap>

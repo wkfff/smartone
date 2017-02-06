@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="fico.invoice">
+
+	<sql id="InvoiceSearchCondition"> 	     
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+				(	
+						CBI.CUST_NAME          LIKE '%'||TRIM(#keyWord#)||'%'
+						OR CBI.CUST_EN_NAME    LIKE '%'||TRIM(#keyWord#)||'%'
+						OR CBI.DESCRIPTION     LIKE '%'||TRIM(#keyWord#)||'%'
+						OR DECODE(#language#,'en',PR.CODE_EN_NAME,PR.CODE_NAME)||
+						DECODE(#language#,'en',CI.CODE_EN_NAME,CI.CODE_NAME)||
+						DECODE(#language#,'en',AR.CODE_EN_NAME,AR.CODE_NAME)||
+						CBI.ADDRESS          LIKE '%'||TRIM(#keyWord#)||'%'
+				)
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="PROJECT_ID">
+			<![CDATA[
+				INV.PROJECT_ID = #PROJECT_ID#
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="CUSTOMER_ID">
+			<![CDATA[
+				INV.CUSTOMER_ID = #CUSTOMER_ID#
+			]]>
+		</isNotEmpty>
+	</sql> 
+	 
+	<select id="getInvoiceList" parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[
+      SELECT  INV.INVOICE_NO,
+              INV.ACCOUNT_ID,
+              INV.CUSTOMER_ID,
+              INV.PROJECT_ID,
+              INV.TYPE_ID,
+              INV.REMARK,
+              INV.PAYABLE_AMOUNT,
+              NVL((SELECT SUM(PER_NET*AMOUNT) FROM FICO_INVOICE_POSITION WHERE INVOICE_NO = INV.INVOICE_NO ),0) PAID_AMOUNT,
+              INV.INVOICE_DATE,
+              INV.SUBJECT,
+              INV.COMMENTS,
+              INV.DUE_DATE,
+              INV.PAYMENT_DATE,
+              INV.STATUS_ID,
+              ACCO.ACCOUNT_NAME,
+              DECODE(#language#, 'en', PROJ.PRO_EN_NAME, PROJ.PRO_NAME)  PROJECT_NAME,
+              DECODE(#language#, 'en', CUST.CUST_EN_NAME, CUST.CUST_NAME)  CUSTOMER_NAME,
+              DECODE(#language#, 'en', A.CODE_EN_NAME, A.CODE_NAME)  TYPE_NAME,
+              DECODE(#language#, 'en', B.CODE_EN_NAME, B.CODE_NAME)  STATUS_NAME
+      FROM  FICO_INVOICE    INV,
+            ESS_PROJECT         PROJ,
+            CUST_BASIC_INFO     CUST,
+            FICO_ACCOUNT        ACCO,
+            SY_CODE             A,
+            SY_CODE             B
+      WHERE INV.PROJECT_ID = PROJ.PRO_NO(+)
+        AND INV.CUSTOMER_ID = CUST.CUST_ID(+)
+        AND INV.TYPE_ID = A.CODE_ID(+)
+        AND INV.STATUS_ID = B.CODE_ID(+) 
+        AND INV.ACCOUNT_ID = ACCO.ACCOUNT_NO(+)
+        AND INV.CPNY_ID = #CPNY_ID# 
+		]]>
+		<include refid="InvoiceSearchCondition" />	
+		<![CDATA[
+		ORDER BY INVOICE_NO
+		]]>	
+	</select>
+	
+	<select id="getInvoiceDetail" parameterClass="linkMap"
+		resultClass="linkMap" remapResults="true">
+		<![CDATA[	
+		      SELECT  INV.INVOICE_NO,
+		              INV.ACCOUNT_ID,
+		              INV.CUSTOMER_ID,
+		              INV.PROJECT_ID,
+		              INV.TYPE_ID,
+		              INV.REMARK,
+		              INV.PAYABLE_AMOUNT,
+		              INV.INVOICE_DATE,
+		              INV.SUBJECT,
+		              INV.COMMENTS,
+		              INV.DUE_DATE,
+		              INV.PAYMENT_DATE,
+		              INV.STATUS_ID,
+		              ACCO.ACCOUNT_NAME,
+		              DECODE(#language#, 'en', PROJ.PRO_EN_NAME, PROJ.PRO_NAME)  PROJECT_NAME,
+		              DECODE(#language#, 'en', CUST.CUST_EN_NAME, CUST.CUST_NAME)  CUSTOMER_NAME,
+		              DECODE(#language#, 'en', A.CODE_EN_NAME, A.CODE_NAME)  TYPE_NAME,
+		              DECODE(#language#, 'en', B.CODE_EN_NAME, B.CODE_NAME)  STATUS_NAME
+		      FROM  FICO_INVOICE    INV,
+		            ESS_PROJECT         PROJ,
+		            CUST_BASIC_INFO     CUST,
+		            FICO_ACCOUNT        ACCO,
+		            SY_CODE             A,
+		            SY_CODE             B
+		      WHERE INV.PROJECT_ID = PROJ.PRO_NO(+)
+		        AND INV.CUSTOMER_ID = CUST.CUST_ID(+)
+		        AND INV.TYPE_ID = A.CODE_ID(+)
+		        AND INV.STATUS_ID = B.CODE_ID(+) 
+		        AND INV.ACCOUNT_ID = ACCO.ACCOUNT_NO(+)
+			    AND INV.INVOICE_NO = #INVOICE_NO#
+			    AND INV.CPNY_ID = #CPNY_ID#
+		]]>
+	</select>	
+
+    <insert id="addInvoice" parameterClass="linkMap">
+    	<selectKey resultClass="string" keyProperty="INVOICE_NO">
+    	<![CDATA[	
+    		SELECT FICO_INVOICE_SEQ.NEXTVAL AS INVOICE_NO FROM DUAL
+    	]]>	
+    	</selectKey>
+    	<![CDATA[
+    		INSERT INTO FICO_INVOICE(INVOICE_NO,
+		              ACCOUNT_ID,
+		              CUSTOMER_ID,
+		              PROJECT_ID,
+		              TYPE_ID,
+		              REMARK,
+		              PAYABLE_AMOUNT,
+		              INVOICE_DATE,
+		              SUBJECT,
+		              COMMENTS,
+		              DUE_DATE,
+		              PAYMENT_DATE,
+		              STATUS_ID,
+		              CREATE_DATE,
+		              CREATED_BY,
+		              ACTIVITY,
+		              CPNY_ID) VALUES(#INVOICE_NO#,
+		              #ACCOUNT_ID#,
+		              #CUSTOMER_ID#,
+		              #PROJECT_ID#,
+		              #TYPE_ID#,
+		              #REMARK#,
+		              #PAYABLE_AMOUNT#,
+		              TO_DATE(#INVOICE_DATE#,'YYYY-MM-DD'),
+		              #SUBJECT#,
+		              #COMMENTS#,
+		              TO_DATE(#DUE_DATE#, 'YYYY-MM-DD'),
+		              TO_DATE(#PAYMENT_DATE#, 'YYYY-MM-DD'),
+		              #STATUS_ID#,
+		              SYSDATE,
+		              #CREATED_BY#,
+		              1,
+		              #CPNY_ID#)
+    	]]>
+    </insert>
+    
+    <update id="updateInvoice" parameterClass="linkMap">
+    	<![CDATA[
+    		UPDATE FICO_INVOICE SET ACCOUNT_ID = #ACCOUNT_ID#,
+		              CUSTOMER_ID = #CUSTOMER_ID#,
+		              PROJECT_ID = #PROJECT_ID#,
+		              TYPE_ID = #TYPE_ID#,
+		              REMARK = #REMARK#,
+		              PAYABLE_AMOUNT = #PAYABLE_AMOUNT#,
+		              INVOICE_DATE = TO_DATE(#INVOICE_DATE#,'YYYY-MM-DD'),
+		              SUBJECT = #SUBJECT#,
+		              COMMENTS = #COMMENTS#,
+		              DUE_DATE = TO_DATE(#DUE_DATE#, 'YYYY-MM-DD'),
+		              PAYMENT_DATE = TO_DATE(#PAYMENT_DATE#, 'YYYY-MM-DD'),
+		              STATUS_ID = #STATUS_ID#,
+		              UPDATE_DATE = SYSDATE,
+		              UPDATED_BY = #UPDATED_BY#,
+		              ACTIVITY = #ACTIVITY#
+    		WHERE INVOICE_NO = #INVOICE_NO#
+    		AND CPNY_ID = #CPNY_ID#
+    	]]>   	
+    </update>
+    
+    
+    <sql id="positionSearchCondition"> 	     
+		<isNotEmpty prepend="AND" property="INVOICE_NO">
+			<![CDATA[
+				INPO.INVOICE_NO = TO_NUMBER(#INVOICE_NO#) 
+			]]>
+		</isNotEmpty>
+	</sql> 
+    
+	<select id="getPositionList" parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[
+      SELECT  INPO.INVOICE_NO,
+              INPO.POSITION_NO,
+              INPO.AMOUNT,
+              INPO.PER_NET,
+              INPO.VAT,
+              INPO.AMOUNT*INPO.PER_NET NET_TOTAL,
+              ROUND(INPO.AMOUNT*INPO.PER_NET*(1+INPO.VAT),2)     TOTAL,
+              INPO.S_TEXT,
+              INPO.TASK_POSITION_NO,
+              INPO.CREATE_DATE
+      FROM  FICO_INVOICE_POSITION INPO,
+            FICO_INVOICE    INV
+      WHERE INV.INVOICE_NO = INPO.INVOICE_NO 
+        AND INV.CPNY_ID = #CPNY_ID#
+		]]>	
+		<include refid="positionSearchCondition" />	
+		<![CDATA[
+		ORDER BY INPO.POSITION_NO
+		]]>	
+	</select>
+	
+    <insert id="addPosition" parameterClass="linkMap">
+    	<![CDATA[
+    		INSERT INTO FICO_INVOICE_POSITION(INVOICE_NO,
+		              POSITION_NO,
+              		  AMOUNT,
+              		  PER_NET,
+              		  VAT,
+              		  S_TEXT,
+              		  TASK_POSITION_NO,
+		              CREATE_DATE,
+		              CREATED_BY,
+		              ACTIVITY,
+		              CPNY_ID) VALUES(#INVOICE_NO#,
+		              FICO_INVOICE_POSITION_SEQ.NEXTVAL,
+		              #AMOUNT#,
+		              #PER_NET#,
+		              #VAT#,
+		              #S_TEXT#,
+		              #TASK_POSITION_NO#,
+		              SYSDATE,
+		              #CREATED_BY#,
+		              1,
+		              #CPNY_ID#)
+    	]]>
+    </insert>
+    
+    <update id="updatePosition" parameterClass="linkMap">
+    	<![CDATA[
+    		UPDATE FICO_INVOICE_POSITION SET AMOUNT = #AMOUNT#,
+		              PER_NET = #PER_NET#,
+		              VAT = #VAT#,
+		              S_TEXT = #S_TEXT#,
+		              TASK_POSITION_NO = #TASK_POSITION_NO#,
+		              UPDATE_DATE = SYSDATE,
+		              UPDATED_BY = #UPDATED_BY#,
+		              ACTIVITY = #ACTIVITY#
+    		WHERE POSITION_NO = #POSITION_NO#
+    		AND CPNY_ID = #CPNY_ID#
+    	]]>   	
+    </update>    
+    
+</sqlMap>

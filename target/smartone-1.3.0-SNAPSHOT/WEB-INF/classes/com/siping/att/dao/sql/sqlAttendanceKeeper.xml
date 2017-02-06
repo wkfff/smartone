@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="att.attendanceKeeper">
+
+	<select id="getAttendanceKeeperInfo" parameterClass="linkMap" resultClass="linkMap"  remapResults="true">
+		<![CDATA[
+			SELECT T.SUPERVISOR_NO,
+			       T.SUPERVISOR_ID,
+				   DECODE(#language#, 'en', HR.ENGLISHNAME, HR.CHINESENAME) CHINESENAME, 
+				   DECODE(#language#, 'en', HD.DEPT_EN_NAME, HD.DEPTNAME) DEPTNAME,
+			       TO_CHAR(T.CREATE_DATE, 'YYYY-MM-DD') AS CREATE_DATE,
+			       T.CREATED_BY,
+				   DECODE(#language#, 'en', A.CODE_EN_NAME, A.CODE_NAME) STATUS_NAME,
+				   DECODE(#language#, 'en', B.CPNY_EN_NAME, B.CPNY_NAME) CPNY_NAME
+			  FROM AR_SUPERVISOR T, HR_EMPLOYEE HR, HR_DEPARTMENT HD, SY_CODE A,HR_COMPANY B
+			 WHERE T.SUPERVISOR_ID = HR.EMPID
+			   AND HR.DEPTID = HD.DEPTID
+			   AND HR.STATUS_CODE = A.CODE_ID(+)
+			   AND HD.CPNY_ID = B.CPNY_ID(+)
+		 
+		]]>
+		
+		<isNotEmpty prepend="AND" property="SUPERVISOR_ID">
+			<![CDATA[
+		 		  T.SUPERVISOR_ID = #SUPERVISOR_ID:VARCHAR#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+		 		  ( HR.EMPID LIKE TRIM(#keyWord:VARCHAR#) || '%' 
+		 		  OR HR.CHINESENAME LIKE '%' || TRIM(#keyWord:VARCHAR#) || '%' 
+		 		  OR HR.CHINESE_PINYIN LIKE '%' || TRIM(#keyWord:VARCHAR#) || '%') 
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="DEPTID">
+			<![CDATA[
+		 		  EXISTS(
+		 		  	SELECT *
+					  FROM HR_DEPARTMENT
+				     WHERE HR_DEPARTMENT.DEPTID = HR.DEPTID
+					 START WITH HR_DEPARTMENT.DEPTID = #DEPTID:VARCHAR#
+					CONNECT BY PRIOR HR_DEPARTMENT.DEPTID = HR_DEPARTMENT.PARENT_DEPT_ID
+		 		  )
+		    ]]>
+		</isNotEmpty>
+		  
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		  ORDER BY $sortname$ $sortorder$
+		    ]]>
+		</isNotEmpty>
+		
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY HR.DEPTID, HR.EMPID
+			]]>
+		</isEmpty>
+	</select>
+	
+	<select id="getAttendanceKeeperInfoCnt" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+			SELECT COUNT(*) 
+			  FROM AR_SUPERVISOR T, HR_EMPLOYEE HR, HR_DEPARTMENT HD, SY_CODE A,HR_COMPANY B
+			 WHERE T.SUPERVISOR_ID = HR.EMPID
+			   AND HR.DEPTID = HD.DEPTID
+			   AND HR.STATUS_CODE = A.CODE_ID(+)
+			   AND HD.CPNY_ID = B.CPNY_ID(+)
+		]]>
+		
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+		 		  ( HR.EMPID LIKE TRIM(#keyWord:VARCHAR#) || '%' 
+		 		  OR HR.CHINESENAME LIKE '%' || TRIM(#keyWord:VARCHAR#) || '%' 
+		 		  OR HR.CHINESE_PINYIN LIKE '%' || TRIM(#keyWord:VARCHAR#) || '%') 
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="DEPTID">
+			<![CDATA[
+		 		  EXISTS(
+		 		  	SELECT *
+					  FROM HR_DEPARTMENT
+				     WHERE HR_DEPARTMENT.DEPTID = HR.DEPTID
+					 START WITH HR_DEPARTMENT.DEPTID = #DEPTID:VARCHAR#
+					CONNECT BY PRIOR HR_DEPARTMENT.DEPTID = HR_DEPARTMENT.PARENT_DEPT_ID
+		 		  )
+		    ]]>
+		</isNotEmpty>
+		 
+	</select>
+	
+	<insert id="addAttendanceKeeperInfo" parameterClass="linkMap" >
+		<![CDATA[
+			INSERT INTO AR_SUPERVISOR (
+					SUPERVISOR_NO,
+					SUPERVISOR_ID,
+					CREATE_DATE,
+					CREATED_BY,
+					ACTIVITY
+				)
+				VALUES(
+					AR_SUPERVISOR_SEQ.NEXTVAL,
+					#SUPERVISOR_ID:VARCHAR#,
+					SYSDATE,
+					#CREATED_BY:VARCHAR#,
+					1
+				)
+		]]>
+	</insert>
+	
+	<update id="updateAttendanceKeeperInfo" parameterClass="linkMap" >
+		<![CDATA[
+			UPDATE AR_SUPERVISOR SET 
+					UPDATE_DATE = SYSDATE,
+					UPDATED_BY = #UPDATED_BY:VARCHAR# 
+					
+			WHERE SUPERVISOR_ID = #SUPERVISOR_ID:VARCHAR# 
+		]]>
+	</update>
+	
+	<delete id="deleteAttendanceKeeperInfo" parameterClass="linkMap">
+		<![CDATA[
+			DELETE AR_SUPERVISOR WHERE SUPERVISOR_ID = #SUPERVISOR_ID:VARCHAR# 
+		]]>
+	</delete>
+	
+	<delete id="deleteAttendanceKeeperDeptInfo" parameterClass="linkMap">
+		<![CDATA[
+			DELETE AR_SUPERVISOR_INFO WHERE AR_SUPERVISOR_ID = #SUPERVISOR_ID:VARCHAR#
+		]]>
+	</delete>
+	
+	<insert id="addAttendanceKeeperDeptInfo" parameterClass="linkMap" >
+		<![CDATA[
+			INSERT INTO AR_SUPERVISOR_INFO (
+					AR_SUPERVISOR_NO,
+					AR_SUPERVISOR_ID,
+					SUPERVISED_DEPTID,
+					CREATE_DATE,
+					CREATED_BY,
+					ORDERNO,
+					ACTIVITY
+				)
+				VALUES(
+					AR_SUPERVISOR_INFO_SEQ.NEXTVAL,
+					#SUPERVISOR_ID:VARCHAR#,
+					#SUPERVISED_DEPTID:VARCHAR#,
+					SYSDATE,
+					#CREATED_BY:VARCHAR#,
+					NULL,
+					1
+				)
+		]]>
+	</insert>
+	
+	<select id="getAttendanceKeeperDeptInfo" parameterClass="linkMap" resultClass="linkMap" >
+		<![CDATA[
+			SELECT HD.DEPTID,
+			       DECODE(#language#, 'en', HD.DEPT_EN_NAME, HD.DEPTNAME) DEPTNAME,
+			       HD.PARENT_DEPT_ID, 
+			       (CASE
+			         WHEN T.SUPERVISED_DEPTID IS NOT NULL THEN
+			          'true'
+			         ELSE
+			          'false'
+			       END) AS ISCHECKED
+			  FROM AR_SUPERVISOR_INFO T, HR_DEPT_TREE_V HD
+			 WHERE HD.DEPTID = T.SUPERVISED_DEPTID(+)
+			   AND T.AR_SUPERVISOR_ID(+) = #SUPERVISOR_ID:VARCHAR#
+		]]>
+	</select>
+</sqlMap>

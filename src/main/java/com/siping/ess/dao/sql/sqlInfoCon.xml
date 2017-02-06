@@ -1,0 +1,375 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="ess.infoConfirm">
+	 
+	<update id="confirmPersonInfo" parameterClass="linkMap">
+		<![CDATA[  
+		UPDATE ESS_PERSONAL_INFO
+		   SET ACTIVITY = #ACTIVITY#, 
+		       REMARK = #REMARK#,
+		       UPDATE_DATE   = SYSDATE,
+		       UPDATED_BY    = #UPDATED_BY#
+		 WHERE EMPID =#EMPID# AND ACTIVITY = 0
+		]]>
+	</update>
+	<update id="updateHrEmpInfo" parameterClass="linkMap">
+		<![CDATA[  
+		UPDATE HR_EMP_INFO A
+		   SET A.SSN           = #SSN#,
+		       A.HAFN          = #HAFN#,
+		       A.SHIFT_CODE    = #SHIFT_CODE#,
+		       A.SUPPLIER_CODE = #SUPPLIER_CODE#,
+		       UPDATE_DATE     = SYSDATE,
+		       UPDATED_BY      = #UPDATED_BY#
+		 WHERE A.EMPID = #EMPID#
+		]]>
+	</update>
+	
+	<update id="updateHrPersonInfo" parameterClass="linkMap">
+		<![CDATA[  
+UPDATE HR_PERSONAL_INFO A
+   SET DEGREE_CODE           = #DEGREE_CODE#,
+       EDU_HIS_CODE          = #EDU_HIS_CODE#,
+       MAJOR_CODE            = #MAJOR_CODE#,
+       GENDER_CODE           = #GENDER_CODE#,
+       BIRTHDAY              = TO_DATE(#BIRTHDAY#,'YYYY-MM-DD'),
+       RELIGION_CODE         = #RELIGION_CODE#,
+       NATION_CODE           = #NATION_CODE#,
+       NATIONALITY_CODE      = #NATIONALITY_CODE#,
+       BORNPLACE_CODE        = #BORNPLACE_CODE#,
+       POLITY_CODE           = #POLITY_CODE#,
+       MEMBERSHIP            = #MEMBERSHIP#,
+       MARITAL_STATUS_CODE   = #MARITAL_STATUS_CODE#,
+       WEDDING_DATE          = TO_DATE(#WEDDING_DATE#,'YYYY-MM-DD'),
+       IDCARD_TYPE_CODE      = #IDCARD_TYPE_CODE#,
+       IDCARD_NO             = #IDCARD_NO#,
+       IDCARD_PROVINCE       = #IDCARD_PROVINCE#,
+       IDCARD_CITY           = #IDCARD_CITY#,
+       IDCARD_AREA           = #IDCARD_AREA#,
+       IDCARD_ADDRESS        = #IDCARD_ADDRESS#,
+       HOME_PROVINCE         = #HOME_PROVINCE#,
+       HOME_CITY             = #HOME_CITY#,
+       HOME_AREA             = #HOME_AREA#,
+       HOME_ADDRESS          = #HOME_ADDRESS#,
+       IDCARD_POSTALCODE     = #IDCARD_POSTALCODE#,
+       HOME_POSTALCODE       = #HOME_POSTALCODE#,
+       P_EMAIL               = #P_EMAIL#,
+       C_EMAIL               = #C_EMAIL#,
+       OFFICE_PHONE          = #OFFICE_PHONE#,
+       HOME_PHONE            = #HOME_PHONE#,
+       CELLPHONE             = #CELLPHONE#,
+       FAX                   = #FAX#,
+       FILE_RELATION_CODE    = #FILE_RELATION_CODE#,
+       FILE_RELATION_ADDRESS = #FILE_RELATION_ADDRESS#,
+       WORKAGE               = #WORKAGE#,
+       UPDATE_DATE           = SYSDATE,
+       UPDATED_BY            = #UPDATED_BY#
+ WHERE EMPID = #EMPID#
+		]]>
+	</update>
+	<update id="confirmWhInfo" parameterClass="linkMap">
+		<![CDATA[  
+		UPDATE ESS_APPLY_WH
+		   SET ACTIVITY = #ACTIVITY#, 
+		       CON_REMARK = #CON_REMARK#,
+		       UPDATE_DATE   = SYSDATE,
+		       UPDATED_BY    = #UPDATED_BY#
+		 WHERE EMPID =#EMPID# AND ACTIVITY = 0 AND WH_NO = #WH_NO#
+		]]>
+	</update>
+	<update id="confirmOtInfo" parameterClass="linkMap">
+		<![CDATA[  
+		UPDATE ESS_APPLY_OT
+		   SET ACTIVITY = #ACTIVITY#, 
+		       CON_REMARK = #CON_REMARK#,
+		       UPDATE_DATE   = SYSDATE,
+		       UPDATED_BY    = #UPDATED_BY#
+		 WHERE ACTIVITY = 0 AND OT_NO = #APPLY_NO#
+		]]>
+	</update>
+	<update id="confirmLeaveInfo" parameterClass="linkMap">
+		<![CDATA[  
+		UPDATE ESS_APPLY_LEAVE
+		   SET ACTIVITY = #ACTIVITY#, 
+		       CON_REMARK = #CON_REMARK#,
+		       UPDATE_DATE   = SYSDATE,
+		       UPDATED_BY    = #UPDATED_BY#
+		 WHERE ACTIVITY = 0 AND LEAVE_NO = #APPLY_NO#
+		]]>
+	</update>
+	<update id="confirmCardtimeInfo" parameterClass="linkMap">
+		<![CDATA[  
+		UPDATE ESS_APPLY_CARD
+		   SET ACTIVITY = #ACTIVITY#, 
+		       CON_REMARK = #CON_REMARK#,
+		       UPDATE_DATE   = SYSDATE,
+		       UPDATED_BY    = #UPDATED_BY#
+		 WHERE ACTIVITY = 0 AND CARD_NO = #APPLY_NO#
+		]]>
+	</update>
+	<update id="confirmBizInfo" parameterClass="linkMap">
+		<![CDATA[  
+		UPDATE ESS_APPLY_BT
+		   SET ACTIVITY = #ACTIVITY#, 
+		       CON_REMARK = #CON_REMARK#,
+		       UPDATE_DATE   = SYSDATE,
+		       UPDATED_BY    = #UPDATED_BY#
+		 WHERE ACTIVITY = 0 AND BT_NO = #APPLY_NO#
+		]]>
+	</update>
+	
+	<update id="confirmExpInfo" parameterClass="linkMap">
+		<![CDATA[  
+		UPDATE ESS_APPLY_EXP
+		   SET ACTIVITY = #ACTIVITY#, 
+		       CON_REMARK = #CON_REMARK#,
+		       UPDATE_DATE   = SYSDATE,
+		       UPDATED_BY    = #UPDATED_BY#
+		 WHERE ACTIVITY = 0 AND EXP_NO = #APPLY_NO#
+		]]>
+	</update>
+	
+	<update id="confirmToolInfo" parameterClass="linkMap">
+		<![CDATA[
+		DECLARE
+		BEGIN
+		  
+		UPDATE ESS_APPLY_TOOL
+		SET ACTIVITY = #ACTIVITY#, 
+		       CON_REMARK = #CON_REMARK#,
+		       CANCEL_REMARK = #CANCEL_REMARK#,
+		       UPDATE_DATE   = SYSDATE,
+		       UPDATED_BY    = #UPDATED_BY#
+		 WHERE TOOL_NO = #APPLY_NO#;
+		 		
+		 END;
+		]]>
+	</update>
+	
+	<update id="returnToolInfo" parameterClass="linkMap">
+		<![CDATA[  
+		DECLARE
+		BEGIN
+			UPDATE ESS_APPLY_TOOL
+			   SET RETURN_REMARK = #RETURN_REMARK#,
+			       RETURN_TYPE_CODE = #RETURN_TYPE_CODE#,
+			       RETURN_DATE   = SYSDATE,
+			       UPDATED_BY    = #UPDATED_BY#,
+			       ACTIVITY = #ACTIVITY#
+			 WHERE TOOL_NO = #APPLY_NO#;
+			 
+			 UPDATE ASS_ASSET_INFO 
+			    SET STATUS_CODE = #RETURN_TYPE_CODE#,
+			        STATUS_REMARK = #RETURN_REMARK#
+			 WHERE ASSET_ID = (SELECT TOOL_TYPE_CODE FROM ESS_APPLY_TOOL WHERE TOOL_NO = #APPLY_NO# );        
+		 END;
+		]]>
+	</update>
+	
+	<insert id="insertOtAppResult" parameterClass='linkMap'>  
+	<![CDATA[ 
+	INSERT INTO AR_APPLY_RESULT
+	  (APPLY_NO,
+	   EMPID,
+	   APPLY_TYPE,
+	   APPLY_DATE,
+	   FROM_TIME,
+	   TO_TIME,
+	   APPLY_DEDUCT,
+	   APP_TYPE)
+	  SELECT EAO.OT_NO,
+	         EAO.EMPID,
+	         EAO.OT_TYPE_CODE,
+	         EAO.OT_DATE + EAO.OT_DATE_S_FLAG,
+	         TO_DATE(TO_CHAR(EAO.OT_DATE + EAO.OT_DATE_S_FLAG, 'YYYY-MM-DD') || ' ' ||
+	                 EAO.OT_FROM_TIME,
+	                 'YYYY-MM-DD HH24:MI:SS'),
+	         TO_DATE(TO_CHAR(EAO.OT_DATE + EAO.OT_DATE_E_FLAG, 'YYYY-MM-DD') || ' ' ||
+	                 EAO.OT_TO_TIME,
+	                 'YYYY-MM-DD HH24:MI:SS'),
+	         EAO.OT_DEDUCTION,
+	         #APPLY_TYPE#
+	    FROM ESS_APPLY_OT EAO
+	   WHERE EAO.OT_NO = #APPLY_NO#
+	     AND EAO.ACTIVITY = 1 
+		]]>  
+	</insert>
+	
+    <insert id="insertLeaveAppResult" parameterClass='linkMap'>  
+	<![CDATA[ 
+	INSERT INTO AR_APPLY_RESULT
+	  (APPLY_NO,
+	   EMPID,
+	   APPLY_TYPE,
+	   APPLY_DATE,
+	   FROM_TIME,
+	   TO_TIME,
+	   APPLY_DEDUCT,
+	   APP_TYPE)
+	  SELECT EAL.LEAVE_NO,
+	         EAL.EMPID,
+	         EAL.LEAVE_TYPE_CODE,
+	         TO_DATE(TO_CHAR(EAL.LEAVE_FROM_TIME, 'YYYY-MM-DD'), 'YYYY-MM-DD'), 
+	         EAL.LEAVE_FROM_TIME,
+	         EAL.LEAVE_TO_TIME,
+	         0,
+	         #APPLY_TYPE# 
+	    FROM ESS_APPLY_LEAVE EAL
+	   WHERE EAL.LEAVE_NO = #APPLY_NO#
+	     AND EAL.ACTIVITY = 1 
+		]]>  
+	</insert>
+	
+    <insert id="insertCardtimeAppRecord" parameterClass='linkMap'>  
+	<![CDATA[ 
+	INSERT INTO AR_MAC_RECORD
+	  (RECORD_NO,
+	   CARD_ID,
+	   EMPID,
+	   R_TIME,
+	   ATT_DATE,
+	   CARD_DOOR_TYPE,
+	   IN_FLAG,
+	   ACTIVITY,
+	   CREATE_DATE，
+	   CREATED_BY)
+	  SELECT AR_MAC_RECORD_SEQ.NEXTVAL,
+	         EAC.CARD_ID,
+	         EAC.EMPID,
+	         EAC.R_TIME,
+	         EAC.ATT_DATE, 
+	         EAC.CARD_DOOR_TYPE,
+	         'H',
+	         1,
+	         SYSDATE,
+	         #CREATED_BY#
+	    FROM ESS_APPLY_CARD EAC
+	   WHERE EAC.CARD_NO = #APPLY_NO#
+	     AND EAC.ACTIVITY = 1 
+		]]>  
+	</insert>
+	<insert id="insertBTAppResult" parameterClass='linkMap'>  
+	<![CDATA[ 
+	INSERT INTO AR_APPLY_RESULT
+	  (APPLY_NO,
+	   EMPID,
+	   APPLY_TYPE,
+	   APPLY_DATE,
+	   FROM_TIME,
+	   TO_TIME,
+	   APPLY_DEDUCT,
+	   APP_TYPE)
+	  SELECT EABT.BT_NO,
+	         EABT.EMPID,
+	         EABT.BT_TYPE_CODE,
+	         TO_DATE(TO_CHAR(EABT.BT_FROM_TIME, 'YYYY-MM-DD'), 'YYYY-MM-DD'), 
+	         EABT.BT_FROM_TIME,
+	         EABT.BT_TO_TIME,
+	         0,
+	         #APPLY_TYPE# 
+	    FROM ESS_APPLY_BT EABT
+	   WHERE EABT.BT_NO = #APPLY_NO#
+	     AND EABT.ACTIVITY = 1 
+		]]>  
+	</insert>
+	<delete id="deleteAppResult" parameterClass="linkMap">
+	<![CDATA[	
+		     DELETE FROM AR_APPLY_RESULT 
+		      WHERE APPLY_NO = #APPLY_NO# 
+		        AND APP_TYPE = #APPLY_TYPE#
+	]]>
+	</delete>
+
+	<delete id="delArDetail" parameterClass="linkMap">
+	<![CDATA[	
+			DELETE FROM AR_DETAIL ARD
+			 WHERE ARD.EMPID = #EMPID#
+			   AND ARD.APP_TYPE = #APPLY_TYPE#
+			   AND ARD.APP_NO = #APPLY_NO#
+	]]> 
+	</delete>
+
+	<delete id="delEssOtInfo" parameterClass="linkMap">
+	<![CDATA[	
+		DELETE FROM ESS_APPLY_OT WHERE OT_NO = #APPLY_NO#
+	]]>
+	</delete>
+	
+	<delete id="delEssLeaveInfo" parameterClass="linkMap">
+	<![CDATA[	
+		DELETE FROM ESS_APPLY_LEAVE WHERE LEAVE_NO = #APPLY_NO#
+	]]>
+	</delete>
+	 
+	<delete id="delEssExpDetailInfo" parameterClass="linkMap">
+	<![CDATA[	
+		DELETE FROM ESS_APPLY_EXP_DETAIL WHERE EXP_NO = #APPLY_NO#
+	]]>
+	</delete>
+	<delete id="delEssExpInfo" parameterClass="linkMap">
+	<![CDATA[	
+		DELETE FROM ESS_APPLY_EXP WHERE EXP_NO = #APPLY_NO#
+	]]>
+	</delete>
+	<delete id="delEssWhInfo" parameterClass="linkMap">
+	<![CDATA[	
+		DELETE FROM ESS_APPLY_WH WHERE WH_NO = #APPLY_NO#
+	]]>
+	</delete>
+	
+	<delete id="delEssToolInfo" parameterClass="linkMap">
+	<![CDATA[	
+		DELETE FROM ESS_APPLY_TOOL WHERE TOOL_NO = #APPLY_NO#
+	]]>
+	</delete>
+	
+	<delete id="delEssBTInfo" parameterClass="linkMap">
+	<![CDATA[	
+		DELETE FROM ESS_APPLY_BT WHERE BT_NO = #APPLY_NO#
+	]]>
+	</delete>
+	
+	<delete id="delEssCardtimeInfo" parameterClass="linkMap">
+	<![CDATA[	
+		DELETE FROM ESS_APPLY_CARD WHERE CARD_NO = #APPLY_NO#
+	]]>
+	</delete>
+	 
+	<delete id="delEssAffirm" parameterClass="linkMap">
+	<![CDATA[	
+		DELETE FROM ESS_AFFIRM WHERE APPLY_NO = #APPLY_NO# AND APPLY_TYPE = #APPLY_TYPE#
+	]]>
+	</delete> 
+	 
+	<delete id="delAttRecordDetail" parameterClass="linkMap">
+	<![CDATA[	
+		     DELETE FROM AR_DETAIL 
+		      WHERE EMPID = #EMPID#   
+		        AND AR_DATE_STR = (SELECT TO_CHAR(ATT_DATE,'YYYY/MM/DD') FROM ESS_APPLY_CARD EAC WHERE EAC.CARD_NO = #APPLY_NO#) 
+	]]>
+	</delete>
+	<delete id="delAttRecord" parameterClass="linkMap">
+	<![CDATA[	
+		     DELETE FROM AR_MAC_RECORD 
+		      WHERE EMPID = #EMPID#  
+		        AND R_TIME = (SELECT R_TIME FROM ESS_APPLY_CARD EAC WHERE EAC.CARD_NO = #APPLY_NO#)
+		        AND ATT_DATE = (SELECT ATT_DATE FROM ESS_APPLY_CARD EAC WHERE EAC.CARD_NO = #APPLY_NO#)
+		        AND CARD_DOOR_TYPE = (SELECT CARD_DOOR_TYPE FROM ESS_APPLY_CARD EAC WHERE EAC.CARD_NO = #APPLY_NO#)
+	]]>
+	</delete>
+	<delete id="delArAppResult" parameterClass="linkMap">
+	<![CDATA[	
+		     DELETE FROM AR_APPLY_RESULT 
+		      WHERE APPLY_NO = #APPLY_NO# 
+		        AND APP_TYPE = #APPLY_TYPE#
+	]]>
+	</delete>
+	
+	<delete id="delPersonInfo" parameterClass="linkMap">
+		<![CDATA[
+			 DELETE ESS_PERSONAL_INFO WHERE EMPID =#EMPID#
+		]]>
+	</delete>
+</sqlMap>

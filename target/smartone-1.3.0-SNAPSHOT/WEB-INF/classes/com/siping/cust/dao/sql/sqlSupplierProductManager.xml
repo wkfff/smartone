@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap  PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="cust.SupplierProduct" >
+
+<sql id="supplier_productCondition">
+    <isNotEmpty prepend="AND" property="keyWord">
+        (SUP_PRO.PRODUCT_NAME LIKE CONCAT('%',TRIM(#keyWord#),'%')
+        OR SUP_PRO.PRODUCT_ID LIKE CONCAT('%',TRIM(#keyWord#),'%')
+        OR PS.SUPPLIER_NAME LIKE CONCAT('%',TRIM(#keyWord#),'%')
+    </isNotEmpty>
+
+    <isNotEmpty prepend="AND" property="STATUS">
+        SUP_PRO.ACTIVITY=#STATUS:NUMBER#
+    </isNotEmpty>
+
+    <isNotEmpty prepend="" property="sortname">
+        <![CDATA[
+            ORDER BY $sortname$ $sortorder$
+        ]]>
+    </isNotEmpty>
+    <isEmpty prepend="" property="sortname" >
+        <![CDATA[
+            ORDER BY SUP_PRO.CREATE_DATE DESC
+        ]]>
+    </isEmpty>
+</sql>
+    <insert id="addNewSupplierProduct" parameterClass="linkMap" >
+    
+        <![CDATA[
+            INSERT INTO PROSTOR_SUPPLIER_PRODUCT(
+                
+                PRODUCT_ID,
+                SUPPLIER_NO,
+                PRODUCT_NAME,
+                SPECIFICATION,
+                UNIT_PRICE,
+                UNIT_CODE_ID,
+                PRODUCT_CATEGORY_ID,
+                CREATE_DATE,
+                CREATED_BY,
+                ACTIVITY,
+                CPNY_ID)
+            VALUES(
+                
+                #PRODUCT_ID#,
+                #SUPPLIER#,
+                #PRODUCT_NAME#,
+                #SPECIFICATION#,
+                #UNIT_PRICE#,
+                #UNIT_CODE_ID#,
+                #PRODUCT_CATEGORY_ID#,
+                NOW(),
+                #CREATED_BY#,
+                #ACTIVITY#,
+                #CPNY_ID#
+            )
+        ]]>
+    </insert> 
+
+    <select id="getSupplierProductCnt"  resultClass="int">
+        <![CDATA[
+            SELECT COUNT(0)
+            FROM PROSTOR_SUPPLIER_PRODUCT SUP_PRO LEFT JOIN PROSTOR_SUPPLIER PS ON(SUP_PRO.SUPPLIER_NO = PS.SUPPLIER_NO)
+                 LEFT JOIN SY_ADMIN A ON(SUP_PRO.CREATED_BY = A.ADMINID)
+                 LEFT JOIN SY_ADMIN B ON(SUP_PRO.UPDATED_BY = B.ADMINID)
+                 LEFT JOIN SY_CODE C  ON(SUP_PRO.UNIT_CODE_ID = C.CODE_ID)
+            WHERE
+                    SUP_PRO.CPNY_ID = #CPNY_ID#
+        ]]>
+        <include refid="supplier_productCondition"/>
+    </select>
+
+    <select id="getSupplierProductList" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT
+                SUP_PRO.PRODUCT_NO,
+                SUP_PRO.SUPPLIER_NO,
+                SUP_PRO.PRODUCT_ID,
+                PS.SUPPLIER_NAME,
+                A.USERNAME CREATED_USERNAME,
+                B.USERNAME UPDATED_USERNAME,
+                SUP_PRO.PRODUCT_NAME,
+                SUP_PRO.SPECIFICATION,
+                SUP_PRO.UNIT_PRICE,
+                SUP_PRO.ACTIVITY,
+                C.CODE_NAME UNIT_CODE,
+                SUP_PRO.PRODUCT_CATEGORY_ID,
+                CAT.CATEGORY_NAME
+            FROM PROSTOR_SUPPLIER_PRODUCT SUP_PRO LEFT JOIN PROSTOR_SUPPLIER PS ON(SUP_PRO.SUPPLIER_NO = PS.SUPPLIER_NO)
+                 LEFT JOIN SY_ADMIN A ON(SUP_PRO.CREATED_BY = A.ADMINID)
+                 LEFT JOIN SY_ADMIN B ON(SUP_PRO.UPDATED_BY = B.ADMINID)
+                 LEFT JION SY_CODE C  ON(SUP_PRO.UNIT_CODE_ID = C.CODE_ID)
+                 LEFT JOIN SY_CATEGORY CAT ON(SUP_PRO.PRODUCT_CATEGORY_ID = CAT.CATEGORY_ID)
+            WHERE
+                 SUP_PRO.CPNY_ID = #CPNY_ID#
+               
+        ]]>
+        <include refid="supplier_productCondition"/>
+    </select>
+    
+    <update id="updateSupplierProduct" parameterClass="linkMap">
+        <![CDATA[
+            UPDATE PROSTOR_SUPPLIER_PRODUCT
+                SET 
+                    UPDATED_BY=#UPDATED_BY#,
+                    UPDATE_DATE=NOW(),
+                    PRODUCT_NAME=#PRODUCT_NAME#,
+                    SPECIFICATION=#SPECIFICATION#,
+                    UNIT_PRICE=#UNIT_PRICE#,
+                    UNIT_CODE_ID=#UNIT_CODE_ID#,
+                    PRODUCT_CATEGORY_ID=#PRODUCT_CATEGORY_ID#,
+                    ACTIVITY=#ACTIVITY#
+                WHERE
+                    PRODUCT_NO=#PRODUCT_NO#
+                    AND
+                    SUPPLIER_NO=#SUPPLIER#
+        ]]>
+    </update>
+
+    <delete id="deleteSupplierProduct" parameterClass="linkMap">
+        <![CDATA[
+            DELETE FROM PROSTOR_SUPPLIER_PRODUCT
+               WHERE
+                  PRODUCT_NO=#PRODUCT_NO#
+                  AND
+                  SUPPLIER_NO=#SUPPLIER#
+        ]]>
+    </delete>
+    
+    <select id="checkSupplierProIdCnt"  resultClass="int">
+        <![CDATA[
+            SELECT COUNT(0)
+            FROM PROSTOR_SUPPLIER_PRODUCT SUP_PRO
+            WHERE SUP_PRO.PRODUCT_ID = #PRODUCT_ID#
+            AND SUP_PRO.CPNY_ID = #CPNY_ID#
+        ]]>
+    </select>
+</sqlMap>

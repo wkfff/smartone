@@ -1,0 +1,313 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="att.empShift">
+
+	<select id="getShift010" resultClass="linkMap">
+		<![CDATA[
+			  SELECT SHIFT_NO, 
+			         SHIFT_NAME, 
+			         SHIFT_EN_NAME
+			  FROM AR_SHIFT010 
+			  ORDER BY SHIFT_NO, SHIFT_NAME
+			  ]]>
+	</select>
+
+	<procedure id="CalladdEmpShift" parameterClass="linkMap" >
+		<![CDATA[
+			{call ar_make_schedule(#TYPE#,#ID#,to_date(#FROM_DATE#,'YYYY-MM-DD'),to_date(#TO_DATE#,'YYYY-MM-DD'),#SHIFT_NO#,#ADMINID# ) }
+          ]]>
+	</procedure>
+	
+	<sql id="getSchedulingEmpInfoCondition">
+		<isNotEmpty prepend="AND" property="PK_NO">
+			<![CDATA[
+		 		  T.PK_NO = #PK_NO:NUMERIC# 
+		    ]]>
+		</isNotEmpty> 
+
+		<isNotEmpty prepend="AND" property="EMPID">
+			<![CDATA[
+		 		  T.EMPID = #EMPID:VARCHAR# 
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="SHIFT_NO">
+			<![CDATA[
+		 		  T.SHIFT_NO = #SHIFT_NO:VARCHAR# 
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="sDate">
+			<isNotEmpty prepend="" property="eDate">
+				<![CDATA[
+				   HR.JOIN_DATE BETWEEN TO_DATE(#sDate#, 'YYYY-MM-DD') AND
+				       TO_DATE(#eDate#, 'YYYY-MM-DD')
+			    ]]>
+			</isNotEmpty>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+		 		  ( HR.EMPID LIKE '%' || TRIM(#keyWord:VARCHAR#) || '%' 
+		 		  OR HR.CHINESENAME LIKE '%' || TRIM(#keyWord:VARCHAR#) || '%' 
+		 		  OR HR.CHINESE_PINYIN LIKE '%' || TRIM(#keyWord:VARCHAR#) || '%'
+		 		  OR HR.ENGLISHNAME LIKE '%' || TRIM(#keyWord:VARCHAR#) || '%') 
+		    ]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="AND" property="DEPTID">
+			<![CDATA[
+		 		  EXISTS(
+		 		  	SELECT * FROM HR_DEPARTMENT WHERE HR_DEPARTMENT.DEPTID!='00110000'
+		 		  )
+		    ]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="AND" property="AR_ADMIN_ID">
+			<![CDATA[
+		 		  EXISTS(
+		 		  	SELECT *
+					  FROM AR_SUPERVISOR_INFO
+					 WHERE AR_SUPERVISOR_INFO.SUPERVISED_DEPTID = HR.DEPTID
+					   AND AR_SUPERVISOR_ID = #AR_ADMIN_ID:VARCHAR#
+		 		  )
+		    ]]>
+		</isNotEmpty>
+
+	</sql>
+
+	<select id="getSchedulingEmpInfo" parameterClass="linkMap"
+		resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT T.PK_NO,
+			       T.EMPID,
+			       DECODE(#language#, 'en', HR.ENGLISHNAME, HR.CHINESENAME) CHINESENAME,
+			       DECODE(#language#, 'en', HD.DEPT_EN_NAME, HD.DEPTNAME) DEPTNAME,
+			       HR.STATUS_CODE,
+			       DECODE(#language#, 'en', A.CODE_EN_NAME, A.CODE_NAME) STATUS_NAME,
+			       TO_CHAR(HR.JOIN_DATE,'YYYY-MM-DD') JOIN_DATE,
+			       T.AR_ITEM_NO,
+			       T.FROM_TIME,
+			       T.TO_TIME,
+			       T.SHIFT_NO,
+			       T.AR_DATE_STR,
+			       T.AR_MONTH_STR,
+			       T.LOCK_YN
+			  FROM (SELECT P.*
+			          FROM (SELECT O.*,
+			                       ROW_NUMBER() OVER(PARTITION BY O.EMPID ORDER BY O.AR_DATE_STR DESC) ROW_NUMBER
+			                  FROM AR_SCHEDULE O) P
+			         WHERE P.ROW_NUMBER = 1) T,
+			       HR_EMPLOYEE HR,
+			       HR_DEPARTMENT HD,
+			       SY_CODE A
+			 WHERE T.EMPID = HR.EMPID
+			   AND HR.DEPTID = HD.DEPTID
+			   AND HR.STATUS_CODE = A.CODE_ID(+)
+		 ]]>
+
+		<include refid="getSchedulingEmpInfoCondition" />
+
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		  ORDER BY $sortname$ $sortorder$
+		    ]]>
+		</isNotEmpty>
+
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY T.EMPID
+			]]>
+		</isEmpty>
+	</select>
+
+	<select id="getSchedulingEmpInfoCnt" parameterClass="linkMap"
+		resultClass="int">
+		<![CDATA[
+			SELECT COUNT(*)
+			  FROM (SELECT P.*
+			          FROM (SELECT O.*,
+			                       ROW_NUMBER() OVER(PARTITION BY O.EMPID ORDER BY O.AR_DATE_STR DESC) ROW_NUMBER
+			                  FROM AR_SCHEDULE O) P
+			         WHERE P.ROW_NUMBER = 1) T,
+			       HR_EMPLOYEE HR,
+			       HR_DEPARTMENT HD,
+			       SY_CODE A
+			 WHERE T.EMPID = HR.EMPID
+			   AND HR.DEPTID = HD.DEPTID
+			   AND HR.STATUS_CODE = A.CODE_ID(+)
+		]]>
+
+		<include refid="getSchedulingEmpInfoCondition" />
+
+	</select>
+	
+	<sql id="getEmpShiftDetailInfoCondition">
+		<isNotEmpty prepend="AND" property="PK_NO">
+			<![CDATA[
+		 		  T.PK_NO = #PK_NO:NUMERIC# 
+		    ]]>
+		</isNotEmpty> 
+
+		<isNotEmpty prepend="AND" property="EMPID">
+			<![CDATA[
+		 		  T.EMPID = #EMPID:VARCHAR# 
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="SHIFT_NO">
+			<![CDATA[
+		 		  T.SHIFT_NO = #SHIFT_NO:VARCHAR# 
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="sDate">
+			<isNotEmpty prepend="" property="eDate">
+				<![CDATA[
+				   TO_DATE(T.AR_DATE_STR, 'YYYY-MM-DD') BETWEEN TO_DATE(#sDate#, 'YYYY-MM-DD') AND
+				       TO_DATE(#eDate#, 'YYYY-MM-DD')
+			    ]]>
+			</isNotEmpty>
+		</isNotEmpty> 
+	</sql>
+
+	<select id="getEmpShiftDetailInfo" parameterClass="linkMap"
+		resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT T.PK_NO,
+			       T.EMPID,
+			       DECODE(#language#, 'en', HR.ENGLISHNAME, HR.CHINESENAME) CHINESENAME,
+			       TO_CHAR(HR.JOIN_DATE,'YYYY-MM-DD') JOIN_DATE,
+			       T.AR_ITEM_NO,
+			       T.FROM_TIME,
+			       T.TO_TIME,
+			       T.SHIFT_NO,
+			       DECODE(#language#, 'en', A.SHIFT_EN_NAME, A.SHIFT_NAME) SHIFT_NAME,
+			       replace(T.AR_DATE_STR,'/','-') AR_DATE_STR,
+			       T.AR_MONTH_STR,
+			       T.LOCK_YN
+			  FROM AR_SCHEDULE T,
+			       HR_EMPLOYEE HR,
+			       AR_SHIFT010 A
+			 WHERE T.EMPID = HR.EMPID
+			   AND T.SHIFT_NO = A.SHIFT_NO(+)
+		 ]]>
+
+		<include refid="getEmpShiftDetailInfoCondition" />
+
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		  ORDER BY $sortname$ $sortorder$
+		    ]]>
+		</isNotEmpty>
+
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY T.AR_DATE_STR
+			]]>
+		</isEmpty>
+	</select>
+
+	<select id="getEmpShiftDetailInfoCnt" parameterClass="linkMap"
+		resultClass="int">
+		<![CDATA[
+			SELECT COUNT(*)
+			 FROM AR_SCHEDULE T,
+			       HR_EMPLOYEE HR,
+			       AR_SHIFT010 A
+			 WHERE T.EMPID = HR.EMPID
+			   AND T.SHIFT_NO = A.SHIFT_NO(+)
+		]]> 
+		<include refid="getEmpShiftDetailInfoCondition" /> 
+	</select>
+	
+	<select id="getShiftSelectedInfo" parameterClass="linkMap"
+		resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT T.PK_NO, 
+			       T.SHIFT_NO,
+			       T.ORDERNO,
+			       DECODE(#language#, 'en', A.SHIFT_EN_NAME, A.SHIFT_NAME) SHIFT_NAME
+			  FROM T_AR_SCHEDULE T, 
+			       AR_SHIFT010 A
+			 WHERE T.SHIFT_NO = A.SHIFT_NO(+)
+		 ]]> 
+		<isNotEmpty prepend="AND" property="FROM_DATE">
+			<![CDATA[
+		 		  T.FROM_DATE = TO_DATE(#FROM_DATE#,'YYYY-MM-DD')
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="TO_DATE">
+			<![CDATA[
+		 		  T.TO_DATE = TO_DATE(#TO_DATE#,'YYYY-MM-DD')
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="ID">
+			<![CDATA[
+		 		  T.ID = #ID#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="CREATED_BY">
+			<![CDATA[
+		 		  T.CREATED_BY = #CREATED_BY#
+		    ]]>
+		</isNotEmpty>
+			<![CDATA[
+			      ORDER BY T.ORDERNO
+		    ]]>
+	</select>
+	
+	<insert id="addShiftedInfo" parameterClass="linkMap" >
+		<![CDATA[
+			INSERT INTO T_AR_SCHEDULE (
+					PK_NO,
+					ID,
+					FROM_DATE,
+					TO_DATE,
+					SHIFT_NO,
+					ORDERNO,
+					CREATED_BY
+				)
+				VALUES(
+					T_AR_SCHEDULE_SEQ.NEXTVAL , 
+					#ID:VARCHAR#,
+					TO_DATE(#FROM_DATE:VARCHAR#,'YYYY-MM-DD'),
+					TO_DATE(#TO_DATE:VARCHAR#,'YYYY-MM-DD'),
+					#SHIFT_NO:NUMERIC#,
+					T_ORDERNO_SEQ.NEXTVAL,
+					#CREATED_BY#
+				)
+		]]>
+	</insert>
+	<delete id="deleteShiftedInfo" parameterClass="linkMap" >
+		<![CDATA[ 
+			DELETE T_AR_SCHEDULE WHERE 1 = 1
+		]]> 
+		<isNotEmpty prepend="AND" property="PK_NO">
+			<![CDATA[ 
+				PK_NO = #PK_NO#
+			]]>  
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="CREATED_BY">
+			<![CDATA[ 
+				CREATED_BY = #CREATED_BY#
+			]]>  
+		</isNotEmpty>
+	</delete>
+	<update id="upShiftedInfo" parameterClass="linkMap" >
+		<![CDATA[ 
+			UPDATE T_AR_SCHEDULE SET
+					ORDERNO = ORDERNO - 16
+			WHERE PK_NO = #PK_NO#
+		]]>
+	</update> 
+	<update id="downShiftedInfo" parameterClass="linkMap" >
+		<![CDATA[ 
+			UPDATE T_AR_SCHEDULE SET
+					ORDERNO = ORDERNO + 16
+			WHERE PK_NO = #PK_NO#
+		]]>
+	</update>
+</sqlMap>

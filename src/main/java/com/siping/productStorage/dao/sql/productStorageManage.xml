@@ -1,0 +1,587 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap  PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="productStorage.proStorageManage">
+    <!-- 获取未出库的销售订单 -->
+    <select id="getSaleOrderList" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT PSO.SALES_ORDER_ID,
+                    PSO.SALES_ORDER_NO,
+                    PSO.INVOICE_TITLE,
+                    PSO.DISCOUNT_PRICE TOTAL_MONEY,
+                    PSO.CONSIGNEE,
+                    PSO.CUST_NO,
+                    PSO.DELIVERY_ADDRESS,
+                    PSO.DISCOUNT,
+                   (case SA.ACCOUNT_TYPE when 'EM' then HRE.CHINESENAME
+when 'CU' then CUST_INFO.CUST_NAME
+else CUST_INFO.CUST_NAME end ) ORDERED_PERSON,
+                    CBI.CUST_NAME,
+                    PSO.RECEIVER_MOBILE MOBILEPHONE,
+                   date_format(PSO.ORDER_DATE,'%Y-%m-%d %H:%i:%s') ORDER_DATE,
+                    PSM.SALES_MODE_NAME,
+                    PSO.SALES_MODEL_NO
+            FROM PROSTOR_SALES_ORDER PSO left join 
+                PROSTOR_SALES_MODEL PSM on  PSO.SALES_MODEL_NO = PSM.SALES_MODE_NO
+                left join HR_EMPLOYEE         HRE on PSO.EMPID = HRE.EMPID
+                left join CUST_BASIC_INFO     CBI on PSO.CUST_NO = CBI.CUST_NO
+                left join CUST_BASIC_INFO     CUST_INFO on PSO.EMPID = CUST_INFO.CUST_ID
+                left join SY_ADMIN            SA on PSO.EMPID = SA.ADMINID
+            WHERE
+              PSO.ACTIVITY = 1
+                AND PSO.STATUS <> 'outStatus1'
+                AND PSO.AFFIRM_FLAG = 'affirm1'
+                AND PSO.CPNY_ID = #CPNY_ID#
+        ]]>
+        <isNotEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+                (PSO.SALES_ORDER_ID LIKE concat('%',TRIM(#keyWord#),'%')
+                OR PSO.INVOICE_TITLE LIKE concat('%',TRIM(#keyWord#),'%')
+                OR PSO.CONSIGNEE LIKE concat('%',TRIM(#keyWord#),'%')
+                OR CBI.CUST_NAME LIKE concat('%',TRIM(#keyWord#),'%')
+                OR HRE.CHINESENAME LIKE concat('%',TRIM(#keyWord#),'%'))
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY PSO.ORDER_DATE DESC
+            ]]>
+        </isEmpty>
+    </select>
+    <!-- 获取未出库的销售订单 数量-->
+    <select id="getSaleOrderListCnt" resultClass="int" parameterClass="linkMap">
+        <![CDATA[
+            SELECT COUNT(PSO.SALES_ORDER_ID)
+            FROM PROSTOR_SALES_ORDER PSO left join 
+                PROSTOR_SALES_MODEL PSM on PSO.SALES_MODEL_NO = PSM.SALES_MODE_NO
+                left join HR_EMPLOYEE         HRE on PSO.EMPID = HRE.EMPID
+                left join CUST_BASIC_INFO     CBI on PSO.CUST_NO = CBI.CUST_NO
+            WHERE 
+                  PSO.ACTIVITY = 1
+                AND PSO.STATUS = 'outStatus0'
+                AND PSO.AFFIRM_FLAG = 'affirm1'
+                AND PSO.CPNY_ID = #CPNY_ID#
+        ]]>
+        <isNotEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+                (PSO.SALES_ORDER_ID LIKE concat('%',TRIM(#keyWord#),'%')
+                OR PSO.INVOICE_TITLE LIKE concat('%',TRIM(#keyWord#),'%')
+                OR PSO.CONSIGNEE LIKE concat('%',TRIM(#keyWord#),'%')
+                OR CBI.CUST_NAME LIKE concat('%',TRIM(#keyWord#),'%')
+                OR HRE.CHINESENAME LIKE concat('%',TRIM(#keyWord#),'%'))
+            ]]>
+        </isNotEmpty>
+    </select>
+    <!-- 获取销售订单 货品的详细情况-->
+    <select id="getSalesOrderDetail" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+        SELECT PP.PRODUCT_NAME,
+               PP.PRODUCT_ID,
+               PP.PRODUCT_CAS,
+               PP.PRODUCT_NUM,
+               PP.SPECIFICATION,
+               PP.PRODUCT_NO,
+                PP.REMARK,
+                A.CODE_NAME UNIT_NAME,
+                B.CATEGORY_NAME PRODUCT_CATEGORY,
+                PPSM.PRICE,
+                PSOD.DISCOUNT,
+                PSOD.DISCOUNT_MONEY MONEY_SUM,
+                PSOD.QUANTITY,
+                PSOD.OUT_QUANTITY OUT_QUANTITY
+        FROM PROSTOR_SALES_ORDER_DETAIL PSOD left join 
+            PROSTOR_PRODUCT PP on PSOD.PRODUCT_NO = PP.PRODUCT_NO
+            left join PROSTOR_PRODUCT_SALES_MODEL PPSM on  PSOD.PRODUCT_NO = PPSM.PRODUCT_NO
+           left join  SY_CODE A on PP.UNIT_CODE_ID = A.CODE_ID
+          left join   SY_CATEGORY B on PP.PRODUCT_CATEGORY_ID = B.CATEGORY_ID
+        WHERE PSOD.ACTIVITY = 1
+            AND PSOD.SALES_ORDER_NO = #SALES_ORDER_NO#
+            AND PPSM.SALES_MODE_NO = #SALES_MODE_NO#
+            AND PSOD.CPNY_ID = #CPNY_ID#
+        ]]>
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY PP.PRODUCT_ID
+            ]]>
+        </isEmpty>
+    </select>
+    <!-- 获取销售订单 货品的数量-->
+    <select id="getSalesOrderDetailCnt" resultClass="int" parameterClass="linkMap">
+        <![CDATA[
+        SELECT COUNT(PP.PRODUCT_ID)
+        FROM PROSTOR_SALES_ORDER_DETAIL PSOD left join 
+            PROSTOR_PRODUCT PP on PSOD.PRODUCT_NO = PP.PRODUCT_NO
+           left join  PROSTOR_PRODUCT_SALES_MODEL PPSM on PSOD.PRODUCT_NO = PPSM.PRODUCT_NO
+           left join  SY_CODE A on PP.UNIT_CODE_ID = A.CODE_ID
+            left join SY_CATEGORY B on PP.PRODUCT_CATEGORY_ID = B.CATEGORY_ID
+        WHERE 
+             PSOD.ACTIVITY = 1
+            AND PSOD.SALES_ORDER_NO = #SALES_ORDER_NO#
+            AND PPSM.SALES_MODE_NO = #SALES_MODE_NO#
+            AND PSOD.CPNY_ID = #CPNY_ID#
+        ]]>
+    </select>
+    <select id="getSalesOrderInfo" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+        SELECT PSOD.PRODUCT_NAME,
+               PSOD.PRODUCT_ID,
+               PP.PRODUCT_CAS,
+               PP.PRODUCT_NUM,
+               PSOD.SPECIFICATION,
+               PP.PRODUCT_NO,
+               PSOD.REMARKS REMARK,
+               PP.CODE_NAME UNIT_NAME,
+               PP.CATEGORY_NAME PRODUCT_CATEGORY,
+               PSOD.PRICE,
+               PSOD.DISCOUNT,
+               PSOD.DISCOUNT_MONEY MONEY_SUM,
+               PSOD.QUANTITY,
+               PSOD.OUT_QUANTITY OUT_QUANTITY
+        FROM PROSTOR_SALES_ORDER_DETAIL PSOD left join 
+            (SELECT
+                P.PRODUCT_CAS,
+                P.PRODUCT_NUM,
+                P.PRODUCT_NO,
+                A.CODE_NAME,
+                B.CATEGORY_NAME
+             FROM PROSTOR_PRODUCT P left join 
+                SY_CODE A on P.UNIT_CODE_ID = A.CODE_ID
+               left join  SY_CATEGORY B on P.PRODUCT_CATEGORY_ID = B.CATEGORY_ID
+             WHERE P.CPNY_ID=#CPNY_ID#
+             ) PP on PSOD.PRODUCT_NO = PP.PRODUCT_NO
+        WHERE 
+         PSOD.ACTIVITY = 1
+            AND PSOD.SALES_ORDER_NO = #SALES_ORDER_NO#
+            AND PSOD.CPNY_ID = #CPNY_ID#
+        ]]>
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY PSOD.PRODUCT_ID
+            ]]>
+        </isEmpty>
+    </select>
+    <!-- 获取销售订单 货品的数量-->
+    <select id="getSalesOrderInfoCnt" resultClass="int" parameterClass="linkMap">
+        <![CDATA[
+        SELECT COUNT(PP.PRODUCT_ID)
+        FROM PROSTOR_SALES_ORDER_DETAIL PSOD left join 
+            PROSTOR_PRODUCT PP on  PSOD.PRODUCT_NO = PP.PRODUCT_NO
+           left join  PROSTOR_PRODUCT_SALES_MODEL PPSM on PSOD.PRODUCT_NO = PPSM.PRODUCT_NO
+           left join  SY_CODE A on  PP.UNIT_CODE_ID = A.CODE_ID
+           left join  SY_CATEGORY B on PP.PRODUCT_CATEGORY_ID = B.CATEGORY_ID
+        WHERE PSOD.ACTIVITY = 1
+            AND PSOD.SALES_ORDER_NO = #SALES_ORDER_NO#
+            AND PPSM.SALES_MODE_NO = #SALES_MODE_NO#
+            AND PSOD.CPNY_ID = #CPNY_ID#
+        ]]>
+    </select>
+    <!-- 获取货品在仓库的库存数量 -->
+    <select id="getLeftQuantity" resultClass="double" parameterClass="linkMap">
+        <![CDATA[
+        SELECT ifnull((SELECT PSP.LEFT_QUANTITY
+        FROM PROSTOR_STORAGE_PRODUCT PSP 
+        WHERE PSP.STORAGE_NO = #STORAGE_NO#
+              AND PSP.PRODUCT_NO = #PRODUCT_NO#
+              AND PSP.CPNY_ID = #CPNY_ID#
+              AND PSP.ACTIVITY = 1),0) LEFT_QUANTITY FROM DUAL
+        ]]>
+    </select>
+    <!-- 获取出库单流水号 -->
+    <select id="getSerialNum" resultClass="string" >
+        <![CDATA[
+            SELECT fn_sy_outstorage_serial_num() FROM DUAL
+        ]]>
+    </select>
+    <insert id="insertOutInfo" parameterClass="linkMap">
+        <![CDATA[
+            INSERT INTO PROSTOR_OUTSTORAGE_INFO(
+                   OUTSTORAGE_NO,
+                   OUTSTORAGE_ID,
+                   SALES_ORDER_ID,
+                   CUST_NO,
+                   CUST_NAME,
+                   CREATE_DATE,
+                   CREATED_BY,
+                   OPERATOR,
+                   PHONE_NUM,
+                   REMARKS,
+                   OUT_DATE,
+                   CPNY_ID,
+                   MONEY,
+                   DISCOUNT,
+                   DIS_MONEY
+            )VALUES(
+                   PROSTOR_OUTSTORAGE_INFO_SEQ.NEXTVAL,
+                   #OUTSTORAGE_ID#,
+                   #SALES_ORDER_ID#,
+                   #CUST_NO#,
+                   #CUST_NAME#,
+                   SYSDATE,
+                   #UPDA_BY#,
+                   #OPERATOR#,
+                   #PHONE_NUM#,
+                   #OUT_REMARKS#,
+                  str_to_date(#OUT_DATE#,'%Y-%m-%d hh24:mi:ss'),
+                   #COMP_ID#,
+                   TO_NUMBER(#MONEY#),
+                   TO_NUMBER(#DISCOUNT#),
+                   TO_NUMBER(#DIS_MONEY#)
+            )
+        ]]>
+    </insert>
+    <parameterMap id="orderDetail" class="linkMap" >
+        <parameter property="STOR_NO" jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="STOR_NAME" jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="PRO_NO" jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="PRO_NAME" jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="PRO_PRICE" jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="CURR_OUT_NUM" jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="SAL_ORD_NO" jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="UPDA_BY" jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="COMP_ID" jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="SERIALNUM" jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="PRO_ID" jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="PRO_NUM" jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="PRO_CAS" jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="SPECIFICATION" jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="UNIT_NAME" jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="DISCOUNT" jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="returnMsg" jdbcType="VARCHAR" javaType="java.lang.String" mode="INOUT"/>
+    </parameterMap>
+    <!-- 出库操作 -->
+    <procedure id="insertOutDetail" parameterMap="orderDetail">
+        <![CDATA[
+             {CALL PRO_DOOUTOFSTORAGE(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)}
+        ]]>
+    </procedure>
+    <sql id="viewOutStorHistoryListCondition">
+        <isNotEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+                (
+                    POI.OUTSTORAGE_ID LIKE concat('%',TRIM(#keyWord#),'%')
+                    OR POI.SALES_ORDER_ID LIKE concat('%',TRIM(#keyWord#),'%')
+                    OR POI.CUST_NAME LIKE concat('%',TRIM(#keyWord#),'%')
+                    OR POI.OPERATOR LIKE concat('%',TRIM(#keyWord#),'%')
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="FROM_DATE">
+            <![CDATA[
+                POI.OUT_DATE >=str_to_date(#FROM_DATE#,'%Y-%m-%d')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="TO_DATE">
+            <![CDATA[
+                POI.OUT_DATE <=str_to_date(#TO_DATE#,'%Y-%m-%d')
+            ]]>
+        </isNotEmpty>
+    </sql>
+    <!--出库历史记录-->
+    <select id="viewOutStorHistoryList" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT POI.OUTSTORAGE_ID,
+                   POI.SALES_ORDER_ID,
+                   POI.MONEY,
+                   POI.DISCOUNT,
+                   POI.DIS_MONEY,
+                   POI.CUST_NAME,
+                  date_format(POI.OUT_DATE,'%Y-%m-%d %H:%i:%s') OUT_DATE,
+                   POI.OPERATOR,
+                   POI.REMARKS
+            FROM PROSTOR_OUTSTORAGE_INFO POI
+            WHERE POI.ACTIVITY = 1
+                  AND POI.CPNY_ID = #CPNY_ID#
+        ]]>
+        <include refid="viewOutStorHistoryListCondition"/>
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY POI.CREATE_DATE DESC
+            ]]>
+        </isEmpty>
+    </select>
+    <!-- 出库历史记录数量-->
+    <select id="viewOutStorHistoryListCnt" resultClass="int" parameterClass="linkMap">
+        <![CDATA[
+            SELECT COUNT(POI.OUTSTORAGE_ID)
+            FROM PROSTOR_OUTSTORAGE_INFO POI
+            WHERE POI.ACTIVITY = 1
+                  AND POI.CPNY_ID = #CPNY_ID#
+        ]]>
+    </select>
+    
+    <!--出库历史记录单详情-->
+    <select id="viewOutStorHistoryDetail" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT POP.OUTSTORAGE_ID,
+                   POP.PRODUCT_NO,
+                   POP.PRODUCT_ID,
+                   POP.PRODUCT_NAME,
+                   POP.PRODUCT_NUM,
+                   POP.SPECIFICATION,
+                   POP.PRODUCT_NAME||POP.SPECIFICATION NAME_SPECIFICATION,
+                   POP.PRODUCT_CAS,
+                   POP.UNIT_NAME,
+                   POP.PRICE,
+                   POP.DIS_MONEY,
+                   POP.DISCOUNT,
+                   POP.QUANTITY,
+                   POP.MONEY,
+                   POP.STORAGE_NAME,
+                   POP.STOR_ADDR,
+                   PP.REMARK
+            FROM PROSTOR_OUTSTORAGE_PRODUCT POP left join
+                 PROSTOR_PRODUCT PP on POP.PRODUCT_NO = PP.PRODUCT_NO
+            WHERE POP.ACTIVITY = 1
+                  AND POP.OUTSTORAGE_ID = #OUTSTORAGE_ID#
+                  AND POP.CPNY_ID = #CPNY_ID#
+                 
+        ]]>
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY POP.CREATE_DATE DESC
+            ]]>
+        </isEmpty>
+    </select>
+    <!-- 出库历史记录单详情数量-->
+    <select id="viewOutStorHistoryDetailCnt" resultClass="int" parameterClass="linkMap">
+        <![CDATA[
+            SELECT COUNT(POP.OUTSTORAGE_ID)
+            FROM PROSTOR_OUTSTORAGE_PRODUCT POP
+            WHERE POP.ACTIVITY = 1
+                  AND POP.OUTSTORAGE_ID = #OUTSTORAGE_ID#
+                  AND POP.CPNY_ID = #CPNY_ID#
+        ]]>
+    </select>
+    <sql id="outStorColumnInfo">
+        <![CDATA[
+          SELECT 'PRODUCT_ID' AS "COLUMN_NAME", 
+                 if(#language#='en', 'PRODUCT_ID', '货品编号') ITEM_NAME,
+                 1 AS CALCU_ORDER
+            FROM DUAL
+            UNION ALL
+            SELECT 'PRODUCT_NAME' AS "COLUMN_NAME", 
+                 if(#language#='en', 'PRODUCT_NAME', '货品名称') ITEM_NAME,
+                 2 AS CALCU_ORDER
+            FROM DUAL
+            UNION ALL
+            SELECT 'SPECIFICATION' AS "COLUMN_NAME", 
+                 if(#language#='en', 'SPECIFICATION', '规格/质量') ITEM_NAME,
+                 4 AS CALCU_ORDER
+            FROM DUAL
+            UNION ALL
+            SELECT 'UNIT_NAME' AS "COLUMN_NAME", 
+                 if(#language#='en', 'UNIT_NAME', '单位') ITEM_NAME,
+                 6 AS CALCU_ORDER
+            FROM DUAL
+            UNION ALL
+            SELECT 'PRICE' AS "COLUMN_NAME", 
+                 if(#language#='en', 'PRICE', '单价') ITEM_NAME,
+                 7 AS CALCU_ORDER
+            FROM DUAL
+            UNION ALL
+            SELECT 'QUANTITY' AS "COLUMN_NAME",
+                 if(#language#='en', 'QUANTITY', '出库量') ITEM_NAME,  
+                 8 AS CALCU_ORDER
+            FROM DUAL
+            UNION ALL
+            SELECT 'MONEY' AS "COLUMN_NAME",
+                 if(#language#='en', 'MONEY', '金额') ITEM_NAME,  
+                 9 AS CALCU_ORDER
+            FROM DUAL
+            UNION ALL
+            SELECT 'DISCOUNT' AS "COLUMN_NAME",
+                 if(#language#='en', 'DISCOUNT', '折扣') ITEM_NAME,  
+                 10 AS CALCU_ORDER
+            FROM DUAL
+            UNION ALL
+            SELECT 'DIS_MONEY' AS "COLUMN_NAME",
+                 if(#language#='en', 'DISCOUNT_MONEY', '折后金额') ITEM_NAME,  
+                 11 AS CALCU_ORDER
+            FROM DUAL
+            UNION ALL
+            SELECT 'STORAGE_NAME' AS "COLUMN_NAME",
+                 if(#language#='en', 'STORAGE_NAME', '出库仓') ITEM_NAME, 
+                 12 AS CALCU_ORDER
+            FROM DUAL
+            UNION ALL
+            SELECT 'STOR_ADDR' AS "COLUMN_NAME",
+                 if(#language#='en', 'STOR_ADDR', '货位') ITEM_NAME, 
+                 13 AS CALCU_ORDER
+            FROM DUAL
+            UNION ALL
+            SELECT 'CUST_LINE_NUM' AS "COLUMN_NAME",
+                 if(#language#='en', 'CUST_LINE_NUM', '客户订单行号') ITEM_NAME, 
+                 14 AS CALCU_ORDER
+            FROM DUAL
+            UNION ALL
+            SELECT 'CUST_PRO_ID' AS "COLUMN_NAME",
+                 if(#language#='en', 'CUST_PRO_ID', '客户商品编码') ITEM_NAME, 
+                 15 AS CALCU_ORDER
+            FROM DUAL
+          
+            ]]>
+    </sql>
+     <!--  ORDER BY CALCU_ORDER -->
+    <select id="getOutStorExcelColumnInfo" parameterClass="linkMap" resultClass="linkMap">
+        <include refid="outStorColumnInfo"/>
+   </select>
+   <select id="getOutStorExcelTitleInfo" parameterClass="linkMap" resultClass="string">
+        <![CDATA[
+        SELECT ITEM_NAME FROM (
+        ]]>
+        <include refid="outStorColumnInfo"/>
+        <![CDATA[
+            )ff WHERE COLUMN_NAME = #ITEM_ID#
+        ]]>
+    </select>
+    <!-- 获取货品在仓库的最低库存数量 -->
+    <select id="getMinStorQuantity" resultClass="double" parameterClass="linkMap">
+        <![CDATA[
+        SELECT NVL((SELECT PSPP.MIN_QUANTITY
+          FROM PROSTOR_STORAGE_PRODUCT_PARAM PSPP
+          WHERE PSPP.STORAGE_NO = #STORAGE_NO#
+                AND PSPP.PRODUCT_NO = #PRODUCT_NO#
+                AND PSPP.CPNY_ID = #CPNY_ID#
+                AND PSPP.ACTIVITY = 1),0) MIN_QUANTITY FROM DUAL
+        ]]>
+    </select>
+    <select id="getOutstorageOrderById" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[   
+           SELECT POI.OUTSTORAGE_ID,
+                   POI.SALES_ORDER_ID,
+                   POI.CUST_NO,
+                   POI.CUST_NAME,
+                   POI.PHONE_NUM,
+                   POI.MONEY,
+                   POI.DISCOUNT,
+                   POI.DIS_MONEY,
+                   CBI.CUST_ID,
+                  date_format(POI.CREATE_DATE,'%Y-%m-%d') OUT_DATE,
+                   POI.OPERATOR,
+                   PSO.DELIVERY_ADDRESS,
+                   PSO.CONSIGNEE,
+                   if(#language#='en', HRE.ENGLISHNAME, HRE.CHINESENAME) as CHINESENAME, 
+                   POI.REMARKS,
+                   ifnull((SELECT SUM(PPOR.QUANTITY) 
+                   FROM PROSTOR_OUTSTORAGE_PRODUCT PPOR
+                   WHERE PPOR.OUTSTORAGE_ID = #OUTSTORAGE_ID#
+                   AND   PPOR.CPNY_ID = #CPNY_ID#),0) SUM_QUANTITY,
+                  ifnull((SELECT SUM(PPOR.MONEY) 
+                   FROM PROSTOR_OUTSTORAGE_PRODUCT PPOR
+                   WHERE PPOR.OUTSTORAGE_ID = #OUTSTORAGE_ID#
+                   AND   PPOR.CPNY_ID = #CPNY_ID#),0) SUM_MONEY,
+                   HC.CPNY_NAME,
+                   HC.CPNY_ADDR,
+                   HC.CPNY_TEL_NO
+            FROM PROSTOR_OUTSTORAGE_INFO POI left join 
+                 PROSTOR_SALES_ORDER PSO on POI.SALES_ORDER_ID = PSO.SALES_ORDER_ID
+                left join  HR_EMPLOYEE HRE on PSO.EMPID = HRE.EMPID
+                 left join CUST_BASIC_INFO CBI on POI.CUST_NO = CBI.CUST_NO
+               , HR_COMPANY HC 
+            WHERE POI.OUTSTORAGE_ID = #OUTSTORAGE_ID#
+            AND POI.ACTIVITY = 1
+            AND POI.CPNY_ID = #CPNY_ID#
+            AND HC.CPNY_ID = #CPNY_ID#
+        ]]>
+    </select>
+  <!--   <select id="viewSaleOrderDetail" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+      SELECT PSO.SALES_ORDER_ID,
+          PSO.SALES_MODEL_NO,
+          PSO.SALES_ORDER_NO,
+          PSO.INVOICE_TITLE,
+          PSO.ORIGINAL_PRICE TOTAL_MONEY,
+          PSO.CONSIGNEE,
+          PSO.DELIVERY_ADDRESS,
+          PSO.ORIGINAL_PRICE,
+          PSO.DISCOUNT,
+          PSO.DISCOUNT_PRICE,
+          DECODE(SA.ACCOUNT_TYPE,'EM',HRE.CHINESENAME,'CU',CUST_INFO.CUST_NAME,CUST_INFO.CUST_NAME) ORDERED_PERSON,
+          HRE.CHINESENAME ORDERED_PERSON,
+          CBI.CUST_NAME,
+          TO_CHAR(PSO.ORDER_DATE,'%Y-%m-%d hh24:mi') ORDER_DATE,
+          PSM.SALES_MODE_NAME,
+          PSO.INVOICE_TYPE,
+          PSO.INVOICE_TITLE_TYPE,
+          PSO.INVOICE_TITLE_CONTENT,
+          PSO.INVOICE_CONTENT,
+          S.CODE_NAME PAYMENTMODE
+      FROM PROSTOR_SALES_ORDER PSO,
+           PROSTOR_SALES_MODEL PSM,
+           HR_EMPLOYEE         HRE,
+           CUST_BASIC_INFO     CBI,
+           CUST_BASIC_INFO     CUST_INFO,
+           SY_ADMIN            SA,
+           SY_CODE             S
+      WHERE PSO.SALES_MODEL_NO = PSM.SALES_MODE_NO(+)
+            AND PSO.EMPID = HRE.EMPID(+)
+            AND PSO.EMPID = SA.ADMINID(+)
+            AND PSO.EMPID = CUST_INFO.CUST_ID(+)
+            AND PSO.CUST_NO = CBI.CUST_NO(+)
+            AND PSO.ACTIVITY = 1
+            AND PSO.SALES_ORDER_NO = #SALES_ORDER_NO#
+            AND PSO.CPNY_ID = #CPNY_ID#
+            AND PSO.PAYMENT_MODE = S.CODE_ID(+)
+    </select> -->
+<select id="viewSaleOrderDetail" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+
+SELECT PSO.SALES_ORDER_ID,
+          PSO.SALES_MODEL_NO,
+          PSO.SALES_ORDER_NO,
+          PSO.INVOICE_TITLE,
+          PSO.ORIGINAL_PRICE TOTAL_MONEY,
+          PSO.CONSIGNEE,
+          PSO.DELIVERY_ADDRESS,
+          PSO.ORIGINAL_PRICE,
+          PSO.DISCOUNT,
+          PSO.DISCOUNT_PRICE,
+    (case SA.ACCOUNT_TYPE when 'EM' then HRE.CHINESENAME when 'CU'then CUST_INFO.CUST_NAME else CUST_INFO.CUST_NAME end ) ORDERED_PERSON,
+          HRE.CHINESENAME ORDERED_PERSON,
+          CBI.CUST_NAME,
+         date_format(PSO.ORDER_DATE,'%Y-%m-%d %H:%i:%s') ORDER_DATE,
+          PSM.SALES_MODE_NAME,
+          PSO.INVOICE_TYPE,
+          PSO.INVOICE_TITLE_TYPE,
+          PSO.INVOICE_TITLE_CONTENT,
+          PSO.INVOICE_CONTENT,
+          S.CODE_NAME PAYMENTMODE
+      FROM PROSTOR_SALES_ORDER PSO left join 
+           PROSTOR_SALES_MODEL PSM on PSO.SALES_MODEL_NO = PSM.SALES_MODE_NO
+          left join  HR_EMPLOYEE         HRE on PSO.EMPID = HRE.EMPID
+           left join CUST_BASIC_INFO     CBI on  PSO.CUST_NO = CBI.CUST_NO
+           left join CUST_BASIC_INFO     CUST_INFO on PSO.EMPID = CUST_INFO.CUST_ID
+           left join SY_ADMIN            SA on PSO.EMPID = SA.ADMINID
+           left join SY_CODE             S on PSO.PAYMENT_MODE = S.CODE_ID
+      WHERE 
+             PSO.ACTIVITY = 1
+            AND PSO.SALES_ORDER_NO = #SALES_ORDER_NO#
+            AND PSO.CPNY_ID = #CPNY_ID#
+
+  </select>
+    <select id="checkReceiverPhoneNum" parameterClass="string" resultClass="string">
+        SELECT NVL(A.RECEIVER_MOBILE,'N') RECEIVER_MOBILE FROM PROSTOR_SALES_ORDER A WHERE A.SALES_ORDER_NO = #saleOrderNo#
+    </select>
+</sqlMap>

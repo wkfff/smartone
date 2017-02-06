@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="att.attMItem">
+
+	<select id="getAttMItemInfo" parameterClass="linkMap" 
+	resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT T.ITEM_NO,
+			       T.ITEM_ID, 
+			       concat('STA_ITEM.',T.ITEM_ID) AS ITEM_ID_F,
+			       IF(#language#='en', T.ITEM_EN_NAME, T.ITEM_NAME) ITEM_NAME_F,
+			       IF(#language#='en', T.ITEM_EN_NAME, T.ITEM_NAME) ITEM_NAME,
+			       T.ITEM_EN_NAME,
+			       T.UNIT UNIT_CODE,
+			       IF(#language#='en', SY3.CODE_EN_NAME, SY3.CODE_NAME) UNIT_NAME, 
+			       T.MIN_UNIT,
+			       T.CALCU_ORDER,
+		          (SELECT COUNT(T.CALCU_ORDER) FROM AR_STA_ITEM T) MAX_INDEX,
+			       T.DATATYPE DATA_TYPE_CODE,  
+			       IF(#language#='en', SY2.CODE_EN_NAME, SY2.CODE_NAME) DATA_TYPE_NAME,
+			       T.CPNY_ID,
+			       IF(#language#='en', A.CPNY_EN_NAME, A.CPNY_NAME) CPNY_NAME, 
+			       T.ACTIVITY STATUS_ID,
+			       IF(T.ACTIVITY='1',
+			              IF(#language#='en', 'Available', '可用'),
+			              IF(#language#='en', 'Unavailable', '不可用')) STATUS
+			   FROM AR_STA_ITEM T LEFT JOIN  SY_CODE SY2 ON T.DATATYPE = SY2.CODE_ID
+                    LEFT JOIN SY_CODE SY3 ON T.UNIT = SY3.CODE_ID
+                    LEFT JOIN HR_COMPANY A ON T.CPNY_ID = A.CPNY_ID
+			 
+		]]>
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+		 		  T.ITEM_NAME LIKE contact('%',TRIM(#keyWord:VARCHAR#),'%')
+					 OR T.ITEM_EN_NAME LIKE contact('%',TRIM(#keyWord:VARCHAR#),'%')
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="ACTIVITY">
+			<![CDATA[
+		 		  T.ACTIVITY = #ACTIVITY#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+		 		  T.CPNY_ID = #CPNY_ID#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="ITEM_NO">
+			<![CDATA[
+		 		  T.ITEM_NO = #ITEM_NO#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		  ORDER BY $sortname$ $sortorder$
+		    ]]>
+		</isNotEmpty>
+		
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY T.CALCU_ORDER
+			]]>
+		</isEmpty>
+		 
+	</select>
+
+	<select id="getAttMItemInfoCnt" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+			SELECT  COUNT(*)
+			  FROM AR_STA_ITEM T LEFT JOIN  SY_CODE SY2 ON T.DATATYPE = SY2.CODE_ID
+                    LEFT JOIN SY_CODE SY3 ON T.UNIT = SY3.CODE_ID
+                    LEFT JOIN HR_COMPANY A ON T.CPNY_ID = A.CPNY_ID
+			 
+		]]>
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+		 		  T.ITEM_NAME LIKE contact('%',TRIM(#keyWord:VARCHAR#),'%')
+					 OR T.ITEM_EN_NAME LIKE contact('%',TRIM(#keyWord:VARCHAR#),'%')
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="ACTIVITY">
+			<![CDATA[
+		 		  T.ACTIVITY = #ACTIVITY#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+		 		  T.CPNY_ID = #CPNY_ID#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="ITEM_NO">
+			<![CDATA[
+		 		  T.ITEM_NO = #ITEM_NO:NUMERIC#
+		    ]]>
+		</isNotEmpty> 
+		 
+	</select>
+
+	<select id="checkDeleteAttMItemInfo" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+			SELECT (SELECT COUNT(*) FROM AR_STA_FORMULAR WHERE ITEM_NO = #ITEM_NO#) +
+			       (SELECT COUNT(*)
+			          FROM USER_TAB_COLS
+			         WHERE TABLE_NAME = 'AR_HISTORY'
+			           AND COLUMN_NAME = #ITEM_ID#) AS A
+			  FROM DUAL
+			 
+		]]>	 
+	</select>
+
+	<insert id="addAttMItemInfo" parameterClass="linkMap" >
+		<![CDATA[
+			INSERT INTO AR_STA_ITEM (
+					ITEM_NO,
+					ITEM_ID,
+					ITEM_NAME,
+					ITEM_EN_NAME,
+					UNIT,
+					MIN_UNIT,
+					CALCU_ORDER,
+					FROM_DATE,
+					TO_DATE,
+					DATATYPE, 
+					ACTIVITY,
+					CPNY_ID
+				)
+				VALUES(
+					AR_STA_ITEM_SEQ.NEXTVAL ,
+					'ATT_M_' || AR_STA_ITEM_SEQ.CURRVAL,
+					#ITEM_NAME:VARCHAR#,
+					#ITEM_EN_NAME:VARCHAR#,
+					#UNIT:VARCAHR#,
+					#MIN_UNIT:VARCAHR#,
+					(SELECT NVL(MAX(T.CALCU_ORDER),0) + 1 FROM AR_STA_ITEM T ),
+					NULL,
+					NULL,
+					'NUMBER(14,4)',
+					#ACTIVITY:NUMERIC#,
+					#CPNY_ID#
+				)
+		]]>
+	</insert>
+	
+	<update id="updateAttMItemInfo" parameterClass="linkMap" >
+		<![CDATA[
+			 UPDATE AR_STA_ITEM SET
+			 		ITEM_ID = #ITEM_ID:VARCHAR#,
+					ITEM_NAME = #ITEM_NAME:VARCHAR#,
+					ITEM_EN_NAME = #ITEM_EN_NAME:VARCHAR#,
+					UNIT = #UNIT:VARCAHR#,
+					MIN_UNIT = #MIN_UNIT:VARCAHR#, 
+					CPNY_ID = #CPNY_ID:VARCHAR#,
+					ACTIVITY = #ACTIVITY:NUMERIC#
+
+			 WHERE ITEM_NO = #ITEM_NO:NUMERIC#
+		]]>
+	</update>
+	
+	<delete id="deleteAttMItemInfo" parameterClass="linkMap">
+		<![CDATA[
+			DELETE AR_STA_ITEM WHERE ITEM_NO = #ITEM_NO:NUMERIC#
+		]]>
+	</delete>
+	
+	<update id="updateAttMItemInfoCalOrder" parameterClass="linkMap" >
+		<![CDATA[ 
+			 UPDATE AR_STA_ITEM SET
+					CALCU_ORDER = #CALCU_ORDER#,
+					UPDATE_DATE = SYSDATE,
+					UPDATED_BY = #UPDATED_BY#
+			 WHERE ITEM_NO = #ITEM_NO#
+		]]>
+	</update>
+</sqlMap>

@@ -1,0 +1,1424 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap
+    PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+    "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="hrm.searchTransferOrder">
+    <!-- comment :搜索员工条件 -->
+    <sql id="EmpCondition">
+        <isNotEmpty prepend="AND" property="EMPID">
+            <![CDATA[
+                HRE.EMPID=#EMPID#
+            ]]>
+        </isNotEmpty>
+   <!-- <isEmpty prepend="AND" property="LEFT_DATE">
+                <![CDATA[ (HRE.LEFT_DATE
+                IS NULL OR HRE.LEFT_DATE > now()) ]]>
+        </isEmpty> -->
+        <isNotEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+                (
+                    HRE.CHINESENAME         LIKE concat('%',TRIM(#keyWord#),'%')
+                    OR HRE.EMPID            LIKE concat('%',TRIM(#keyWord#),'%')
+                    OR TRANS_NO             LIKE concat('%',TRIM(#keyWord#),'%')
+                    OR upper(HRE.CHINESE_PINYIN) LIKE concat('%',TRIM(upper(#keyWord#)),'%')
+                    OR upper(HRE.ENGLISHNAME) LIKE concat('%',TRIM(upper(#keyWord#)),'%')
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="DEPTID">
+            <![CDATA[
+                EXISTS (
+                    SELECT * FROM HR_DEPARTMENT WHERE HR_DEPARTMENT.DEPTID!='00110000'
+                    )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="HR_ADMIN_ID">
+            <![CDATA[
+               EXISTS (
+                    SELECT EMPID FROM
+                        (
+                        SELECT EMPID FROM HR_EMPLOYEE H2
+                            WHERE EXISTS
+                            (
+                            SELECT S2.ADMINID AS EMPID
+                                FROM SY_ADMIN_DEPTID S1, SY_ADMIN S2
+                                WHERE S2.ADMINNO = S1.ADMIN_NO
+                                AND S2.ADMINID = #HR_ADMIN_ID#
+                                AND H2.DEPTID=S1.ADMIN_DEPTID
+                            )
+                        UNION
+                        SELECT #HR_ADMIN_ID# AS EMPID FROM DUAL
+                     ) S3
+                     WHERE S3.EMPID = HRE.EMPID
+               )
+            ]]>
+        </isNotEmpty>
+    </sql>
+
+    <sql id="seachExpCondition">
+        <isNotEmpty prepend="AND" property="EXP_INSIDE_NO">
+            <![CDATA[
+               HREI.EXP_INSIDE_NO = #EXP_INSIDE_NO#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="EXECUTED">
+            <![CDATA[
+               HREI.EXECUTED = #EXECUTED#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="AFFIRM_FLAG">
+            <![CDATA[
+               HREI.AFFIRM_FLAG = #AFFIRM_FLAG#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="START_DATE">
+            <![CDATA[
+               HREI.START_DATE <= str_to_date(date_format(now(),'%Y-%m-%d'),'%Y-%m-%d')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="E_DATE">
+            <![CDATA[
+               HREI.START_DATE <= str_to_date(#E_DATE#,'%Y-%m-%d')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="S_DATE">
+            <![CDATA[
+               HREI.START_DATE >= str_to_date(#S_DATE#,'%Y-%m-%d')
+            ]]>
+        </isNotEmpty>
+        <isEqual prepend="AND" property="TRANS_CODE" compareValue="TransCode_100">
+            <![CDATA[
+                HREI.TRANS_CODE = 'TransCode_100'
+            ]]>
+        </isEqual>
+        <isEqual prepend="AND" property="TRANS_CODE" compareValue="TransCode_110">
+            <![CDATA[
+                HREI.TRANS_CODE = 'TransCode_110'
+            ]]>
+        </isEqual>
+        <isEqual prepend="AND" property="TRANS_CODE" compareValue="TransCode_120">
+            <![CDATA[
+               ( HREI.TRANS_CODE = 'TurnType0010' OR HREI.TRANS_CODE = 'TurnType0020' OR HREI.TRANS_CODE='TurnType0030' )
+            ]]>
+        </isEqual>
+        <isEqual prepend="AND" property="TRANS_CODE" compareValue="TransCode_130">
+            <![CDATA[
+                HREI.TRANS_CODE = 'TransCode_130'
+            ]]>
+        </isEqual>
+        <isEqual prepend="AND" property="TRANS_CODE" compareValue="TransCode_220">
+            <![CDATA[
+                HREI.TRANS_CODE = 'TransCode_220'
+            ]]>
+        </isEqual>
+        <isEqual prepend="AND" property="TRANS_CODE" compareValue="TransCode_170">
+            <![CDATA[
+               ( HREI.TRANS_CODE = 'BandhType0010' OR HREI.TRANS_CODE = 'BandhType0020' OR HREI.TRANS_CODE = 'BandhType0030' OR HREI.TRANS_CODE = 'BandhType0040')
+            ]]>
+        </isEqual>
+    </sql>
+
+    <sql id="seachgetActBusiness">
+        <isNotEmpty prepend="AND" property="ACTIVITY">
+            <![CDATA[
+                HRAB.ACTIVITY = #ACTIVITY#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="S_DATE">
+            <![CDATA[
+               HRAB.START_DATE >= str_to_date(#S_DATE#,'%Y-%m-%d')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="E_DATE">
+            <![CDATA[
+               HRAB.START_DATE <=str_to_date(#E_DATE#,'%Y-%m-%d')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="TRANS_NO">
+            <![CDATA[
+               HRAB.TRANS_NO = #TRANS_NO#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="TRANS_CODE">
+            <![CDATA[
+               HRAB.TRANS_CODE = #TRANS_CODE#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="BIZ_CODE">
+            <![CDATA[
+               HRAB.BIZ_CODE = #BIZ_CODE#
+            ]]>
+        </isNotEmpty>
+    </sql>
+
+    <sql id="seachgetPlurality">
+        <isNotEmpty prepend="AND" property="EXECUTED">
+            <![CDATA[
+                aa.EXECUTED = #EXECUTED#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="S_DATE">
+            <![CDATA[
+                aa.START_DATE >= str_to_date(#S_DATE#,'%Y-%m-%d')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="E_DATE">
+            <![CDATA[
+                aa.END_DATE <= str_to_date(#E_DATE#,'%Y-%m-%d')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="TRANS_NO">
+            <![CDATA[
+                aa.TRANS_NO = #TRANS_NO#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="TRANS_CODE">
+            <![CDATA[
+              aa.TRANS_CODE = #TRANS_CODE#
+            ]]>
+        </isNotEmpty>
+    </sql>
+    
+    <sql id="seachgetDispatch">
+        <isNotEmpty prepend="AND" property="EXECUTED">
+            <![CDATA[
+              aa.EXECUTED = #EXECUTED#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="S_DATE">
+            <![CDATA[
+              aa.START_DATE >= str_to_date(#S_DATE#,'%Y-%m-%d')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="E_DATE">
+            <![CDATA[
+              aa.END_DATE <= str_to_date(#E_DATE#,'%Y-%m-%d')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="DISP_NO">
+            <![CDATA[
+              aa.DISP_NO = #DISP_NO#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="TRANS_CODE">
+            <![CDATA[
+              aa.TRANS_CODE = #TRANS_CODE#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="DIS_TYPE_CODE">
+            <![CDATA[
+              aa.DIS_TYPE_CODE = #DIS_TYPE_CODE#
+            ]]>
+        </isNotEmpty>
+    </sql>
+
+    <sql id="seachgetRewardInfo">
+        <isNotEmpty prepend="AND" property="EXECUTED">
+            <![CDATA[
+               aa.EXECUTED = #EXECUTED#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="S_DATE">
+            <![CDATA[
+               aa.REWARD_DATE >=str_to_date(#S_DATE#,'%Y-%m-%d')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="E_DATE">
+            <![CDATA[
+               aa.REWARD_DATE <=str_to_date(#E_DATE#,'%Y-%m-%d')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="REWARD_TYPE_CODE">
+            <![CDATA[
+               aa.REWARD_TYPE_CODE =#REWARD_TYPE_CODE#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="REWARD_SORT_CODE">
+            <![CDATA[
+                aa.REWARD_SORT_CODE =#REWARD_SORT_CODE#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="ACHIEVEMENT_TYPE_CODE">
+            <![CDATA[
+               aa.ACHIEVEMENT_TYPE_CODE =#ACHIEVEMENT_TYPE_CODE#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="REWARD_NO">
+            <![CDATA[
+               aa.REWARD_NO =#REWARD_NO#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="TRANS_CODE">
+            <![CDATA[
+               aa.TRANS_CODE =#TRANS_CODE#
+            ]]>
+        </isNotEmpty>
+    </sql>
+
+    <sql id="seachgetPunishMent">
+        <isNotEmpty prepend="AND" property="EXECUTED">
+            <![CDATA[
+              HRPU.EXECUTED = #EXECUTED#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="S_DATE">
+            <![CDATA[
+               HRPU.PUNISHED_DATE >= str_to_date(#S_DATE#,'%Y-%m-%d')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="E_DATE">
+            <![CDATA[
+               HRPU.PUNISHED_DATE <= str_to_date(#E_DATE#,'%Y-%m-%d')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="PUN_TYPE_CODE">
+            <![CDATA[
+               HRPU.PUN_TYPE_CODE =#PUN_TYPE_CODE#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="PUNISHMENT_NO">
+            <![CDATA[
+               HRPU.PUNISHMENT_NO =#PUNISHMENT_NO#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="TRANS_CODE">
+            <![CDATA[
+               HRPU.TRANS_CODE =#TRANS_CODE#
+            ]]>
+        </isNotEmpty>
+    </sql>
+    <!-- aibi添加 -->
+    <sql id="seachgetPunishMent1">
+        <isNotEmpty prepend="AND" property="EXECUTED">
+            <![CDATA[
+              aa.EXECUTED = #EXECUTED#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="S_DATE">
+            <![CDATA[
+               aa.PUNISHED_DATE >= str_to_date(#S_DATE#,'%Y-%m-%d')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="E_DATE">
+            <![CDATA[
+               aa.PUNISHED_DATE <= str_to_date(#E_DATE#,'%Y-%m-%d')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="PUN_TYPE_CODE">
+            <![CDATA[
+               aa.PUN_TYPE_CODE =#PUN_TYPE_CODE#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="PUNISHMENT_NO">
+            <![CDATA[
+               aa.PUNISHMENT_NO =#PUNISHMENT_NO#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="TRANS_CODE">
+            <![CDATA[
+               aa.TRANS_CODE =#TRANS_CODE#
+            ]]>
+        </isNotEmpty>
+    </sql>
+
+    <sql id="seachgetResignation">
+        <isNotEmpty prepend="AND" property="EXECUTED">
+            <![CDATA[
+              aa.EXECUTED = #EXECUTED#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="S_DATE">
+            <![CDATA[
+               aa.RESIGN_DATE >= str_to_date(#S_DATE#,'%Y-%m-%d')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="E_DATE">
+            <![CDATA[
+               aa.RESIGN_DATE <= str_to_date(#E_DATE#,'%Y-%m-%d')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="RESIGN_TYPE_CODE">
+            <![CDATA[
+               aa.RESIGN_TYPE_CODE = #RESIGN_TYPE_CODE#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="TRANS_NO">
+            <![CDATA[
+               aa.TRANS_NO = #TRANS_NO#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="TRANS_CODE">
+            <![CDATA[
+               aa.TRANS_CODE = #TRANS_CODE#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="RESIGN_NO">
+            <![CDATA[
+               aa.RESIGN_NO = #RESIGN_NO#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="AFFIRM_FLAG">
+            <![CDATA[
+               aa.AFFIRM_FLAG = #AFFIRM_FLAG#
+            ]]>
+        </isNotEmpty>
+    </sql>
+
+    <!-- 调动 -->
+    <select id="getExpInside" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT HREI.EXP_INSIDE_NO,
+               HREI.TRANS_NO,
+               HREI.TRANS_CODE,
+               IF(#language#='en', B.CODE_EN_NAME, B.CODE_NAME) TRANS_NAME,
+               HRE.EMPID,
+               IF(#language#='en', HRE.ENGLISHNAME, HRE.CHINESENAME) CHINESENAME,
+               HREI.DEPTID,
+               IF(#language#='en', HRD.DEPT_EN_NAME, HRD.DEPTNAME) DEPTNAME,
+               HREI.POSITION_ID POSITION_ID,
+               IF(#language#='en', HRPO.POSITION_EN_NAME, HRPO.POSITION_NAME) POSITION_NAME,
+               HREI.POST_ID POST_ID,
+               IF(#language#='en', HRP.POST_EN_NAME, HRP.POST_NAME) POST_NAME,
+               HREI.POST_GRADE_ID POST_GRADE_ID,
+               IF(#language#=
+                      'en',
+                      HRPGR.POST_GRADE_EN_NAME,
+                      HRPGR.POST_GRADE_NAME) POST_GRADE_NAME,
+               HREI.POST_COEF,
+               HREI.POST_GRADE_LEVEL_CODE POST_GRADE_LEVEL_ID,
+               IF(#language#=
+                      'en',
+                      HRPGRL.POST_GRADE_LEVEL_EN_NAME,
+                      HRPGRL.POST_GRADE_LEVEL_NAME) POST_GRADE_LEVEL_NAME,
+               HREI.POST_GROUP_ID POST_GROUP_ID,
+               IF(#language#=
+                      'en',
+                      HRPG.POST_GROUP_EN_NAME,
+                      HRPG.POST_GROUP_NAME) POST_GROUP_NAME,
+               HREI.STATUS_CODE,
+               IF(#language#='en', M.CODE_EN_NAME, M.CODE_NAME) EMPSTATUS,
+               HREI.DUTY_CODE DUTY_ID,
+               IF(#language#='en', J.CODE_EN_NAME, J.CODE_NAME) DUTY_NAME,
+               HREI.JOIN_TYPE_CODE,
+               IF(#language#='en', N.CODE_EN_NAME, N.CODE_NAME) JOIN_TYPE_NAME,
+               HREI.EMP_TYPE_CODE,
+               IF(#language#='en', A.CODE_EN_NAME, A.CODE_NAME) EMP_TYPE_NAME,
+               HPI.IDCARD_NO     IDCARD_NO,
+               HREI.PRE_DEPTID,
+               IF(#language#='en', P_HRD.DEPT_EN_NAME, P_HRD.DEPTNAME) PRE_DEPTNAME,
+               HREI.PRE_POSITION_ID PRE_POSITION_ID,
+               IF(#language#='en', P_HRPO.POSITION_EN_NAME, P_HRPO.POSITION_NAME) PRE_POSITION_NAME,
+               HREI.PRE_POST_ID PRE_POST_ID,
+               IF(#language#='en', P_HRP.POST_EN_NAME, P_HRP.POST_NAME) PRE_POST_NAME,
+               HREI.PRE_POST_GRADE_ID PRE_POST_GRADE_ID,
+               IF(#language#=
+                      'en',
+                      P_HRPGR.POST_GRADE_EN_NAME,
+                      P_HRPGR.POST_GRADE_NAME) PRE_POST_GRADE_NAME,
+               HREI.PRE_POST_COEF,
+               HREI.PRE_POST_GRADE_LEVEL_CODE PRE_POST_GRADE_LEVEL_ID,
+               IF(#language#=
+                      'en',
+                      P_HRPGRL.POST_GRADE_LEVEL_EN_NAME,
+                      P_HRPGRL.POST_GRADE_LEVEL_NAME) PRE_POST_GRADE_LEVEL_NAME,
+               HREI.PRE_POST_GROUP_ID PRE_POST_GROUP_ID,
+               IF(#language#=
+                      'en',
+                      P_HRPG.POST_GROUP_EN_NAME,
+                      P_HRPG.POST_GROUP_NAME) PRE_POST_GROUP_NAME,
+               HREI.PRE_STATUS_CODE,
+               IF(#language#='en', P_M.CODE_EN_NAME, P_M.CODE_NAME) PRE_STATUS_NAME,
+               HREI.PRE_DUTY_CODE PRE_DUTY_ID,
+               IF(#language#='en', P_J.CODE_EN_NAME, P_J.CODE_NAME) PRE_DUTY_NAME,
+               HREI.PRE_JOIN_TYPE_CODE,
+               IF(#language#='en', P_N.CODE_EN_NAME, P_N.CODE_NAME) PRE_JOIN_TYPE_NAME,
+               HREI.PRE_EMP_TYPE_CODE,
+               IF(#language#='en', P_A.CODE_EN_NAME, P_A.CODE_NAME) PRE_EMP_TYPE_NAME,
+               HPL.POST_GRADE_NAME POST_LEVEL_NAME,
+               HREI.PRE_POST_LEVEL_ID,
+               P_HPL.POST_GRADE_NAME PRE_POST_LEVEL_NAME,
+               date_format(HREI.START_DATE, '%Y-%m-%d') START_DATE,
+               date_format(HREI.END_DATE, '%Y-%m-%d') END_DATE,
+               date_format(HREI.END_PROBATION_DATE, '%Y-%m-%d') END_PROBATION_DATE,
+               HREI.REMARK,
+               HREI.CANCEL_REMARK,
+               HREI.CREATE_DATE,
+               HREI.CREATED_BY,
+               HREI.UPDATED_BY,
+               HREI.UPDATE_DATE,
+               HREI.ORDERNO,
+               HREI.EXECUTED,
+               HREI.AFFIRM_FLAG,
+               HREI.PROCESSID
+        FROM   HR_EXPERIENCE_INSIDE HREI left join HR_EMPLOYEE         HRE 		on HREI.EMPID = HRE.EMPID
+               							 left join HR_PERSONAL_INFO    HPI		on HREI.EMPID = HPI.EMPID
+               							 left join HR_POST_LEVEL       HPL		on HREI.POST_LEVEL_ID = HPL.POST_GRADE_ID
+               							 left join HR_DEPARTMENT       HRD		on HREI.DEPTID = HRD.DEPTID
+               							 left join HR_POSITION         HRPO		on HREI.POSITION_ID = HRPO.POSITION_ID
+               							 left join HR_POST             HRP		on HREI.POST_ID = HRP.POST_ID
+               							 left join HR_POST_GROUP       HRPG		on HREI.POST_GROUP_ID = HRPG.POST_GROUP_ID
+               							 left join HR_POST_GRADE_LEVEL HRPGRL	on HREI.POST_GRADE_LEVEL_CODE = HRPGRL.POST_GRADE_LEVEL_ID
+               							 left join HR_POST_GRADE       HRPGR	on HREI.POST_GRADE_ID = HRPGR.POST_GRADE_ID
+               							 left join HR_DEPARTMENT       P_HRD	on HREI.PRE_DEPTID = P_HRD.DEPTID
+               							 left join HR_POSITION         P_HRPO	on HREI.PRE_POSITION_ID = P_HRPO.POSITION_ID
+               							 left join HR_POST             P_HRP	on HREI.PRE_POST_ID = P_HRP.POST_ID
+               							 left join HR_POST_GROUP       P_HRPG	on HREI.PRE_POST_GROUP_ID = P_HRPG.POST_GROUP_ID
+               							 left join HR_POST_GRADE_LEVEL P_HRPGRL	on HREI.PRE_POST_GRADE_LEVEL_CODE = P_HRPGRL.POST_GRADE_LEVEL_ID
+               							 left join HR_POST_GRADE       P_HRPGR	on HREI.PRE_POST_GRADE_ID = P_HRPGR.POST_GRADE_ID
+               							 left join HR_POST_LEVEL       P_HPL	on HREI.PRE_POST_LEVEL_ID = P_HPL.POST_GRADE_ID
+               							 left join SY_CODE             J		on HREI.DUTY_CODE = J.CODE_ID
+               							 left join SY_CODE             P_J		on HREI.PRE_DUTY_CODE = P_J.CODE_ID
+               							 left join SY_CODE             M		on HREI.STATUS_CODE = M.CODE_ID
+               							 left join SY_CODE             P_M		on HREI.PRE_STATUS_CODE = P_M.CODE_ID
+               							 left join SY_CODE             N		on HREI.JOIN_TYPE_CODE = N.CODE_ID
+               							 left join SY_CODE             P_N		on HREI.PRE_JOIN_TYPE_CODE = P_N.CODE_ID
+               							 left join SY_CODE             A		on HREI.EMP_TYPE_CODE = A.CODE_ID
+               							 left join SY_CODE             P_A		on HREI.PRE_EMP_TYPE_CODE = P_A.CODE_ID
+               							 left join SY_CODE             B		on HREI.TRANS_CODE = B.CODE_ID
+         WHERE HREI.ACTIVITY = 1
+        ]]>
+        <include refid="seachExpCondition" />
+        <include refid="EmpCondition" />
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                 ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY HREI.START_DATE DESC,HREI.ACTIVITY ASC
+             ]]>
+        </isEmpty>
+    </select>
+
+    <!-- comment : 调动 发令信息查讯记录数 -->
+    <select id="getExpInsideCnt" parameterClass="linkMap"
+        resultClass="int">
+        <![CDATA[
+            SELECT COUNT(HREI.EMPID) CNT
+            FROM   HR_EXPERIENCE_INSIDE HREI left join HR_EMPLOYEE         HRE 		on HREI.EMPID = HRE.EMPID
+               							 left join HR_PERSONAL_INFO    HPI		on HREI.EMPID = HPI.EMPID
+               							 left join HR_POST_LEVEL       HPL		on HREI.POST_LEVEL_ID = HPL.POST_GRADE_ID
+               							 left join HR_DEPARTMENT       HRD		on HREI.DEPTID = HRD.DEPTID
+               							 left join HR_POSITION         HRPO		on HREI.POSITION_ID = HRPO.POSITION_ID
+               							 left join HR_POST             HRP		on HREI.POST_ID = HRP.POST_ID
+               							 left join HR_POST_GROUP       HRPG		on HREI.POST_GROUP_ID = HRPG.POST_GROUP_ID
+               							 left join HR_POST_GRADE_LEVEL HRPGRL	on HREI.POST_GRADE_LEVEL_CODE = HRPGRL.POST_GRADE_LEVEL_ID
+               							 left join HR_POST_GRADE       HRPGR	on HREI.POST_GRADE_ID = HRPGR.POST_GRADE_ID
+               							 left join HR_DEPARTMENT       P_HRD	on HREI.PRE_DEPTID = P_HRD.DEPTID
+               							 left join HR_POSITION         P_HRPO	on HREI.PRE_POSITION_ID = P_HRPO.POSITION_ID
+               							 left join HR_POST             P_HRP	on HREI.PRE_POST_ID = P_HRP.POST_ID
+               							 left join HR_POST_GROUP       P_HRPG	on HREI.PRE_POST_GROUP_ID = P_HRPG.POST_GROUP_ID
+               							 left join HR_POST_GRADE_LEVEL P_HRPGRL	on HREI.PRE_POST_GRADE_LEVEL_CODE = P_HRPGRL.POST_GRADE_LEVEL_ID
+               							 left join HR_POST_GRADE       P_HRPGR	on HREI.PRE_POST_GRADE_ID = P_HRPGR.POST_GRADE_ID
+               							 left join HR_POST_LEVEL       P_HPL	on HREI.PRE_POST_LEVEL_ID = P_HPL.POST_GRADE_ID
+               							 left join SY_CODE             J		on HREI.DUTY_CODE = J.CODE_ID
+               							 left join SY_CODE             P_J		on HREI.PRE_DUTY_CODE = P_J.CODE_ID
+               							 left join SY_CODE             M		on HREI.STATUS_CODE = M.CODE_ID
+               							 left join SY_CODE             P_M		on HREI.PRE_STATUS_CODE = P_M.CODE_ID
+               							 left join SY_CODE             N		on HREI.JOIN_TYPE_CODE = N.CODE_ID
+               							 left join SY_CODE             P_N		on HREI.PRE_JOIN_TYPE_CODE = P_N.CODE_ID
+               							 left join SY_CODE             A		on HREI.EMP_TYPE_CODE = A.CODE_ID
+               							 left join SY_CODE             P_A		on HREI.PRE_EMP_TYPE_CODE = P_A.CODE_ID
+               							 left join SY_CODE             B		on HREI.TRANS_CODE = B.CODE_ID
+         WHERE HREI.ACTIVITY = 1
+        ]]>
+        <include refid="seachExpCondition" />
+        <include refid="EmpCondition" />
+    </select>
+
+    <update id="cancelExpInsideInfo" parameterClass="linkMap">
+        <![CDATA[
+            UPDATE HR_EXPERIENCE_INSIDE
+                SET ACTIVITY = 0 ,CANCEL_REMARK = #CANCEL_REMARK#
+            WHERE EXP_INSIDE_NO = #EXP_INSIDE_NO#
+            AND   CPNY_ID = #CPNY_ID#
+        ]]>
+    </update>
+
+    <update id="cancelExpInsideInfoRecover" parameterClass="linkMap">
+        <![CDATA[
+            UPDATE HR_EXPERIENCE_INSIDE
+                SET ACTIVITY = 1 ,CANCEL_REMARK = #CANCEL_REMARK#
+            WHERE EXP_INSIDE_NO = #EXP_INSIDE_NO#
+            AND   CPNY_ID = #CPNY_ID#
+        ]]>
+    </update>
+
+    <!-- 担当业务变更 -->
+    <select id="getActBusinessInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT HRE.EMPID,
+               IF(#language#='en', HRE.ENGLISHNAME, HRE.CHINESENAME) CHINESENAME,
+               HRAB.ACT_BIZ_NO,
+               HRAB.TRANS_NO,
+               HRAB.TRANS_CODE,
+               HRAB.DEPTID,
+               IF(#language#='en', HRD.DEPT_EN_NAME, HRD.DEPTNAME) DEPTNAME,
+               HRAB.DUTY_CODE DUTY_ID,
+               IF(#language#='en', J.CODE_EN_NAME, J.CODE_NAME) DUTY_NAME,
+               HRAB.POSITION_ID POSITION_ID,
+               IF(#language#='en', HRPO.POSITION_EN_NAME, HRPO.POSITION_NAME) POSITION_NAME,
+               HRAB.POST_ID POST_ID,
+               IF(#language#='en', HRP.POST_EN_NAME, HRP.POST_NAME) POST_NAME,
+               HRE.POST_GRADE_ID POST_GRADE_ID,
+               IF(#language#,
+                      'en',
+                      HRPGR.POST_GRADE_EN_NAME,
+                      HRPGR.POST_GRADE_NAME) POST_GRADE_NAME,
+               HRAB.POST_COEF,
+               HRAB.POST_GRADE_LEVEL_CODE POST_GRADE_LEVEL_ID,
+               IF(#language#,
+                      'en',
+                      HRPGRL.POST_GRADE_LEVEL_EN_NAME,
+                      HRPGRL.POST_GRADE_LEVEL_NAME) POST_GRADE_LEVEL_NAME,
+               HRAB.POST_GROUP_ID POST_GROUP_ID,
+               IF(#language#,
+                      'en',
+                      HRPG.POST_GROUP_EN_NAME,
+                      HRPG.POST_GROUP_NAME) POST_GROUP_NAME,
+               HRAB.STATUS_CODE,
+               IF(#language#='en', M.CODE_EN_NAME, M.CODE_NAME) STATUS_NAME,
+               HRAB.JOIN_TYPE_CODE,
+               IF(#language#='en', N.CODE_EN_NAME, N.CODE_NAME) JOIN_TYPE_NAME,
+               date_format(HRE.JOIN_DATE, '%Y-%m-%d') JOIN_DATE,
+               date_format(HRE.HIRE_DATE, '%Y-%m-%d') HIRE_DATE,
+               date_format(HRE.END_PROBATION_DATE, '%Y-%m-%d') END_PROBATION_DATE,
+               date_format(HRE.LEFT_DATE, '%Y-%m-%d') LEFT_DATE,
+               HRE.COSTCENTER,
+               HRAB.EMP_TYPE_CODE,
+               IF(#language#='en', A.CODE_EN_NAME, A.CODE_NAME) EMP_TYPE_NAME,
+               HRAB.BIZ_CODE,
+               HRAB.ACTIVITY,
+               HRAB.AFFIRM_FLAG,
+               HRAB.REMARK,
+               HRAB.CANCEL_REMARK,
+               IF(#language#='en', B.CODE_EN_NAME, B.CODE_NAME) BIZ_NAME,
+               date_format(HRAB.START_DATE, '%Y-%m-%d') START_DATE,
+               date_format(HRAB.END_DATE, '%Y-%m-%d') END_DATE
+        FROM HR_ACT_BUSINESS     HRAB,
+               HR_EMPLOYEE         HRE,
+               HR_DEPARTMENT       HRD,
+               HR_POSITION         HRPO,
+               HR_POST             HRP,
+               HR_POST_GROUP       HRPG,
+               HR_POST_GRADE_LEVEL HRPGRL,
+               HR_POST_GRADE       HRPGR,
+               SY_CODE             J,
+               SY_CODE             M,
+               SY_CODE             N,
+               SY_CODE             A,
+               SY_CODE             B
+        WHERE HRAB.EMPID = HRE.EMPID(+)
+           AND HRAB.DEPTID = HRD.DEPTID(+)
+           AND HRAB.POST_ID = HRP.POST_ID(+)
+           AND HRAB.POST_GROUP_ID = HRPG.POST_GROUP_ID(+)
+           AND HRAB.POSITION_ID = HRPO.POSITION_ID(+)
+           AND HRAB.POST_GRADE_ID = HRPGR.POST_GRADE_ID(+)
+           AND HRAB.POST_GRADE_LEVEL_CODE = HRPGRL.POST_GRADE_LEVEL_ID(+)
+           AND HRAB.DUTY_CODE = J.CODE_ID(+)
+           AND HRAB.STATUS_CODE = M.CODE_ID(+)
+           AND HRAB.JOIN_TYPE_CODE = N.CODE_ID(+)
+           AND HRAB.EMP_TYPE_CODE = A.CODE_ID(+)
+           AND HRAB.BIZ_CODE = B.CODE_ID(+)
+        ]]>
+        <include refid="EmpCondition" />
+        <include refid="seachgetActBusiness" />
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                  ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY HRAB.START_DATE DESC
+             ]]>
+        </isEmpty>
+    </select>
+
+    <select id="getActBusinessInfoCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(*)
+            FROM HR_ACT_BUSINESS   HRAB,
+               HR_EMPLOYEE         HRE,
+               HR_DEPARTMENT       HRD,
+               HR_POSITION         HRPO,
+               HR_POST             HRP,
+               HR_POST_GROUP       HRPG,
+               HR_POST_GRADE_LEVEL HRPGRL,
+               HR_POST_GRADE       HRPGR,
+               SY_CODE             J,
+               SY_CODE             M,
+               SY_CODE             N,
+               SY_CODE             A,
+               SY_CODE             B
+            WHERE HRAB.EMPID = HRE.EMPID(+)
+                AND HRAB.DEPTID = HRD.DEPTID(+)
+                AND HRAB.POST_ID = HRP.POST_ID(+)
+                AND HRAB.POST_GROUP_ID = HRPG.POST_GROUP_ID(+)
+                AND HRAB.POSITION_ID = HRPO.POSITION_ID(+)
+                AND HRAB.POST_GRADE_ID = HRPGR.POST_GRADE_ID(+)
+                AND HRAB.POST_GRADE_LEVEL_CODE = HRPGRL.POST_GRADE_LEVEL_ID(+)
+                AND HRAB.DUTY_CODE = J.CODE_ID(+)
+                AND HRAB.STATUS_CODE = M.CODE_ID(+)
+                AND HRAB.JOIN_TYPE_CODE = N.CODE_ID(+)
+                AND HRAB.EMP_TYPE_CODE = A.CODE_ID(+)
+                AND HRAB.BIZ_CODE = B.CODE_ID(+)
+        ]]>
+        <include refid="EmpCondition" />
+        <include refid="seachgetActBusiness" />
+    </select>
+
+    <update id="cancelActBusinessInfo" parameterClass="linkMap">
+        <![CDATA[
+               UPDATE HR_ACT_BUSINESS
+                  SET ACTIVITY= 0 ,CANCEL_REMARK = #CANCEL_REMARK#
+                WHERE ACT_BIZ_NO = #ACT_BIZ_NO#
+                AND   CPNY_ID = #CPNY_ID#
+              ]]>
+    </update>
+
+    <update id="cancelActBusinessInfoRecover" parameterClass="linkMap">
+        <![CDATA[
+               UPDATE HR_ACT_BUSINESS
+                  SET ACTIVITY= 1 ,CANCEL_REMARK = #CANCEL_REMARK#
+                WHERE ACT_BIZ_NO = #ACT_BIZ_NO#
+                AND   CPNY_ID = #CPNY_ID#
+              ]]>
+    </update>
+
+    <!-- comment :查讯兼职信息 -->
+    <select id="getPluralityInfo" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT HRE.EMPID,
+               IF(#language#='en', HRE.ENGLISHNAME, HRE.CHINESENAME) CHINESENAME,
+               aa.PLU_NO,
+               aa.TRANS_NO,
+               aa.TRANS_CODE,
+               HRE.DEPTID,
+               IF(#language#='en', aa.DEPT_EN_NAME, aa.DEPTNAME) DEPTNAME,
+               HRE.DUTY_CODE DUTY_ID,
+               IF(#language#='en', J.CODE_EN_NAME, J.CODE_NAME) DUTY_NAME,
+               HRE.POSITION_ID POSITION_ID,
+               IF(#language#='en', HRPO.POSITION_EN_NAME, HRPO.POSITION_NAME) POSITION_NAME,
+               HRE.POST_ID POST_ID,
+               IF(#language#='en', aa.POST_EN_NAME, aa.POST_NAME) POST_NAME,
+               HRE.POST_GRADE_ID POST_GRADE_ID,
+               IF(#language#=
+                      'en',
+                      HRPGR.POST_GRADE_EN_NAME,
+                      HRPGR.POST_GRADE_NAME) POST_GRADE_NAME,
+               HRE.POST_COEF,
+               HRE.POST_GRADE_LEVEL_CODE POST_GRADE_LEVEL_ID,
+               IF(#language#=
+                      'en',
+                      HRPGRL.POST_GRADE_LEVEL_EN_NAME,
+                      HRPGRL.POST_GRADE_LEVEL_NAME) POST_GRADE_LEVEL_NAME,
+               HRE.POST_GROUP_ID POST_GROUP_ID,
+               IF(#language#=
+                      'en',
+                      HRPG.POST_GROUP_EN_NAME,
+                      HRPG.POST_GROUP_NAME) POST_GROUP_NAME,
+               HRE.STATUS_CODE,
+               IF(#language#='en', M.CODE_EN_NAME, M.CODE_NAME) STATUS_NAME,
+               HRE.JOIN_TYPE_CODE,
+               IF(#language#='en', N.CODE_EN_NAME, N.CODE_NAME) JOIN_TYPE_NAME,
+               date_format(HRE.JOIN_DATE, '%Y-%m-%d') JOIN_DATE,
+               date_format(HRE.HIRE_DATE, '%Y-%m-%d') HIRE_DATE,
+               date_format(HRE.END_PROBATION_DATE, '%Y-%m-%d') END_PROBATION_DATE,
+               date_format(HRE.LEFT_DATE, '%Y-%m-%d') LEFT_DATE,
+               HRE.COSTCENTER,
+               HRE.EMP_TYPE_CODE,
+               IF(#language#='en', A.CODE_EN_NAME, A.CODE_NAME) EMP_TYPE_NAME,
+               aa.ACTIVITY,
+               aa.AFFIRM_FLAG,
+               aa.EXECUTED,
+               aa.REMARK,
+               aa.CANCEL_REMARK,
+               aa.REASON,
+               aa.WORK_CONTENTS,
+               date_format(aa.START_DATE, '%Y-%m-%d') START_DATE,
+               date_format(aa.END_DATE, '%Y-%m-%d') END_DATE
+          FROM HR_EMPLOYEE HRE left join HR_POST_GROUP       HRPG 	on HRE.POST_GROUP_ID = HRPG.POST_GROUP_ID
+               				   left join HR_POSITION         HRPO 	on HRE.POSITION_ID = HRPO.POSITION_ID
+               				   left join HR_POST_GRADE_LEVEL HRPGRL	on HRE.POST_GRADE_LEVEL_CODE = HRPGRL.POST_GRADE_LEVEL_ID
+               				   left join HR_POST_GRADE       HRPGR	on HRE.POST_GRADE_ID = HRPGR.POST_GRADE_ID
+               				   left join SY_CODE             J		on HRE.DUTY_CODE = J.CODE_ID
+               				   left join SY_CODE             M		on HRE.STATUS_CODE = M.CODE_ID
+               				   left join SY_CODE             N		on HRE.JOIN_TYPE_CODE = N.CODE_ID
+               				   left join SY_CODE             A		on HRE.EMP_TYPE_CODE = A.CODE_ID
+               				   right join (select HRPL.*,HRD.DEPT_EN_NAME, HRD.DEPTNAME,
+               				   							 HRP.POST_EN_NAME, HRP.POST_NAME
+               				   					from HR_PLURALITY HRPL 
+               				   					left join HR_DEPARTMENT  HRD on HRPL.DEPTID = HRD.DEPTID
+                   								left join HR_POST        HRP on HRPL.POST_ID = HRP.POST_ID)as aa on aa.EMPID = HRE.EMPID
+            WHERE aa.ACTIVITY = 1
+        ]]>
+        <include refid="seachgetPlurality" />
+        <include refid="EmpCondition" />
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                  ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY  aa.START_DATE DESC
+            ]]>
+        </isEmpty>
+    </select>
+    <select id="getPluralityInfoCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(aa.EMPID) CNT
+            FROM HR_EMPLOYEE HRE left join HR_POST_GROUP       HRPG 	on HRE.POST_GROUP_ID = HRPG.POST_GROUP_ID
+               				   left join HR_POSITION         HRPO 	on HRE.POSITION_ID = HRPO.POSITION_ID
+               				   left join HR_POST_GRADE_LEVEL HRPGRL	on HRE.POST_GRADE_LEVEL_CODE = HRPGRL.POST_GRADE_LEVEL_ID
+               				   left join HR_POST_GRADE       HRPGR	on HRE.POST_GRADE_ID = HRPGR.POST_GRADE_ID
+               				   left join SY_CODE             J		on HRE.DUTY_CODE = J.CODE_ID
+               				   left join SY_CODE             M		on HRE.STATUS_CODE = M.CODE_ID
+               				   left join SY_CODE             N		on HRE.JOIN_TYPE_CODE = N.CODE_ID
+               				   left join SY_CODE             A		on HRE.EMP_TYPE_CODE = A.CODE_ID
+               				   right join (select HRPL.*,HRD.DEPT_EN_NAME, HRD.DEPTNAME,
+               				   							 HRP.POST_EN_NAME, HRP.POST_NAME
+               				   					from HR_PLURALITY HRPL 
+               				   					left join HR_DEPARTMENT  HRD on HRPL.DEPTID = HRD.DEPTID
+                   								left join HR_POST        HRP on HRPL.POST_ID = HRP.POST_ID)as aa on aa.EMPID = HRE.EMPID
+            WHERE aa.ACTIVITY = 1
+        ]]>
+        <include refid="seachgetPlurality" />
+        <include refid="EmpCondition" />
+    </select>
+
+    <update id="cancelPluralityInfo" parameterClass="linkMap">
+        <![CDATA[
+               UPDATE HR_PLURALITY
+                  SET activity = 0 ,CANCEL_REMARK = #CANCEL_REMARK#
+                WHERE PLU_NO = #PLU_NO#
+                AND   CPNY_ID = #CPNY_ID#
+              ]]>
+    </update>
+
+    <update id="cancelPluralityInfoRecover" parameterClass="linkMap">
+        <![CDATA[
+               UPDATE HR_PLURALITY
+                  SET activity = 1 ,CANCEL_REMARK = #CANCEL_REMARK#
+                WHERE PLU_NO = #PLU_NO#
+                AND   CPNY_ID = #CPNY_ID#
+              ]]>
+    </update>
+
+    <!-- comment :查讯派遣信息 -->
+    <select id="getDispatchInfo" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT HRE.EMPID,
+               IF(#language#='en', HRE.ENGLISHNAME, HRE.CHINESENAME) CHINESENAME,
+               aa.DISP_NO,
+               aa.TRANS_NO,
+               aa.TRANS_CODE,
+               HRE.DEPTID,
+               IF(#language#='en', HRD.DEPT_EN_NAME, HRD.DEPTNAME) DEPTNAME,
+               HRE.DUTY_CODE DUTY_ID,
+               IF(#language#='en', J.CODE_EN_NAME, J.CODE_NAME) DUTY_NAME,
+               HRE.POSITION_ID POSITION_ID,
+               IF(#language#='en', HRPO.POSITION_EN_NAME, HRPO.POSITION_NAME) POSITION_NAME,
+               HRE.POST_ID POST_ID,
+               IF(#language#='en', HRP.POST_EN_NAME, HRP.POST_NAME) POST_NAME,
+               HRE.POST_GRADE_ID POST_GRADE_ID,
+               IF(#language#=
+                      'en',
+                      HRPGR.POST_GRADE_EN_NAME,
+                      HRPGR.POST_GRADE_NAME) POST_GRADE_NAME,
+               HRE.POST_COEF,
+               IF(#language#=
+                      'en',
+                      HRPGRL.POST_GRADE_LEVEL_EN_NAME,
+                      HRPGRL.POST_GRADE_LEVEL_NAME) POST_GRADE_LEVEL_NAME,
+               HRE.POST_GROUP_ID POST_GROUP_ID,
+               IF(#language#=
+                      'en',
+                      HRPG.POST_GROUP_EN_NAME,
+                      HRPG.POST_GROUP_NAME) POST_GROUP_NAME,
+               HRE.STATUS_CODE,
+               IF(#language#='en', M.CODE_EN_NAME, M.CODE_NAME) STATUS_NAME,
+               HRE.JOIN_TYPE_CODE,
+               IF(#language#='en', N.CODE_EN_NAME, N.CODE_NAME) JOIN_TYPE_NAME,
+               date_format(HRE.JOIN_DATE, '%Y-%m-%d') JOIN_DATE,
+               date_format(HRE.HIRE_DATE, '%Y-%m-%d') HIRE_DATE,
+               date_format(HRE.END_PROBATION_DATE, '%Y-%m-%d') END_PROBATION_DATE,
+               date_format(HRE.LEFT_DATE, '%Y-%m-%d') LEFT_DATE,
+               HRE.COSTCENTER,
+               HRE.EMP_TYPE_CODE,
+               IF(#language#='en', A.CODE_EN_NAME, A.CODE_NAME) EMP_TYPE_NAME,
+               aa.DIS_TYPE_CODE,
+               IF(#language#='en', aa.CODE_EN_NAME, aa.CODE_NAME) DIS_TYPE_NAME,
+               aa.ACTIVITY,
+               aa.AFFIRM_FLAG,
+               aa.EXECUTED,
+               aa.REMARK,
+               aa.CANCEL_REMARK,
+               aa.CONTENTS,
+               aa.DIS_TARGET,
+               date_format(aa.START_DATE, '%Y-%m-%d') START_DATE,
+               date_format(aa.END_DATE, '%Y-%m-%d') END_DATE
+        FROM HR_EMPLOYEE HRE 
+               left join HR_DEPARTMENT       HRD	on HRE.DEPTID = HRD.DEPTID
+               left join HR_POSITION         HRPO	on HRE.POSITION_ID = HRPO.POSITION_ID
+               left join HR_POST             HRP	on HRE.POST_ID = HRP.POST_ID
+               left join HR_POST_GROUP       HRPG	on HRE.POST_GROUP_ID = HRPG.POST_GROUP_ID
+               left join HR_POST_GRADE_LEVEL HRPGRL	on HRE.POST_GRADE_LEVEL_CODE = HRPGRL.POST_GRADE_LEVEL_ID
+               left join HR_POST_GRADE       HRPGR	on HRE.POST_GRADE_ID = HRPGR.POST_GRADE_ID
+               left join SY_CODE             J		on HRE.DUTY_CODE = J.CODE_ID
+               left join SY_CODE             M		on HRE.STATUS_CODE = M.CODE_ID
+               left join SY_CODE             N		on HRE.JOIN_TYPE_CODE = N.CODE_ID
+               left join SY_CODE             A		on HRE.EMP_TYPE_CODE = A.CODE_ID
+               right join (select HRDI.*,B.CODE_EN_NAME, B.CODE_NAME
+               				from HR_DISPATCH HRDI left join SY_CODE B on HRDI.DIS_TYPE_CODE = B.CODE_ID) as aa on aa.EMPID = HRE.EMPID
+        WHERE aa.ACTIVITY = 1
+        ]]>
+        <include refid="seachgetDispatch" />
+        <include refid="EmpCondition" />
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                  ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY aa.START_DATE DESC
+             ]]>
+        </isEmpty>
+    </select>
+
+    <select id="getDispatchInfoCnt" parameterClass="linkMap"
+        resultClass="int">
+        <![CDATA[
+         SELECT COUNT(aa.EMPID) CNT
+          FROM HR_EMPLOYEE HRE 
+               left join HR_DEPARTMENT       HRD	on HRE.DEPTID = HRD.DEPTID
+               left join HR_POSITION         HRPO	on HRE.POSITION_ID = HRPO.POSITION_ID
+               left join HR_POST             HRP	on HRE.POST_ID = HRP.POST_ID
+               left join HR_POST_GROUP       HRPG	on HRE.POST_GROUP_ID = HRPG.POST_GROUP_ID
+               left join HR_POST_GRADE_LEVEL HRPGRL	on HRE.POST_GRADE_LEVEL_CODE = HRPGRL.POST_GRADE_LEVEL_ID
+               left join HR_POST_GRADE       HRPGR	on HRE.POST_GRADE_ID = HRPGR.POST_GRADE_ID
+               left join SY_CODE             J		on HRE.DUTY_CODE = J.CODE_ID
+               left join SY_CODE             M		on HRE.STATUS_CODE = M.CODE_ID
+               left join SY_CODE             N		on HRE.JOIN_TYPE_CODE = N.CODE_ID
+               left join SY_CODE             A		on HRE.EMP_TYPE_CODE = A.CODE_ID
+               right join (select HRDI.*,B.CODE_EN_NAME, B.CODE_NAME
+               				from HR_DISPATCH HRDI left join SY_CODE B on HRDI.DIS_TYPE_CODE = B.CODE_ID) as aa on aa.EMPID = HRE.EMPID
+        WHERE aa.ACTIVITY = 1
+        ]]>
+        <include refid="seachgetDispatch" />
+        <include refid="EmpCondition" />
+    </select>
+
+    <update id="cancelDispatchInfo" parameterClass="linkMap">
+        <![CDATA[
+            UPDATE HR_DISPATCH
+                SET ACTIVITY = 0 ,CANCEL_REMARK = #CANCEL_REMARK#
+            WHERE DISP_NO = #DISP_NO#
+                AND   CPNY_ID = #CPNY_ID#
+              ]]>
+    </update>
+
+    <update id="cancelDispatchInfoRecover" parameterClass="linkMap">
+        <![CDATA[
+            UPDATE HR_DISPATCH
+                SET ACTIVITY = 1 ,CANCEL_REMARK = #CANCEL_REMARK#
+            WHERE DISP_NO = #DISP_NO#
+                AND   CPNY_ID = #CPNY_ID#
+              ]]>
+    </update>
+
+    <!-- comment :查讯奖励信息 -->
+    <select id="getRewardInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT HRE.EMPID,
+               IF(#language#='en', HRE.ENGLISHNAME, HRE.CHINESENAME) CHINESENAME,
+               aa.REWARD_NO,
+               aa.TRANS_NO,
+               aa.TRANS_CODE,
+               HRE.DEPTID,
+               IF(#language#='en', HRD.DEPT_EN_NAME, HRD.DEPTNAME) DEPTNAME,
+               HRE.DUTY_CODE DUTY_ID,
+               IF(#language#='en', J.CODE_EN_NAME, J.CODE_NAME) DUTY_NAME,
+               HRE.POSITION_ID POSITION_ID,
+               IF(#language#='en', HRPO.POSITION_EN_NAME, HRPO.POSITION_NAME) POSITION_NAME,
+               HRE.POST_ID POST_ID,
+               IF(#language#='en', HRP.POST_EN_NAME, HRP.POST_NAME) POST_NAME,
+               HRE.POST_GRADE_ID POST_GRADE_ID,
+               IF(#language#=
+                      'en',
+                      HRPGR.POST_GRADE_EN_NAME,
+                      HRPGR.POST_GRADE_NAME) POST_GRADE_NAME,
+               HRE.POST_COEF,
+               HRE.POST_GRADE_LEVEL_CODE POST_GRADE_LEVEL_ID,
+               IF(#language#=
+                      'en',
+                      HRPGRL.POST_GRADE_LEVEL_EN_NAME,
+                      HRPGRL.POST_GRADE_LEVEL_NAME) POST_GRADE_LEVEL_NAME,
+               HRE.POST_GROUP_ID POST_GROUP_ID,
+               IF(#language#=
+                      'en',
+                      HRPG.POST_GROUP_EN_NAME,
+                      HRPG.POST_GROUP_NAME) POST_GROUP_NAME,
+               HRE.STATUS_CODE,
+               IF(#language#='en', M.CODE_EN_NAME, M.CODE_NAME) STATUS_NAME,
+               HRE.JOIN_TYPE_CODE,
+               IF(#language#='en', N.CODE_EN_NAME, N.CODE_NAME) JOIN_TYPE_NAME,
+               date_format(HRE.JOIN_DATE, '%Y-%m-%d') JOIN_DATE,
+               date_format(HRE.HIRE_DATE, '%Y-%m-%d') HIRE_DATE,
+               date_format(HRE.END_PROBATION_DATE, '%Y-%m-%d') END_PROBATION_DATE,
+               date_format(HRE.LEFT_DATE, '%Y-%m-%d') LEFT_DATE,
+               HRE.COSTCENTER,
+               HRE.EMP_TYPE_CODE,
+               IF(#language#='en', A.CODE_EN_NAME, A.CODE_NAME) EMP_TYPE_NAME,
+               aa.IDCARD_NO IDCARD_NO,
+               aa.ACTIVITY,
+               aa.AFFIRM_FLAG,
+               aa.REMARK,
+               aa.CANCEL_REMARK,
+               aa.REWARD_CONTENTS,
+               aa.REWARD_TYPE_CODE,
+               IF(#language#='en', aa.B_CODE_EN_NAME, aa.B_CODE_NAME) REWARD_TYPE_NAME,
+               aa.REWARD_SORT_CODE,
+               IF(#language#='en', aa.C_CODE_EN_NAME, aa.C_CODE_NAME) REWARD_SORT_NAME,
+               aa.ACHIEVEMENT_TYPE_CODE,
+               IF(#language#='en', aa.D_CODE_EN_NAME, aa.D_CODE_NAME) ACHIEVEMENT_TYPE_NAME,
+               aa.REWARD_GRADE_CODE,
+               IF(#language#='en', aa.E_CODE_EN_NAME, aa.E_CODE_NAME) REWARD_GRADE_NAME,
+               aa.REWARD_REASON,
+               aa.REWARD_AMOUNT,
+               aa.REWARD_BONUS,
+               aa.EXECUTED,
+               date_format(aa.REWARD_DATE, '%Y-%m-%d') REWARD_DATE
+        FROM   HR_EMPLOYEE         HRE left join HR_DEPARTMENT       HRD		on HRE.DEPTID = HRD.DEPTID
+        							   left join HR_POSITION         HRPO		on HRE.POSITION_ID = HRPO.POSITION_ID
+        							   left join HR_POST             HRP		on HRE.POST_ID = HRP.POST_ID
+        							   left join HR_POST_GROUP       HRPG		on HRE.POST_GROUP_ID = HRPG.POST_GROUP_ID
+        							   left join HR_POST_GRADE       HRPGR		on HRE.POST_GRADE_ID = HRPGR.POST_GRADE_ID
+        							   left join HR_POST_GRADE_LEVEL HRPGRL		on HRE.POST_GRADE_LEVEL_CODE = HRPGRL.POST_GRADE_LEVEL_ID
+        							   left join SY_CODE             J			on HRE.DUTY_CODE = J.CODE_ID
+        							   left join SY_CODE             M			on HRE.STATUS_CODE = M.CODE_ID
+        							   left join SY_CODE             N			on HRE.JOIN_TYPE_CODE = N.CODE_ID
+        							   left join SY_CODE             A			on HRE.EMP_TYPE_CODE = A.CODE_ID
+        							   right join (select HRR.*,HPI.IDCARD_NO,B.CODE_EN_NAME B_CODE_EN_NAME, B.CODE_NAME B_CODE_NAME,
+        							   					 		C.CODE_EN_NAME C_CODE_EN_NAME, C.CODE_NAME C_CODE_NAME,
+        							   					 		D.CODE_EN_NAME D_CODE_EN_NAME, D.CODE_NAME D_CODE_NAME,
+        							   					 		E.CODE_EN_NAME E_CODE_EN_NAME, E.CODE_NAME E_CODE_NAME
+        							   		from HR_REWARD  HRR 
+        							   		left join HR_PERSONAL_INFO    HPI on HRR.EMPID = HPI.EMPID
+        							   		left join SY_CODE             B on HRR.REWARD_TYPE_CODE = B.CODE_ID
+        							   		left join SY_CODE             C on HRR.REWARD_SORT_CODE = C.CODE_ID
+        							   		left join SY_CODE             D on HRR.ACHIEVEMENT_TYPE_CODE = D.CODE_ID
+        							   		left join SY_CODE             E on HRR.REWARD_GRADE_CODE = E.CODE_ID
+        							   		) as aa on aa.EMPID = HRE.EMPID
+        WHERE aa.ACTIVITY = 1
+        ]]>
+        <include refid="seachgetRewardInfo" />
+        <include refid="EmpCondition" />
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                  ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY REWARD_DATE DESC
+             ]]>
+        </isEmpty>
+    </select>
+
+    <select id="getRewardInfoCnt" parameterClass="linkMap" resultClass="int" remapResults="true">
+        <![CDATA[
+            SELECT COUNT(aa.EMPID) CNT
+            FROM   HR_EMPLOYEE         HRE left join HR_DEPARTMENT       HRD		on HRE.DEPTID = HRD.DEPTID
+        							   left join HR_POSITION         HRPO		on HRE.POSITION_ID = HRPO.POSITION_ID
+        							   left join HR_POST             HRP		on HRE.POST_ID = HRP.POST_ID
+        							   left join HR_POST_GROUP       HRPG		on HRE.POST_GROUP_ID = HRPG.POST_GROUP_ID
+        							   left join HR_POST_GRADE       HRPGR		on HRE.POST_GRADE_ID = HRPGR.POST_GRADE_ID
+        							   left join HR_POST_GRADE_LEVEL HRPGRL		on HRE.POST_GRADE_LEVEL_CODE = HRPGRL.POST_GRADE_LEVEL_ID
+        							   left join SY_CODE             J			on HRE.DUTY_CODE = J.CODE_ID
+        							   left join SY_CODE             M			on HRE.STATUS_CODE = M.CODE_ID
+        							   left join SY_CODE             N			on HRE.JOIN_TYPE_CODE = N.CODE_ID
+        							   left join SY_CODE             A			on HRE.EMP_TYPE_CODE = A.CODE_ID
+        							   right join (select HRR.*,HPI.IDCARD_NO,B.CODE_EN_NAME B_CODE_EN_NAME, B.CODE_NAME B_CODE_NAME,
+        							   					 		C.CODE_EN_NAME C_CODE_EN_NAME, C.CODE_NAME C_CODE_NAME,
+        							   					 		D.CODE_EN_NAME D_CODE_EN_NAME, D.CODE_NAME D_CODE_NAME,
+        							   					 		E.CODE_EN_NAME E_CODE_EN_NAME, E.CODE_NAME E_CODE_NAME
+        							   		from HR_REWARD  HRR 
+        							   		left join HR_PERSONAL_INFO    HPI on HRR.EMPID = HPI.EMPID
+        							   		left join SY_CODE             B on HRR.REWARD_TYPE_CODE = B.CODE_ID
+        							   		left join SY_CODE             C on HRR.REWARD_SORT_CODE = C.CODE_ID
+        							   		left join SY_CODE             D on HRR.ACHIEVEMENT_TYPE_CODE = D.CODE_ID
+        							   		left join SY_CODE             E on HRR.REWARD_GRADE_CODE = E.CODE_ID
+        							   		) as aa on aa.EMPID = HRE.EMPID
+        WHERE aa.ACTIVITY = 1
+        ]]>
+        <include refid="EmpCondition" />
+        <include refid="seachgetRewardInfo" />
+    </select>
+
+    <!-- comment :查询每月奖励汇总信息 -->
+    <select id="getSumRewardInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT     MIN(HRE.EMPID) EMPID,
+                MIN(IF('', 'en', HRE.ENGLISHNAME, HRE.CHINESENAME)) CHINESENAME,
+                MIN(IF('', 'en', HRD.DEPT_EN_NAME, HRD.DEPTNAME)) DEPTNAME,
+                SUM(HRR.REWARD_AMOUNT) SUMREWARD_AMOUNT
+            FROM   HR_REWARD         HRR,
+	            HR_EMPLOYEE         HRE,
+	            HR_DEPARTMENT       HRD,
+	            HR_POST             HRP
+            WHERE HRR.EMPID = HRE.EMPID(+)
+                AND HRE.DEPTID = HRD.DEPTID(+)
+                AND HRE.POST_ID = HRP.POST_ID(+)
+                AND HRR.ACTIVITY = 1
+                AND HRR.EXECUTED = 1
+                AND HRR.REWARD_DATE >=str_to_date(#S_DATE#,'%Y-%m-%d')
+                AND HRR.REWARD_DATE <=str_to_date(#E_DATE#,'%Y-%m-%d')
+                AND EXISTS (
+                             SELECT EMPID FROM
+                                 (
+                                 SELECT EMPID FROM HR_EMPLOYEE H2
+                                     WHERE EXISTS
+                                     (
+                                     SELECT S2.ADMINID AS EMPID
+                                         FROM SY_ADMIN_DEPTID S1, SY_ADMIN S2
+                                         WHERE S2.ADMINNO = S1.ADMIN_NO
+                                         AND S2.ADMINID = #HR_ADMIN_ID#
+                                         AND H2.DEPTID=S1.ADMIN_DEPTID
+                                     )
+                                 UNION
+                                 SELECT #HR_ADMIN_ID# AS EMPID FROM DUAL
+                              ) S3
+                              WHERE S3.EMPID = HRE.EMPID
+                        )
+                 GROUP BY HRE.EMPID
+                 ORDER BY HRE.EMPID
+        ]]>
+    </select>
+
+    <update id="cancelRewardInfo" parameterClass="linkMap">
+        <![CDATA[
+            UPDATE HR_REWARD
+            SET ACTIVITY = 0 ,CANCEL_REMARK = #CANCEL_REMARK#
+            WHERE REWARD_NO = #REWARD_NO#
+                AND   CPNY_ID = #CPNY_ID#
+        ]]>
+    </update>
+
+    <update id="cancelRewardInfoRecover" parameterClass="linkMap">
+        <![CDATA[
+            UPDATE HR_REWARD
+            SET ACTIVITY = 1 ,CANCEL_REMARK = #CANCEL_REMARK#
+            WHERE REWARD_NO = #REWARD_NO#
+                AND   CPNY_ID = #CPNY_ID#
+        ]]>
+    </update>
+
+    <!-- comment :查讯惩戒信息 -->
+    <select id="getPunishMent" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT HRE.EMPID,
+               IF(#language#='en', HRE.ENGLISHNAME, HRE.CHINESENAME) CHINESENAME,
+               aa.PUNISHMENT_NO,
+               aa.TRANS_NO,
+               aa.TRANS_CODE,
+               HRE.DEPTID,
+               IF(#language#='en', HRD.DEPT_EN_NAME, HRD.DEPTNAME) DEPTNAME,
+               HRE.DUTY_CODE DUTY_ID,
+               IF(#language#='en', J.CODE_EN_NAME, J.CODE_NAME) DUTY_NAME,
+               HRE.POSITION_ID POSITION_ID,
+               IF(#language#='en', HRPO.POSITION_EN_NAME, HRPO.POSITION_NAME) POSITION_NAME,
+               HRE.POST_ID POST_ID,
+               IF(#language#='en', HRP.POST_EN_NAME, HRP.POST_NAME) POST_NAME,
+               HRE.POST_GRADE_ID POST_GRADE_ID,
+               IF(#language#=
+                      'en',
+                      HRPGR.POST_GRADE_EN_NAME,
+                      HRPGR.POST_GRADE_NAME) POST_GRADE_NAME,
+               HRE.POST_COEF,
+               HRE.POST_GRADE_LEVEL_CODE POST_GRADE_LEVEL_ID,
+               IF(#language#=
+                      'en',
+                      HRPGRL.POST_GRADE_LEVEL_EN_NAME,
+                      HRPGRL.POST_GRADE_LEVEL_NAME) POST_GRADE_LEVEL_NAME,
+               HRE.POST_GROUP_ID POST_GROUP_ID,
+               IF(#language#=
+                      'en',
+                      HRPG.POST_GROUP_EN_NAME,
+                      HRPG.POST_GROUP_NAME) POST_GROUP_NAME,
+               HRE.STATUS_CODE,
+               IF(#language#='en', M.CODE_EN_NAME, M.CODE_NAME) STATUS_NAME,
+               HRE.JOIN_TYPE_CODE,
+               IF(#language#='en', N.CODE_EN_NAME, N.CODE_NAME) JOIN_TYPE_NAME,
+               date_format(HRE.JOIN_DATE, '%Y-%m-%d') JOIN_DATE,
+               date_format(HRE.HIRE_DATE, '%Y-%m-%d') HIRE_DATE,
+               date_format(HRE.END_PROBATION_DATE, '%Y-%m-%d') END_PROBATION_DATE,
+               date_format(HRE.LEFT_DATE, '%Y-%m-%d') LEFT_DATE,
+               HRE.COSTCENTER,
+               HRE.EMP_TYPE_CODE,
+               IF(#language#='en', A.CODE_EN_NAME, A.CODE_NAME) EMP_TYPE_NAME,
+               aa.IDCARD_NO IDCARD_NO,
+               aa.ACTIVITY,
+               aa.AFFIRM_FLAG,
+               aa.EXECUTED,
+               aa.REMARK,
+               aa.CANCEL_REMARK,
+               aa.PUN_REASON,
+               aa.PUN_AMOUNT,
+               aa.PUN_RESULT,
+               aa.PUN_TYPE_CODE,
+               IF(#language#='en', aa.B_CODE_EN_NAME, aa.B_CODE_NAME) PUN_TYPE_NAME,
+               aa.VIOLATION_TYPE_CODE,
+               IF(#language#='en', aa.C_CODE_EN_NAME, aa.C_CODE_NAME) VIOLATION_TYPE_NAME,
+
+               date_format(aa.PUNISHED_DATE, '%Y-%m-%d') PUNISHED_DATE,
+               date_format(aa.DATE_RELEASED, '%Y-%m-%d') DATE_RELEASED
+        FROM HR_EMPLOYEE HRE left join HR_DEPARTMENT       HRD		on HRE.DEPTID = HRD.DEPTID
+        					 left join HR_POST             HRP		on HRE.POST_ID = HRP.POST_ID
+        					 left join HR_POST_GROUP       HRPG		on HRE.POST_GROUP_ID = HRPG.POST_GROUP_ID
+        					 left join HR_POSITION         HRPO		on HRE.POSITION_ID = HRPO.POSITION_ID
+        					 left join HR_POST_GRADE       HRPGR	on HRE.POST_GRADE_ID = HRPGR.POST_GRADE_ID
+        					 left join HR_POST_GRADE_LEVEL HRPGRL	on HRE.POST_GRADE_LEVEL_CODE = HRPGRL.POST_GRADE_LEVEL_ID
+        					 left join SY_CODE             J		on HRE.DUTY_CODE = J.CODE_ID
+        					 left join SY_CODE             M		on HRE.STATUS_CODE = M.CODE_ID
+        					 left join SY_CODE             N		on HRE.JOIN_TYPE_CODE = N.CODE_ID
+        					 left join SY_CODE             A 		on HRE.EMP_TYPE_CODE = A.CODE_ID
+        					 right join (select HRPU.*,HPI.IDCARD_NO,
+        					 					B.CODE_EN_NAME B_CODE_EN_NAME, B.CODE_NAME B_CODE_NAME,
+        					 					C.CODE_EN_NAME C_CODE_EN_NAME, C.CODE_NAME C_CODE_NAME
+        					 				from HR_PUNISHMENT HRPU
+        					 				left join HR_PERSONAL_INFO    HPI on HRPU.EMPID = HPI.EMPID
+        					 				left join SY_CODE             B   on HRPU.PUN_TYPE_CODE = B.CODE_ID
+        					 				left join SY_CODE             C   on HRPU.VIOLATION_TYPE_CODE = C.CODE_ID
+        					 				)as aa on aa.EMPID = HRE.EMPID
+         WHERE aa.ACTIVITY = 1
+        ]]>
+        <include refid="EmpCondition" />
+        <include refid="seachgetPunishMent1" />
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                  ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY aa.PUNISHED_DATE DESC
+             ]]>
+        </isEmpty>
+    </select>
+
+    <select id="getPunishMentCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(aa.EMPID) CNT
+            FROM HR_EMPLOYEE HRE left join HR_DEPARTMENT       HRD		on HRE.DEPTID = HRD.DEPTID
+        					 left join HR_POST             HRP		on HRE.POST_ID = HRP.POST_ID
+        					 left join HR_POST_GROUP       HRPG		on HRE.POST_GROUP_ID = HRPG.POST_GROUP_ID
+        					 left join HR_POSITION         HRPO		on HRE.POSITION_ID = HRPO.POSITION_ID
+        					 left join HR_POST_GRADE       HRPGR	on HRE.POST_GRADE_ID = HRPGR.POST_GRADE_ID
+        					 left join HR_POST_GRADE_LEVEL HRPGRL	on HRE.POST_GRADE_LEVEL_CODE = HRPGRL.POST_GRADE_LEVEL_ID
+        					 left join SY_CODE             J		on HRE.DUTY_CODE = J.CODE_ID
+        					 left join SY_CODE             M		on HRE.STATUS_CODE = M.CODE_ID
+        					 left join SY_CODE             N		on HRE.JOIN_TYPE_CODE = N.CODE_ID
+        					 left join SY_CODE             A 		on HRE.EMP_TYPE_CODE = A.CODE_ID
+        					 right join (select HRPU.*,HPI.IDCARD_NO,
+        					 					B.CODE_EN_NAME B_CODE_EN_NAME, B.CODE_NAME B_CODE_NAME,
+        					 					C.CODE_EN_NAME C_CODE_EN_NAME, C.CODE_NAME C_CODE_NAME
+        					 				from HR_PUNISHMENT HRPU
+        					 				left join HR_PERSONAL_INFO    HPI on HRPU.EMPID = HPI.EMPID
+        					 				left join SY_CODE             B   on HRPU.PUN_TYPE_CODE = B.CODE_ID
+        					 				left join SY_CODE             C   on HRPU.VIOLATION_TYPE_CODE = C.CODE_ID
+        					 				)as aa on aa.EMPID = HRE.EMPID
+         WHERE aa.ACTIVITY = 1
+        ]]>
+        <include refid="EmpCondition" />
+        <include refid="seachgetPunishMent1" />
+    </select>
+
+    <!-- comment :查询每月惩戒汇总信息 -->
+    <select id="getSumPunishmentInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT     MIN(HRE.EMPID) EMPID,
+                       MIN(IF('', 'en', HRE.ENGLISHNAME, HRE.CHINESENAME)) CHINESENAME,
+                       MIN(IF('', 'en', HRD.DEPT_EN_NAME, HRD.DEPTNAME)) DEPTNAME,
+                       SUM(HRPU.PUN_AMOUNT) SUMPUN_AMOUNT
+                  FROM HR_PUNISHMENT     HRPU,
+                       HR_EMPLOYEE         HRE,
+                       HR_DEPARTMENT       HRD
+                 WHERE HRPU.EMPID = HRE.EMPID(+)
+                   AND HRE.DEPTID = HRD.DEPTID(+)
+                   AND HRPU.ACTIVITY = 1
+                   AND HRPU.EXECUTED = 1
+                   AND HRPU.PUNISHED_DATE >=str_to_date(#S_DATE#,'%Y-%m-%d')
+                   AND HRPU.PUNISHED_DATE <=str_to_date(#E_DATE#,'%Y-%m-%d')
+                   AND EXISTS (
+                            SELECT EMPID FROM
+                                   (
+                                   SELECT EMPID FROM HR_EMPLOYEE H2
+                                                    WHERE EXISTS
+                                                    (
+                                                    SELECT S2.ADMINID AS EMPID
+                                                        FROM SY_ADMIN_DEPTID S1, SY_ADMIN S2
+                                                        WHERE S2.ADMINNO = S1.ADMIN_NO
+                                                        AND S2.ADMINID = #HR_ADMIN_ID#
+                                                        AND H2.DEPTID=S1.ADMIN_DEPTID
+                                                    )
+                                                UNION
+                                                SELECT #HR_ADMIN_ID# AS EMPID FROM DUAL
+                                             ) S3
+                                             WHERE S3.EMPID = HRE.EMPID
+                                       )
+                   GROUP BY HRPU.EMPID
+                   ORDER BY HRPU.EMPID
+        ]]>
+    </select>
+
+    <update id="cancelPunishMentInfo" parameterClass="linkMap">
+        <![CDATA[
+               UPDATE HR_PUNISHMENT
+                  SET ACTIVITY = 0 ,CANCEL_REMARK = #CANCEL_REMARK#
+                WHERE PUNISHMENT_NO = #PUNISHMENT_NO#
+                AND   CPNY_ID = #CPNY_ID#
+              ]]>
+    </update>
+
+    <update id="cancelPunishMentInfoRecover" parameterClass="linkMap">
+        <![CDATA[
+               UPDATE HR_PUNISHMENT
+                  SET ACTIVITY = 1 ,CANCEL_REMARK = #CANCEL_REMARK#
+                WHERE PUNISHMENT_NO = #PUNISHMENT_NO#
+                AND   CPNY_ID = #CPNY_ID#
+              ]]>
+    </update>
+
+    <!-- comment :查讯退社信息 -->
+    <select id="getResignInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT HRE.EMPID,
+               IF(#language#='en', HRE.ENGLISHNAME, HRE.CHINESENAME) CHINESENAME,
+               aa.RESIGN_NO,
+               aa.TRANS_NO,
+               aa.TRANS_CODE,
+               HRE.DEPTID,
+               IF(#language#='en', HRD.DEPT_EN_NAME, HRD.DEPTNAME) DEPTNAME,
+               HRE.DUTY_CODE DUTY_ID,
+               IF(#language#='en', J.CODE_EN_NAME, J.CODE_NAME) DUTY_NAME,
+               HRE.POSITION_ID POSITION_ID,
+               IF(#language#='en', HRPO.POSITION_EN_NAME, HRPO.POSITION_NAME) POSITION_NAME,
+               HRE.POST_ID POST_ID,
+               IF(#language#='en', HRP.POST_EN_NAME, HRP.POST_NAME) POST_NAME,
+               HRE.POST_GRADE_ID POST_GRADE_ID,
+               IF(#language#=
+                      'en',
+                      HRPGR.POST_GRADE_EN_NAME,
+                      HRPGR.POST_GRADE_NAME) POST_GRADE_NAME,
+               HRE.POST_COEF,
+               HRE.POST_GRADE_LEVEL_CODE POST_GRADE_LEVEL_ID,
+               IF(#language#=
+                      'en',
+                      HRPGRL.POST_GRADE_LEVEL_EN_NAME,
+                      HRPGRL.POST_GRADE_LEVEL_NAME) POST_GRADE_LEVEL_NAME,
+               HRE.POST_GROUP_ID POST_GROUP_ID,
+               IF(#language#=
+                      'en',
+                      HRPG.POST_GROUP_EN_NAME,
+                      HRPG.POST_GROUP_NAME) POST_GROUP_NAME,
+               aa.IDCARD_NO   IDCARD_NO,
+               HRE.STATUS_CODE,
+               IF(#language#='en', M.CODE_EN_NAME, M.CODE_NAME) STATUS_NAME,
+               HRE.JOIN_TYPE_CODE,
+               IF(#language#='en', N.CODE_EN_NAME, N.CODE_NAME) JOIN_TYPE_NAME,
+               date_format(HRE.JOIN_DATE, '%Y-%m-%d') JOIN_DATE,
+               date_format(HRE.HIRE_DATE, '%Y-%m-%d') HIRE_DATE,
+               date_format(HRE.END_PROBATION_DATE, '%Y-%m-%d') END_PROBATION_DATE,
+               date_format(HRE.LEFT_DATE, '%Y-%m-%d') LEFT_DATE,
+               HRE.COSTCENTER,
+               HRE.EMP_TYPE_CODE,
+               IF(#language#='en', A.CODE_EN_NAME, A.CODE_NAME) EMP_TYPE_NAME,
+               aa.EXECUTED,
+               aa.AFFIRM_FLAG,
+               aa.REMARK,
+               aa.CANCEL_REMARK,
+               aa.RESIGN_FINE,
+               aa.RESIGN_REASON,
+               aa.PROCESSID,
+               aa.RESIGN_TYPE_CODE,
+               IF(#language#='en', aa.CODE_EN_NAME, aa.CODE_NAME) RESIGN_TYPE_NAME,
+               date_format(aa.RESIGN_DATE, '%Y-%m-%d') RESIGN_DATE
+        FROM   HR_EMPLOYEE         HRE		
+               left join HR_DEPARTMENT       HRD	on HRE.DEPTID = HRD.DEPTID
+               left join HR_POSITION         HRPO	on HRE.POSITION_ID = HRPO.POSITION_ID
+               left join HR_POST             HRP	on HRE.POST_ID = HRP.POST_ID
+               left join HR_POST_GROUP       HRPG	on HRE.POST_GROUP_ID = HRPG.POST_GROUP_ID
+               left join HR_POST_GRADE_LEVEL HRPGRL	on HRE.POST_GRADE_LEVEL_CODE = HRPGRL.POST_GRADE_LEVEL_ID
+               left join HR_POST_GRADE       HRPGR	on HRE.POST_GRADE_ID = HRPGR.POST_GRADE_ID
+               left join SY_CODE             J		on HRE.DUTY_CODE = J.CODE_ID
+               left join SY_CODE             M		on HRE.STATUS_CODE = M.CODE_ID
+               left join SY_CODE             N		on HRE.JOIN_TYPE_CODE = N.CODE_ID
+               left join SY_CODE             A		on HRE.EMP_TYPE_CODE = A.CODE_ID
+               right join (select HRR.* ,HPI.IDCARD_NO,
+               							B.CODE_EN_NAME, B.CODE_NAME
+               				from HR_RESIGNATION  HRR
+               				left join HR_PERSONAL_INFO    HPI on HRR.EMPID = HPI.EMPID
+               				left join SY_CODE             B   on HRR.RESIGN_TYPE_CODE = B.CODE_ID)as aa on aa.EMPID = HRE.EMPID
+        WHERE aa.ACTIVITY = 1
+        ]]>
+        <include refid="EmpCondition" />
+        <include refid="seachgetResignation" />
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                  ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY  aa.RESIGN_DATE DESC
+            ]]>
+        </isEmpty>
+    </select>
+
+    <select id="getResignInfoCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(aa.EMPID)    CNT
+            FROM   HR_EMPLOYEE         HRE		
+               left join HR_DEPARTMENT       HRD	on HRE.DEPTID = HRD.DEPTID
+               left join HR_POSITION         HRPO	on HRE.POSITION_ID = HRPO.POSITION_ID
+               left join HR_POST             HRP	on HRE.POST_ID = HRP.POST_ID
+               left join HR_POST_GROUP       HRPG	on HRE.POST_GROUP_ID = HRPG.POST_GROUP_ID
+               left join HR_POST_GRADE_LEVEL HRPGRL	on HRE.POST_GRADE_LEVEL_CODE = HRPGRL.POST_GRADE_LEVEL_ID
+               left join HR_POST_GRADE       HRPGR	on HRE.POST_GRADE_ID = HRPGR.POST_GRADE_ID
+               left join SY_CODE             J		on HRE.DUTY_CODE = J.CODE_ID
+               left join SY_CODE             M		on HRE.STATUS_CODE = M.CODE_ID
+               left join SY_CODE             N		on HRE.JOIN_TYPE_CODE = N.CODE_ID
+               left join SY_CODE             A		on HRE.EMP_TYPE_CODE = A.CODE_ID
+               right join (select HRR.* ,HPI.IDCARD_NO,
+               							B.CODE_EN_NAME, B.CODE_NAME
+               				from HR_RESIGNATION  HRR
+               				left join HR_PERSONAL_INFO    HPI on HRR.EMPID = HPI.EMPID
+               				left join SY_CODE             B   on HRR.RESIGN_TYPE_CODE = B.CODE_ID)as aa on aa.EMPID = HRE.EMPID
+        WHERE aa.ACTIVITY = 1
+        ]]>
+        <include refid="EmpCondition" />
+        <include refid="seachgetResignation" />
+    </select>
+
+    <update id="cancelResignInfo" parameterClass="linkMap">
+        <![CDATA[
+            UPDATE HR_RESIGNATION
+            SET ACTIVITY = 0 ,CANCEL_REMARK = #CANCEL_REMARK#
+            WHERE RESIGN_NO = #RESIGN_NO#
+            AND   CPNY_ID = #CPNY_ID#
+        ]]>
+    </update>
+
+    <update id="cancelResignInfoRecover" parameterClass="linkMap">
+        <![CDATA[
+            UPDATE HR_RESIGNATION
+               SET ACTIVITY = 1 ,CANCEL_REMARK = #CANCEL_REMARK#
+            WHERE RESIGN_NO = #RESIGN_NO#
+            AND   CPNY_ID = #CPNY_ID#
+        ]]>
+    </update>
+</sqlMap>

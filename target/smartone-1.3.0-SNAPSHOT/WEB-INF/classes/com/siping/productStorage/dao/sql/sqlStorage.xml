@@ -1,0 +1,385 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap
+        PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+        "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="prostor.storage">
+    <sql id="storageCondition">
+        <isNotEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+                (
+                    S.STORAGE_ID LIKE concat('%',TRIM(#keyWord#),'%')
+                    OR S.STORAGE_NAME LIKE concat('%',TRIM(#keyWord#),'%')
+                    OR S.STORAGE_REMARK LIKE concat('%',TRIM(#keyWord#),'%')
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="STORAGESTARTDATE">
+            <![CDATA[
+                (
+                    S.STORAGE_BEGIN_DATE >= str_to_date(#STORAGESTARTDATE#,'%Y-%m-%d')
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="STORAGEENDDATE">
+            <![CDATA[
+                (
+                    S.STORAGE_BEGIN_DATE <= str_to_date(#STORAGEENDDATE#,'%Y-%m-%d')
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="CPNY_ID">
+            <![CDATA[
+                (
+                    S.CPNY_ID = #CPNY_ID#
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="NOT_STORAGE_NO">
+            <![CDATA[
+                (
+                    S.STORAGE_NO <> #NOT_STORAGE_NO#
+                )
+            ]]>
+        </isNotEmpty>
+    </sql>
+
+    <insert id="addNewStorage" parameterClass="linkMap">
+        <![CDATA[
+             INSERT INTO PROSTOR_STORAGE_INFO(
+                   STORAGE_NO,
+                   STORAGE_ID,
+                   STORAGE_EN_NAME,
+                   STORAGE_NAME,
+                   PLACE_CODE,
+                   STORAGE_ADDRESS,
+                   STORAGE_REMARK,
+                   MANAGE_EMPID,
+                   STORAGE_BEGIN_DATE,
+                   STORAGE_END_DATE,
+                   CREATE_DATE,
+                   CREATED_BY,
+                   ACTIVITY,
+                   CPNY_ID)
+             VALUES(
+                   PROSTOR_STORAGE_INFO_SEQ.NEXTVAL,
+                   #storageId#,
+                   #storageName#,
+                   #storageName#,
+                   #storageAreaCode#,
+                   #storageAddr#,
+                   #storageMemo#,
+                   #manageEmpID#,
+                  str_to_date(#storageStartDate#,'%Y-%m-%d %H:%i:%s'),
+                  str_to_date(#storageEndDate#,'%Y-%m-%d %H:%i:%s'),
+                   NOW(),
+                   #createdBy#,
+                   1,
+                   #companyID#)
+            ]]>
+    </insert>
+    <!-- <select id="getAllStorages" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+                SELECT S.STORAGE_NO STORAGENO,
+                       S.STORAGE_ID STORAGEID,
+                       DECODE(#language#, 'en', NVL(STORAGE_EN_NAME, STORAGE_NAME), STORAGE_NAME) STORAGENAME,
+                       TO_CHAR(S.STORAGE_BEGIN_DATE,'yyyy-mm-dd') STORAGESTARTDATE,
+                       TO_CHAR(S.STORAGE_END_DATE,'yyyy-mm-dd') STORAGEENDDATE,
+                       PROVINCE.CODE_ID PROVINCECODE,
+                       PROVINCE.CODE_NAME PROVINCE,
+                       CITY.CODE_ID CITYCODE,
+                       CITY.CODE_NAME CITY,
+                       COUNTY.CODE_ID COUNTYCODE,
+                       COUNTY.CODE_NAME COUNTY,
+                       S.STORAGE_ADDRESS STORAGEADDR,
+                       S.STORAGE_REMARK STORAGEMEMO,
+                       S.STORAGE_PHOTOPATH PHOTOPATH
+                FROM
+                       PROSTOR_STORAGE_INFO S,
+                       SY_CODE COUNTY,
+                       SY_CODE CITY,
+                       SY_CODE PROVINCE
+                WHERE  S.PLACE_CODE = COUNTY.CODE_ID(+)
+                AND    COUNTY.PARENT_CODE = CITY.CODE_ID(+)
+                AND    CITY.PARENT_CODE = PROVINCE.CODE_ID(+)
+                AND    S.ACTIVITY = 1
+                       ]]> -->
+                       
+    <select id="getAllStorages" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+        SELECT S.STORAGE_NO STORAGENO,
+                       S.STORAGE_ID STORAGEID,
+                       if(#language#='en', ifnull(STORAGE_EN_NAME, STORAGE_NAME), STORAGE_NAME) STORAGENAME,
+                      date_format(S.STORAGE_BEGIN_DATE,'%Y-%m-%d') STORAGESTARTDATE,
+                       date_format(S.STORAGE_END_DATE,'%Y-%m-%d') STORAGEENDDATE,
+                       PROVINCE.CODE_ID PROVINCECODE,
+                       PROVINCE.CODE_NAME PROVINCE,
+                       CITY.CODE_ID CITYCODE,
+                       CITY.CODE_NAME CITY,
+                       COUNTY.CODE_ID COUNTYCODE,
+                       COUNTY.CODE_NAME COUNTY,
+                       S.STORAGE_ADDRESS STORAGEADDR,
+                       S.STORAGE_REMARK STORAGEMEMO,
+                       S.STORAGE_PHOTOPATH PHOTOPATH
+FROM PROSTOR_STORAGE_INFO S                     
+left join  SY_CODE COUNTY on  S.PLACE_CODE = COUNTY.CODE_ID
+left join   SY_CODE CITY  on COUNTY.PARENT_CODE = CITY.CODE_ID
+left join   SY_CODE PROVINCE on  CITY.PARENT_CODE = PROVINCE.CODE_ID
+where S.ACTIVITY = 1
+        
+             ]]>                
+                <include refid="storageCondition" />
+    </select>
+    <select id="getStorageCount" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+                SELECT COUNT(S.STORAGE_NO)
+                FROM PROSTOR_STORAGE_INFO S
+                WHERE S.ACTIVITY = 1
+        ]]>
+        <include refid="storageCondition" />
+    </select>
+ <update id="updateStorage" parameterClass="linkMap">
+        <![CDATA[
+                UPDATE  PROSTOR_STORAGE_INFO
+                SET     STORAGE_ID = #storageId#,
+                        STORAGE_EN_NAME = #storageName#,
+                        STORAGE_NAME = #storageName#,
+                        STORAGE_BEGIN_DATE = str_to_date(#storageStartDate#,'%Y-%m-%d %H:%i:%s'),
+                        STORAGE_END_DATE = str_to_date(#storageEndDate#,'%Y-%m-%d %H:%i:%s'),
+                        PLACE_CODE = #storageAreaCode#,
+                        STORAGE_ADDRESS = #storageAddr#,
+                        STORAGE_REMARK = #storageMemo#,
+                        UPDATE_DATE = SYSDATE,
+                        UPDATED_BY = #updatedBy#
+                WHERE   STORAGE_NO = #storageNo#
+        ]]>
+    </update> 
+    
+    
+    <select id="productCountInStorage" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+                SELECT COUNT(PRODUCT_ID)
+                FROM   PROSTOR_STORAGE_PRODUCT
+                WHERE  STORAGE_ID = #ID#
+                AND    ACTIVITY = 1
+        ]]>
+    </select>
+    <procedure id="deleteStorage" parameterClass="linkMap" resultClass="string">
+        <![CDATA[
+                {CALL DELETE_STORAGE(#NO#, #companyID#, #updatedBy#, #resultMessage,jdbcType=VARCHAR,mode=OUT#)}
+        ]]>
+    </procedure>
+    <select id="getStorageName" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+                SELECT PSI.STORAGE_NO,
+                       PSI.STORAGE_NAME
+                FROM PROSTOR_STORAGE_INFO PSI
+                WHERE PSI.ACTIVITY = 1
+                      AND PSI.CPNY_ID = #CPNY_ID#
+        ]]>
+    </select>
+   <!--  <select id="getStorageProList" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+        SELECT * FROM(
+            SELECT PP.PRODUCT_NO,
+                   PP.PRODUCT_ID,
+                   PP.PRODUCT_NAME,
+                   PP.SPECIFICATION,
+                   PP.UNIT_CODE_ID,
+                   DECODE(#language#,'en',S.CODE_EN_NAME,S.CODE_NAME) CODE_NAME,
+                   PSP.LEFT_QUANTITY,
+                   NVL((
+                       SELECT PSPP.MIN_QUANTITY FROM PROSTOR_STORAGE_PRODUCT_PARAM PSPP 
+                       WHERE PSPP.ACTIVITY = 1
+                       AND PSPP.STORAGE_NO = PSP.STORAGE_NO
+                       AND PSPP.PRODUCT_NO = PSP.PRODUCT_NO
+                   ),'') MIN_QUANTITY,
+                   NVL((
+                       SELECT PSPP.MAX_QUANTITY FROM PROSTOR_STORAGE_PRODUCT_PARAM PSPP 
+                       WHERE PSPP.ACTIVITY = 1
+                       AND PSPP.STORAGE_NO = PSP.STORAGE_NO
+                       AND PSPP.PRODUCT_NO = PSP.PRODUCT_NO
+                   ),'') MAX_QUANTITY,
+                   NVL((
+                       SELECT PSPP.STOR_ADDR FROM PROSTOR_STORAGE_PRODUCT_PARAM PSPP 
+                       WHERE PSPP.ACTIVITY = 1
+                       AND PSPP.STORAGE_NO = PSP.STORAGE_NO
+                       AND PSPP.PRODUCT_NO = PSP.PRODUCT_NO
+                   ),'') STOR_ADDR,
+                   PP.STATUS,
+                   PSI.STORAGE_NAME,
+                   PSI.STORAGE_NO
+            FROM PROSTOR_STORAGE_PRODUCT PSP,
+                 PROSTOR_PRODUCT PP,
+                 PROSTOR_STORAGE_INFO PSI,
+                 SY_CODE S
+            WHERE PSP.PRODUCT_NO = PP.PRODUCT_NO(+)
+            	  AND PP.UNIT_CODE_ID = S.CODE_ID(+)
+                  AND PSP.STORAGE_NO = PSI.STORAGE_NO(+)
+                  AND PSP.ACTIVITY = 1
+                  AND PP.ACTIVITY = 1
+                  AND PSP.CPNY_ID = #CPNY_ID#
+                  AND PSP.STORAGE_NO = #STORAGE_NO#
+        ]]>
+         -->
+        <select id="getStorageProList" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+         SELECT * FROM(
+            SELECT PP.PRODUCT_NO,
+                   PP.PRODUCT_ID,
+                   PP.PRODUCT_NAME,
+                   PP.SPECIFICATION,
+                   PP.UNIT_CODE_ID,
+                   if(#language#='en',S.CODE_EN_NAME,S.CODE_NAME) CODE_NAME,
+                   PSP.LEFT_QUANTITY,
+                   ifnull((
+                       SELECT PSPP.MIN_QUANTITY FROM PROSTOR_STORAGE_PRODUCT_PARAM PSPP 
+                       WHERE PSPP.ACTIVITY = 1
+                       AND PSPP.STORAGE_NO = PSP.STORAGE_NO
+                       AND PSPP.PRODUCT_NO = PSP.PRODUCT_NO
+                   ),'') MIN_QUANTITY,
+                  ifnull((
+                       SELECT PSPP.MAX_QUANTITY FROM PROSTOR_STORAGE_PRODUCT_PARAM PSPP 
+                       WHERE PSPP.ACTIVITY = 1
+                       AND PSPP.STORAGE_NO = PSP.STORAGE_NO
+                       AND PSPP.PRODUCT_NO = PSP.PRODUCT_NO
+                   ),'') MAX_QUANTITY,
+                  ifnull((
+                       SELECT PSPP.STOR_ADDR FROM PROSTOR_STORAGE_PRODUCT_PARAM PSPP 
+                       WHERE PSPP.ACTIVITY = 1
+                       AND PSPP.STORAGE_NO = PSP.STORAGE_NO
+                       AND PSPP.PRODUCT_NO = PSP.PRODUCT_NO
+                   ),'') STOR_ADDR,
+                   PP.STATUS,
+                   PSI.STORAGE_NAME,
+                   PSI.STORAGE_NO
+            FROM PROSTOR_STORAGE_PRODUCT PSP,
+                 PROSTOR_PRODUCT PP,
+                 PROSTOR_STORAGE_INFO PSI,
+                 SY_CODE S
+            WHERE PSP.PRODUCT_NO = PP.PRODUCT_NO(+)
+            	  AND PP.UNIT_CODE_ID = S.CODE_ID(+)
+                  AND PSP.STORAGE_NO = PSI.STORAGE_NO(+)
+                  AND PSP.ACTIVITY = 1
+                  AND PP.ACTIVITY = 1
+                  AND PSP.CPNY_ID = #CPNY_ID#
+                  AND PSP.STORAGE_NO = #STORAGE_NO#
+        ]]>
+        
+        <isNotEmpty prepend="AND" property="PRODUCT_NO">
+            <![CDATA[
+                PSP.PRODUCT_NO = #PRODUCT_NO#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="proKeyWords">
+			<![CDATA[
+				(PP.PRODUCT_ID LIKE concat('%',TRIM(#proKeyWords#),'%')
+				OR PP.PRODUCT_NAME LIKE concat('%',TRIM(#proKeyWords#),'%')
+				OR PP.SPECIFICATION LIKE concat('%',TRIM(#proKeyWords#),'%'))
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY $sortname$ $sortorder$
+			]]>
+		</isNotEmpty>
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY PP.PRODUCT_NAME
+			]]>
+		</isEmpty>
+		<![CDATA[
+		    ) STO_PRO
+		    WHERE 1=1
+		]]>
+		<isNotEmpty prepend="AND" property="Warning">
+            <![CDATA[
+                STO_PRO.LEFT_QUANTITY < STO_PRO.MIN_QUANTITY
+            ]]>
+        </isNotEmpty>
+    </select>
+    <select id="getStorageProListCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(PP.PRODUCT_NAME)
+            FROM PROSTOR_STORAGE_PRODUCT PSP left join 
+                 PROSTOR_PRODUCT PP on  PSP.PRODUCT_NO = PP.PRODUCT_NO
+            WHERE PSP.ACTIVITY = 1
+                  AND PP.ACTIVITY = 1
+                  AND PSP.CPNY_ID = #CPNY_ID#
+                  AND PSP.STORAGE_NO = #STORAGE_NO#
+        ]]>
+    </select>
+    
+    <update id="moveStorage" parameterClass="linkMap">
+        <![CDATA[
+        DECLARE
+        	V_COUNT NUMBER;
+        	V_MOVE_QUANTITY NUMBER := #MOVE_QUANTITY#;
+        BEGIN
+	        IF V_MOVE_QUANTITY IS NOT NULL OR V_MOVE_QUANTITY > 0 THEN
+	        	UPDATE PROSTOR_STORAGE_PRODUCT SET
+	        		LEFT_QUANTITY = LEFT_QUANTITY-#MOVE_QUANTITY#,
+	        		UPDATE_DATE = SYSDATE,
+	        		UPDATED_BY = #UPDATED_BY#
+	        	WHERE
+	        		STORAGE_NO = #STORAGE_NO_FROM#
+	        	AND PRODUCT_NO = #PRODUCT_NO#
+	        	AND ACTIVITY = 1
+	        	AND CPNY_ID = #CPNY_ID#;
+        	
+	        	SELECT COUNT(0) INTO V_COUNT FROM PROSTOR_STORAGE_PRODUCT
+	        	WHERE STORAGE_NO = #STORAGE_NO_TO#
+	        	AND PRODUCT_NO = #PRODUCT_NO#
+	        	AND ACTIVITY = 1
+	        	AND CPNY_ID = #CPNY_ID#;
+	        	
+	        	IF V_COUNT>0 THEN
+	        		UPDATE PROSTOR_STORAGE_PRODUCT SET
+		        		LEFT_QUANTITY = LEFT_QUANTITY+#MOVE_QUANTITY#,
+		        		UPDATE_DATE = SYSDATE,
+	        			UPDATED_BY = #UPDATED_BY#
+		        	WHERE
+		        		STORAGE_NO = #STORAGE_NO_TO#
+		        	AND PRODUCT_NO = #PRODUCT_NO#
+		        	AND ACTIVITY = 1
+		        	AND CPNY_ID = #CPNY_ID#;
+	        	ELSE
+	        		INSERT INTO PROSTOR_STORAGE_PRODUCT(STORAGE_NO,PRODUCT_NO,LEFT_QUANTITY,QUANTITY_UNIT_CODE,CREATE_DATE,CREATED_BY,ACTIVITY,CPNY_ID) 
+	        		VALUES(#STORAGE_NO_TO#,#PRODUCT_NO#,#MOVE_QUANTITY#,#UNIT_CODE_ID#,SYSDATE,#UPDATED_BY#,1,#CPNY_ID#);
+	        	END IF;
+        	END IF;
+        	
+        	SELECT COUNT(0) INTO V_COUNT FROM PROSTOR_STORAGE_PRODUCT_PARAM
+        	WHERE STORAGE_NO = #STORAGE_NO_TO#
+        	AND PRODUCT_NO = #PRODUCT_NO#
+        	AND ACTIVITY = 1
+        	AND CPNY_ID = #CPNY_ID#;
+        	
+        	IF V_COUNT>0 THEN
+        		UPDATE PROSTOR_STORAGE_PRODUCT_PARAM SET
+	        		MIN_QUANTITY = #MIN_QUANTITY#,
+	        		MAX_QUANTITY = #MAX_QUANTITY#,
+	        		STOR_ADDR = #STOR_ADDR#,
+	        		UPDATE_DATE = SYSDATE,
+        			UPDATED_BY = #UPDATED_BY#
+	        	WHERE
+	        		STORAGE_NO = #STORAGE_NO_TO#
+	        	AND PRODUCT_NO = #PRODUCT_NO#
+	        	AND ACTIVITY = 1
+	        	AND CPNY_ID = #CPNY_ID#;
+        	ELSE
+        		INSERT INTO PROSTOR_STORAGE_PRODUCT_PARAM(STORAGE_NO,PRODUCT_NO,MIN_QUANTITY,MAX_QUANTITY,STOR_ADDR,CREATE_DATE,CREATED_BY,ACTIVITY,CPNY_ID) 
+        		VALUES(#STORAGE_NO_TO#,#PRODUCT_NO#,#MIN_QUANTITY#,#MAX_QUANTITY#,#STOR_ADDR#,SYSDATE,#UPDATED_BY#,1,#CPNY_ID#);
+        	END IF;
+        END;
+        ]]>
+    </update>
+    
+    <select id="checkStorageId" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(0) FROM PROSTOR_STORAGE_INFO PS
+            WHERE PS.ACTIVITY = 1
+            AND PS.CPNY_ID = #companyID#
+            AND PS.STORAGE_ID = #storageId#
+        ]]>
+    </select>
+</sqlMap>

@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="att.attCardRecord">
+	<sql id="getAttCardRecordInfoCondition" >
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+				(	
+					HRE.CHINESENAME 		LIKE '%'||TRIM(#keyWord#)||'%'
+					OR HRE.EMPID 			LIKE '%'||TRIM(#keyWord#)||'%'
+					OR HRD.DEPTNAME 		LIKE '%'||TRIM(#keyWord#)||'%' 
+					OR upper(HRD.DEPT_EN_NAME) LIKE '%'||TRIM(upper(#keyWord#))||'%'
+					OR upper(HRE.CHINESE_PINYIN) LIKE '%'||TRIM(upper(#keyWord#))||'%'
+					OR upper(HRE.ENGLISHNAME) LIKE '%'||TRIM(upper(#keyWord#))||'%'
+				)
+			]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="AND" property="DEPTID">
+			<![CDATA[
+				EXISTS (
+					SELECT *
+						FROM HR_DEPARTMENT B1
+						WHERE B1.DEPTID=HRE.DEPTID
+						START WITH B1.DEPTID = #DEPTID#
+						CONNECT BY PRIOR B1.DEPTID = B1.PARENT_DEPT_ID
+					)
+			]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="AND" property="EMPID">
+			<![CDATA[
+				AMR.EMPID = #EMPID#
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="IN_FLAG_CODE" >
+			<![CDATA[
+					AMR.IN_FLAG = #IN_FLAG_CODE#
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="CARD_DOOR_TYPE" >
+			<![CDATA[
+				AMR.CARD_DOOR_TYPE = #CARD_DOOR_TYPE#
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="S_DATE" >
+			<![CDATA[
+				TO_CHAR(AMR.R_TIME,'YYYY-MM-DD') >= #S_DATE#
+			]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="AND" property="E_DATE" >
+			<![CDATA[
+				TO_CHAR(AMR.R_TIME,'YYYY-MM-DD') <= #E_DATE#
+			]]>
+		</isNotEmpty>
+	</sql>
+
+	<select id="getAttCardRecordInfo" parameterClass="linkMap" resultClass="linkMap"  >
+		<![CDATA[
+		SELECT HRE.EMPID,
+			DECODE(#language#, 'en', HRE.ENGLISHNAME, HRE.CHINESENAME) CHINESENAME,
+			HRE.DEPTID,
+			DECODE(#language#, 'en', HRD.DEPT_EN_NAME, HRD.DEPTNAME) DEPTNAME,		       
+			AMR.CARD_DOOR_TYPE,
+			DECODE(#language#, 'en', A.CODE_EN_NAME, A.CODE_NAME) CARD_DOOR_NAME,
+			AMR.RECORD_NO,
+			AMR.CARD_ID,
+			TO_CHAR(AMR.R_TIME,'YYYY-MM-DD HH24:MI') R_TIME, 
+			TO_CHAR(AMR.ATT_DATE,'YYYY-MM-DD') ATT_DATE,
+			AMR.IN_FLAG IN_FLAG_CODE,
+			DECODE(#language#, 'en', B.CODE_EN_NAME, B.CODE_NAME) IN_FLAG_NAME,
+			AMR.IN_ID,
+			AMR.REMARK,
+			TO_CHAR(AMR.CREATE_DATE,'YYYY-MM-DD HH24:MI') CREATE_DATE,
+			AMR.CREATED_BY ,
+			TO_CHAR(AMR.UPDATE_DATE,'YYYY-MM-DD HH24:MI') UPDATE_DATE,
+			AMR.UPDATED_BY
+		FROM AR_MAC_RECORD AMR,
+			HR_EMPLOYEE HRE,
+			HR_DEPARTMENT HRD,
+			SY_CODE A,
+			SY_CODE B
+		WHERE AMR.EMPID = HRE.EMPID(+) 
+			AND HRE.DEPTID = HRD.DEPTID(+)
+			AND AMR.CARD_DOOR_TYPE = A.CODE_ID(+)
+			AND AMR.IN_FLAG = B.CODE_ID(+) 
+		]]>
+
+		<include refid="getAttCardRecordInfoCondition"/>
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY $sortname$ $sortorder$
+			]]>
+		</isNotEmpty>
+
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY AMR.R_TIME DESC,HRE.EMPID, AMR.CARD_DOOR_TYPE
+			]]>
+		</isEmpty>
+
+	</select>
+
+	<select id="getAttCardRecordInfoCnt" parameterClass="linkMap" resultClass="int"  >
+		<![CDATA[ 
+		SELECT COUNT(*) CNT
+			FROM AR_MAC_RECORD AMR,
+				HR_EMPLOYEE HRE,
+				HR_DEPARTMENT HRD,
+				SY_CODE A,
+				SY_CODE B
+		WHERE AMR.EMPID = HRE.EMPID(+) 
+		AND HRE.DEPTID = HRD.DEPTID(+)
+		AND AMR.CARD_DOOR_TYPE = A.CODE_ID(+)
+		AND AMR.IN_FLAG = B.CODE_ID(+) 
+		]]> 
+		<include refid="getAttCardRecordInfoCondition"/>
+
+	</select>
+
+	<update id="updateAttCardRecordInfo" parameterClass="linkMap" >
+		<![CDATA[
+			UPDATE AR_MAC_RECORD A
+				SET R_TIME = TO_DATE(#R_TIME#,'YYYY-MM-DD HH24:MI'),
+					DOOR_TYPE = #DOOR_TYPE#,
+					IN_FLAG = 'M',
+					INSERT_TIME = SYSDATE,
+					OPERATOR_ID = #OPERATOR_ID#,
+					REMARK = #REMARK#
+				WHERE A.RECORD_NO = #RECORD_NO# 
+		]]>
+	</update>
+	<delete id="deleteAttCardRecordInfo" parameterClass="linkMap" >
+		<![CDATA[
+			DELETE FROM AR_MAC_RECORD A WHERE A.RECORD_NO = #RECORD_NO# 
+		]]>
+	</delete>
+
+	<insert id="addAttCardRecordInfo" parameterClass="linkMap">
+		<![CDATA[
+			INSERT INTO AR_MAC_RECORD(
+				RECORD_NO,
+				EMPID,
+				R_TIME,
+				ATT_DATE,
+				ACTIVITY,
+				IN_FLAG,
+				CREATED_BY,
+				CREATE_DATE)
+			VALUES (
+				AR_MAC_RECORD_SEQ.NEXTVAL,
+				#EMPID#,
+				TO_DATE(#R_TIME#,'YYYY-MM-DD HH24:MI:SS'),
+				TO_DATE(#ATT_DATE#,'YYYY-MM-DD'),
+				1,
+				#IN_FLAG#,
+				#CREATED_BY#,
+				SYSDATE)
+		]]>
+	</insert>
+</sqlMap>

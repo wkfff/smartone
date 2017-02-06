@@ -1,0 +1,156 @@
+/*
+* Xuui jQuery Mobile CSS Lite Theme.
+* Dual licensed under the MIT or GPL Version 2 licenses.
+* http://jquery.org/license
+*/
+@import url("jqm.structure.css");
+/* Theme Start
+-----------------------------------------------------------------------------------------------------------*/
+.ui-bar-a{}
+.ui-bar-a .ui-link-inherit{}
+.ui-bar-a .ui-link{}
+.ui-bar-a .ui-link:hover{}
+.ui-bar-a .ui-link:active{}
+.ui-bar-a .ui-link:visited{}
+.ui-bar-a,.ui-bar-a input,.ui-bar-a select,.ui-bar-a textarea,.ui-bar-a button{}
+.ui-body-a,.ui-overlay-a{}
+.ui-overlay-a{}
+.ui-body-a,.ui-body-a input,.ui-body-a select,.ui-body-a textarea,.ui-body-a button{}
+.ui-body-a .ui-link-inherit{}
+.ui-body-a .ui-link{}
+.ui-body-a .ui-link:hover{}
+.ui-body-a .ui-link:active{}
+.ui-body-a .ui-link:visited{}
+.ui-btn-up-a{}
+.ui-btn-up-a a.ui-link-inherit{}
+.ui-btn-hover-a{}
+.ui-btn-hover-a a.ui-link-inherit{}
+.ui-btn-down-a{}
+.ui-btn-down-a a.ui-link-inherit{}
+.ui-btn-up-a,.ui-btn-hover-a,.ui-btn-down-a{}
+
+/* Structure */
+/* links within "buttons" 
+-----------------------------------------------------------------------------------------------------------*/
+a.ui-link-inherit{}
+
+/* Active class used as the "on" state across all themes
+-----------------------------------------------------------------------------------------------------------*/
+.ui-btn-active{}
+.ui-btn-active a.ui-link-inherit{}
+
+/* button inner top highlight
+-----------------------------------------------------------------------------------------------------------*/
+.ui-btn-inner{}
+
+/* corner rounding classes
+-----------------------------------------------------------------------------------------------------------*/
+.ui-corner-tl{}
+.ui-corner-tr{}
+.ui-corner-bl{}
+.ui-corner-br{}
+.ui-corner-top{}
+.ui-corner-bottom{}
+.ui-corner-right{}
+.ui-corner-left{}
+.ui-corner-all{}
+.ui-corner-none{}
+
+/* Form field separator
+-----------------------------------------------------------------------------------------------------------*/
+.ui-br{}
+
+/* Interaction cues
+-----------------------------------------------------------------------------------------------------------*/
+.ui-disabled{}
+.ui-disabled,.ui-disabled a{}
+.ui-disabled .ui-btn-text{}
+
+/* Icons
+-----------------------------------------------------------------------------------------------------------*/
+.ui-icon,.ui-icon-searchfield:after{}
+
+/* Alt icon color
+-----------------------------------------------------------------------------------------------------------*/
+.ui-icon-alt{}
+
+/* HD/"retina" sprite
+-----------------------------------------------------------------------------------------------------------*/
+@media only screen and (-webkit-min-device-pixel-ratio:1.5),only screen and (min--moz-device-pixel-ratio:1.5),only screen and (min-resolution:240dpi){
+.ui-icon-plus,.ui-icon-minus,.ui-icon-delete,.ui-icon-arrow-r,.ui-icon-arrow-l,.ui-icon-arrow-u,.ui-icon-arrow-d,.ui-icon-check,	.ui-icon-gear,.ui-icon-refresh,.ui-icon-forward,.ui-icon-back,.ui-icon-grid,.ui-icon-star,.ui-icon-alert,.ui-icon-info,.ui-icon-home,.ui-icon-search,.ui-icon-searchfield:after,.ui-icon-checkbox-off,.ui-icon-checkbox-on,.ui-icon-radio-off,.ui-icon-radio-on{}
+.ui-icon-alt{}
+}
+
+/* plus minus */
+.ui-icon-plus{}
+.ui-icon-minus{}
+
+/* delete/close */
+.ui-icon-delete{}
+
+/* arrows */
+.ui-icon-arrow-r{}
+.ui-icon-arrow-l{}
+.ui-icon-arrow-u{}
+.ui-icon-arrow-d{}
+
+/* misc */
+.ui-icon-check{}
+.ui-icon-gear{}
+.ui-icon-refresh{}
+.ui-icon-forward{}
+.ui-icon-back{}
+.ui-icon-grid{}
+.ui-icon-star{}
+.ui-icon-alert{}
+.ui-icon-info{}
+.ui-icon-home{}
+.ui-icon-search,.ui-icon-searchfield:after{}
+.ui-icon-checkbox-off{}
+.ui-icon-checkbox-on{}
+.ui-icon-radio-off{}
+.ui-icon-radio-on{}
+
+/* checks,radios */
+.ui-checkbox .ui-icon{}
+.ui-icon-checkbox-off,.ui-icon-radio-off{}
+.ui-checkbox-on .ui-icon,.ui-radio-on .ui-icon{}
+
+/* loading icon */
+.ui-icon-loading{}
+
+/* Button corner classes
+-----------------------------------------------------------------------------------------------------------*/
+.ui-btn-corner-tl{}
+.ui-btn-corner-tr{}
+.ui-btn-corner-bl{}
+.ui-btn-corner-br{}
+.ui-btn-corner-top{}
+.ui-btn-corner-bottom{}
+.ui-btn-corner-right{}
+.ui-btn-corner-left{}
+.ui-btn-corner-all{}
+
+/* radius clip workaround for cleaning up corner trapping */
+.ui-corner-tl,.ui-corner-tr,.ui-corner-bl,.ui-corner-br,.ui-corner-top,.ui-corner-bottom,.ui-corner-right,.ui-corner-left,.ui-corner-all,.ui-btn-corner-tl,.ui-btn-corner-tr,.ui-btn-corner-bl,.ui-btn-corner-br,.ui-btn-corner-top,.ui-btn-corner-bottom,.ui-btn-corner-right,.ui-btn-corner-left,.ui-btn-corner-all{}
+
+/* Overlay / modal
+-----------------------------------------------------------------------------------------------------------*/
+.ui-overlay{}
+.ui-overlay-shadow{}
+.ui-shadow{}
+.ui-bar-a .ui-shadow,.ui-bar-b .ui-shadow,.ui-bar-c .ui-shadow{}
+.ui-shadow-inset{}
+.ui-icon-shadow{}
+
+/* Focus state - set here for specificity (note: these classes are added by JavaScript)
+-----------------------------------------------------------------------------------------------------------*/
+.ui-btn:focus{}
+.ui-focus,.ui-btn:focus{}
+
+/* unset box shadow in browsers that don't do it right
+-----------------------------------------------------------------------------------------------------------*/
+.ui-mobile-nosupport-boxshadow *{}
+
+/* ...and bring back focus */
+.ui-mobile-nosupport-boxshadow .ui-focus,.ui-mobile-nosupport-boxshadow .ui-btn:focus{}

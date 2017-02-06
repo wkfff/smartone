@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+    PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+    "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="ass.assManage">
+    <select id="checkAssetID" parameterClass="linkMap" resultClass="int">
+    <![CDATA[
+    SELECT COUNT(0) FROM ASS_ASSET_INFO T WHERE T.ASSET_ID = #ASSET_ID#  
+    ]]>         
+    </select>
+
+    <select id="checkAssetName" parameterClass="linkMap" resultClass="int">
+    <![CDATA[
+    SELECT COUNT(0) FROM SY_CODE T WHERE T.CODE_NAME = #ASSET_NAME# 
+                    AND T.PARENT_CODE = 'ToolCode'  
+    ]]>         
+    </select>
+    
+    <select id="checkCategoryName" parameterClass="linkMap" resultClass="int">
+    <![CDATA[
+    SELECT COUNT(0) FROM SY_CODE T WHERE T.CODE_NAME = #CODE_NAME# 
+                    AND T.PARENT_CODE = 'AssetCategoryCode'  
+    ]]>         
+    </select>
+    
+    <insert id="addAsset" parameterClass="linkMap">
+    <![CDATA[
+   
+            INSERT INTO ASS_ASSET_INFO(ASSET_ID,ASSET_CATEGORY_CODE,ASSET_MODEL,ASSET_NAME,ASSET_EN_NAME,
+                                       MANUFACTURER,MANUFACTURE_DATE,INTERNATIONAL_NUMBER,PURCHASE_DATE,
+                                       NET_SALVAGE_VALUE,SERVICE_LIFE,ORIGINAL_VALUE,NET_VALUE,DEPRECIATION_WAY,
+                                       STATUS_CODE,STATUS_REMARK,DESCRIPTION,DEPTID,USER_ID,REMARK,PHOTOPATH,
+                                       ORDERNO,CREATE_DATE,CREATED_BY,ACTIVITY,CPNY_ID,ALLOW_BORROW) 
+                   VALUES(#ASSET_ID#,#ASSET_CATEGORY_CODE#,#ASSET_MODEL#,#ASSET_NAME#,#ASSET_EN_NAME#,
+                                       #MANUFACTURER#,
+         ]]>
+         <isNotEmpty property="MANUFACTURE_DATE">
+            <![CDATA[
+                    STR_TO_DATE(#MANUFACTURE_DATE#,'%Y-%m-%d %T'),
+             ]]>
+        </isNotEmpty>
+        <isEmpty property="MANUFACTURE_DATE">
+            <![CDATA[
+                    null,
+             ]]>
+        </isEmpty>
+        <![CDATA[
+                                       #INTERNATIONAL_NUMBER#,
+                                       STR_TO_DATE(#PURCHASE_DATE#,'%Y-%m-%d %T'),
+                                       #NET_SALVAGE_VALUE#,#SERVICE_LIFE#,#ORIGINAL_VALUE#,#NET_VALUE#,#DEPRECIATION_WAY#,
+                                       #STATUS_CODE#,#STATUS_REMARK#,#DESCRIPTION#,#DEPTID#,#USER_ID#,#REMARK#,#PHOTOPATH#,
+                                       #ORDERNO#,NOW(),#CREATED_BY#,1,'wooribank',#ALLOW_BORROW#);
+  
+    ]]>
+    </insert>
+    
+    <select id="getAssetId" resultClass="int">
+<!--         SELECT ASS_ASSET_INFO_SEQ.NEXTVAL FROM DUAL -->
+		SELECT Auto_increment
+			FROM information_schema.`TABLES`
+			WHERE Table_Schema='smartone_v1'
+			AND table_name = 'ass_asset_info'
+    </select>
+    
+    <select id="getLastCodeID" parameterClass="linkMap" resultClass="string">
+    <![CDATA[
+        SELECT CODE_ID FROM (SELECT CODE_ID FROM SY_CODE WHERE PARENT_CODE = #PARENT_CODE# ORDER BY CODE_ID DESC ) 
+                       WHERE ROWNUM =1  
+    ]]> 
+    </select>
+
+    <insert id="addCategory" parameterClass="linkMap">
+    <![CDATA[
+        INSERT INTO SY_CODE(CODE_NO,CODE_ID,CODE_NAME,CODE_EN_NAME,PARENT_CODE,
+                                       DEPTH,CREATE_DATE,CREATED_BY,ACTIVITY,CPNY_ID)
+                   VALUES(SY_CODE_SEQ.NEXTVAL,#CODE_ID#,#CODE_NAME#,#CODE_EN_NAME#,#PARENT_CODE#,
+                                       2,now(),#CREATED_BY#,1,'wooribank')
+    ]]> 
+    </insert>
+    
+    <update id="updateAsset" parameterClass="linkMap">
+    <![CDATA[
+      
+            UPDATE ASS_ASSET_INFO SET UPDATED_BY=#UPDATED_BY#, UPDATE_DATE=now(),ASSET_CATEGORY_CODE=#ASSET_CATEGORY_CODE#,ASSET_NAME=#ASSET_NAME#,ASSET_EN_NAME=#ASSET_EN_NAME#,
+                               MANUFACTURER=#MANUFACTURER#,
+                               
+                               INTERNATIONAL_NUMBER=#INTERNATIONAL_NUMBER#,ALLOW_BORROW=#ALLOW_BORROW#,
+                               NET_SALVAGE_VALUE=#NET_SALVAGE_VALUE#,SERVICE_LIFE=#SERVICE_LIFE#,ORIGINAL_VALUE=#ORIGINAL_VALUE#,NET_VALUE=#NET_VALUE#,
+                               STATUS_CODE=#STATUS_CODE#,STATUS_REMARK=#STATUS_REMARK#,DESCRIPTION=#DESCRIPTION#,DEPTID=#DEPTID#,USER_ID=#USER_ID#,
+                               DEPRECIATION_WAY=#DEPRECIATION_WAY#,PURCHASE_DATE=STR_TO_DATE(#PURCHASE_DATE#,'%Y-%m-%d %T'),REMARK=#REMARK#,ASSET_MODEL=#ASSET_MODEL#
+                               
+
+    ]]> 
+    <isNotEmpty property="MANUFACTURE_DATE">
+            <![CDATA[
+                    MANUFACTURE_DATE=STR_TO_DATE(#MANUFACTURE_DATE#,'%Y-%m-%d %T'),
+             ]]>
+        </isNotEmpty>
+        <![CDATA[
+                    WHERE ASSET_ID = #ASSET_ID#;
+             ]]>
+    </update>
+
+    <update id="removeAsset" parameterClass="linkMap">
+    <![CDATA[
+        
+            UPDATE ASS_ASSET_INFO SET UPDATED_BY=#UPDATED_BY#, UPDATE_DATE=now(), ACTIVITY=0, REMOVE_REMARK=#REMOVE_REMARK#
+                               WHERE ASSET_ID = #ASSET_ID#;                    
+      
+    ]]> 
+    </update>
+
+</sqlMap>

@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap
+    PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+    "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="doc.docManage">
+
+    <select id="checkDocumentID" parameterClass="linkMap" resultClass="int">
+    <![CDATA[
+        SELECT COUNT(0) FROM CUST_BASIC_INFO T WHERE T.CUST_ID = #CUST_ID#
+    ]]>
+    </select>
+
+    <!-- <procedure id="addDocument" parameterClass="linkMap">
+    <![CDATA[
+        {CALL DOC_CREATE(#DOC_T_ID#,#ID_TYPE#,#DOC_NAME#,#DOC_TYPE_ID#,#DOC_VERSION#,#DOC_PART#,#DESCRIPTION#,
+        #CREATED_BY#,#CPNY_ID#,#DOC_ID,jdbcType=VARCHAR,mode=OUT#)}
+    ]]>
+    </procedure> -->
+
+    <insert id="addDocument" parameterClass="document">
+        <![CDATA[
+            INSERT INTO DOC_INFO (
+                DOC_NO,
+                DOC_ID,
+                DOC_NAME,
+                DOC_VERSION,
+                DOC_PART,
+                RUNNING_NO,
+                DESCRIPTION,
+                CREATE_DATE,
+                CREATED_BY,
+                CPNY_ID,
+                ACTIVITY )
+            VALUES(
+                #no#,
+                #id#||'',
+                #name#,
+                #version#,
+                #part#,
+                #processRunning.no#,
+                #description#,
+                #metaData.createDate#,
+                #metaData.createUser.adminID#,
+                #metaData.company.companyId#,
+                #active# )
+        ]]>
+    </insert>
+
+    <update id="updateDocument" parameterClass="document">
+    <![CDATA[
+        UPDATE  DOC_INFO SET
+                DESCRIPTION=#description#,
+                UPDATED_BY=#metaData.lastUpdateUser.adminID#,
+                UPDATE_DATE=#metaData.lastUpdateDate#
+            WHERE CPNY_ID = #metaData.company.companyId#
+            AND DOC_NO = #no#
+    ]]>
+    </update>
+
+    <update id="removeDocument" parameterClass="document">
+    <![CDATA[
+        UPDATE DOC_INFO SET
+                UPDATED_BY=#metaData.lastUpdateUser.adminID#,
+                UPDATE_DATE=#metaData.lastUpdateDate#,
+                ACTIVITY=#active#
+        WHERE CPNY_ID = #metaData.company.companyId#
+        AND DOC_NO = #no#
+    ]]>
+    </update>
+
+    <update id="updateDocumentStatus" parameterClass="linkMap">
+    <![CDATA[
+        DECLARE
+        BEGIN
+            UPDATE DOC_INFO SET DOC_STATUS_ID = #DOC_STATUS_ID#,PROCESS_NO = #PROCESS_NO#,
+            UPDATED_BY=#UPDATED_BY#, UPDATE_DATE=SYSDATE
+            WHERE DOC_ID = #DOC_ID#
+            AND   CPNY_ID = #CPNY_ID#;
+        END;
+    ]]>
+    </update>
+
+    <insert id="uploadFile">
+    <selectKey resultClass="long" keyProperty="no">
+        <![CDATA[
+        SELECT DOC_FILE_SEQ.NEXTVAL AS no FROM DUAL
+        ]]>
+        </selectKey>
+    <![CDATA[
+            INSERT INTO DOC_FILE_INFO(FILE_NO,DOC_NO,FILE_NAME,FILE_PATH,DESCRIPTION,FILE_VERSION,LOCKED,
+                    CREATED_BY,CREATE_DATE,ACTIVITY,CPNY_ID)
+            VALUES(#no#,#document.no#,#name#,#path#,#description#,#version#,0,
+                    #document.metaData.createUser.adminID#,SYSDATE,1,#document.metaData.company.companyId#)
+    ]]>
+    </insert>
+
+
+    <update id="deleteFile" parameterClass="documentFile" >
+    <![CDATA[
+            UPDATE DOC_FILE_INFO SET UPDATED_BY=#document.metaData.lastUpdateUser.adminID#, UPDATE_DATE=SYSDATE, ACTIVITY=0
+            WHERE FILE_NO = #no#
+    ]]>
+    </update>
+
+    <update id="releaseFileLock" parameterClass="documentFile" >
+    <![CDATA[
+        DECLARE
+        BEGIN
+            UPDATE DOC_FILE_INFO SET LOCKED=0, CHECKED_BY='', CHECK_DATE=''
+            WHERE FILE_NO = #no#;
+        END;
+    ]]>
+    </update>
+
+    <update id="checkOutFile" parameterClass="documentFile">
+    <![CDATA[
+        DECLARE
+        BEGIN
+            UPDATE DOC_FILE_INFO SET CHECKED_BY=#lockUser.adminID#, CHECK_DATE=SYSDATE, LOCKED=1
+            WHERE FILE_NO = #no#;
+        END;
+    ]]>
+    </update>
+    <!-- OBJ PART -->
+    <update id="deleteDocObject" parameterClass="linkMap" >
+    <![CDATA[
+        DECLARE
+        BEGIN
+            UPDATE DOC_OBJECT_REL SET ACTIVITY = 0,UPDATED_BY = #UPDATED_BY#,UPDATE_DATE = SYSDATE
+            WHERE DOC_ID = #DOC_ID#
+            AND   OBJECT_ID = #OBJ_ID#
+            AND   CPNY_ID = #CPNY_ID#
+            AND   OBJECT_TYPE_ID = #OBJ_TYPE#
+            AND   ACTIVITY = 1;
+        END;
+    ]]>
+    </update>
+
+    <insert id="addDocObject" parameterClass="linkMap">
+    <![CDATA[
+        DECLARE
+        BEGIN
+            INSERT INTO DOC_OBJECT_REL(DOC_ID,OBJECT_ID,OBJECT_TYPE_ID,
+                    CREATED_BY,CREATE_DATE,ACTIVITY,CPNY_ID)
+            VALUES(#DOC_ID#,#OBJ_ID#,#OBJ_TYPE#,
+                    #CREATED_BY#,SYSDATE,1,#CPNY_ID#);
+        END;
+    ]]>
+    </insert>
+
+    <insert id="copyDocument" parameterClass="linkMap">
+        <selectKey resultClass="string" keyProperty="NEW_DOC_ID">
+        <![CDATA[
+        SELECT DOC_SEQ.NEXTVAL AS NEW_DOC_ID FROM DUAL
+        ]]>
+        </selectKey>
+        <![CDATA[
+        DECLARE
+        BEGIN
+        INSERT INTO DOC_INFO (DOC_ID,DOC_NAME,DESCRIPTION,DOC_TYPE_ID,DOC_STATUS_ID,DOC_VERSION,
+                      CREATED_BY,CREATE_DATE,UPDATED_BY,UPDATE_DATE,ACTIVITY,CPNY_ID,DOC_PART,
+                      CHANGE_NO,S_DATE,E_DATE,ORI_ID) SELECT
+               #NEW_DOC_ID#,
+               T.DOC_NAME,
+               T.DESCRIPTION,
+               T.DOC_TYPE_ID,
+               GET_PROCESS_DEF_STATUS(T.DOC_TYPE_ID, T.CPNY_ID),
+               T.DOC_VERSION+1,
+               T.CREATED_BY,
+               T.CREATE_DATE,
+               T.UPDATED_BY,
+               T.UPDATE_DATE,
+               T.ACTIVITY,
+               T.CPNY_ID,
+               T.DOC_PART,
+               #CHANGE_NO#,
+               TO_DATE(#S_DATE#,'YYYY-MM-DD'),
+               TO_DATE(#E_DATE#,'YYYY-MM-DD'),
+               T.ORI_ID  FROM DOC_INFO T WHERE T.DOC_ID = #OBJECT_ID# AND T.CPNY_ID = #CPNY_ID#;
+
+         INSERT INTO DOC_FILE_INFO(FILE_ID, DOC_ID, FILE_NAME, FILE_PATH, DESCRIPTION, FILE_VERSION,
+                          CREATED_BY, CREATE_DATE, UPDATED_BY, UPDATE_DATE, LOCKED, ACTIVITY,
+                          CPNY_ID, CHECK_DATE, CHECKED_BY) SELECT
+                 DOC_FILE_SEQ.NEXTVAL,
+                 #NEW_DOC_ID#,
+                 T.FILE_NAME,
+                 T.FILE_PATH,
+                 T.DESCRIPTION,
+                 T.FILE_VERSION,
+                 T.CREATED_BY,
+                 T.CREATE_DATE,
+                 T.UPDATED_BY,
+                 T.UPDATE_DATE,
+                 T.LOCKED,
+                 T.ACTIVITY,
+                 T.CPNY_ID,
+                 T.CHECK_DATE,
+                 T.CHECKED_BY FROM DOC_FILE_INFO T WHERE T.DOC_ID = #OBJECT_ID#  AND T.CPNY_ID = #CPNY_ID# ;
+           END;
+        ]]>
+    </insert>
+
+    <select id="generateDocId" resultClass="string">
+        <![CDATA[
+            SELECT DOC_SEQ.NEXTVAL AS NEW_DOC_ID FROM DUAL
+        ]]>
+    </select>
+
+</sqlMap>

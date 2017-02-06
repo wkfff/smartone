@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="utility.projInfo">
+
+	<sql id="ProjectProcessSearchCondition">
+		<isNotEmpty prepend="AND" property="PROJ_PROS_TYPE_CODE">
+			<isNotEmpty prepend="" property="PRO_NO">
+				PROJ_PROS_TYPE_CODE = #PROJ_PROS_TYPE_CODE#
+			</isNotEmpty>
+			<isEmpty prepend="" property="PRO_NO">
+				A.CODE_ID = #PROJ_PROS_TYPE_CODE#
+			</isEmpty>
+		</isNotEmpty>
+	</sql> 
+	 
+	<select id="getProjectProcessList" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+		<isNotEmpty prepend="" property="PRO_NO">
+			SELECT * FROM (
+			    SELECT  CODE_ID                                          PROJ_PROS_TYPE_CODE,
+			        DECODE(#language# ,'en',A.CODE_EN_NAME,A.CODE_NAME)  PROJ_PROS_TYPE_NAME,
+			        TO_CHAR(EPE.START_DATE,'YYYY-MM-DD')                 START_DATE,
+			        TO_CHAR(EPE.END_DATE,'YYYY-MM-DD')                   END_DATE,
+			        NVL(EPE.QUANTITY,0)                                  QUANTITY,
+			        EPE.PRO_NO                                           PRO_NO
+			    FROM  SY_CODE      A,
+			         ESS_PROJECT_EMP EPE
+			    WHERE  A.PARENT_CODE  = 'ProjectProsTypeCode'
+			         AND  A.CODE_ID = EPE.PROJ_PROS_TYPE_CODE(+)
+			         AND  EPE.PRO_NO  =  #PRO_NO#
+			         AND  A.ACTIVITY = 1
+			
+				UNION
+			
+			    SELECT CODE_ID                                           PROJ_PROS_TYPE_CODE,
+			        DECODE(#language# ,'en',A.CODE_EN_NAME,A.CODE_NAME)  PROJ_PROS_TYPE_NAME,
+			        NULL                                                 START_DATE,
+			        NULL                                                 END_DATE,
+			        0                                                    QUANTITY,
+			        NULL                                                 PRO_NO
+			    FROM  SY_CODE      A,
+			         ESS_PROJECT_EMP EPE
+			    WHERE  A.PARENT_CODE  = 'ProjectProsTypeCode'
+			         AND  A.CODE_ID = EPE.PROJ_PROS_TYPE_CODE(+)
+			         AND  A.ACTIVITY = 1
+			         AND  (EPE.PRO_NO != #PRO_NO# OR EPE.PRO_NO IS NULL)
+			   ) A
+			WHERE 1 = 1
+		</isNotEmpty>
+		<isEmpty prepend="" property="PRO_NO">
+		     SELECT  CODE_ID                                          PROJ_PROS_TYPE_CODE,
+		        DECODE(#language# ,'en',A.CODE_EN_NAME,A.CODE_NAME)   PROJ_PROS_TYPE_NAME,
+		        NULL                                                  START_DATE,
+		        NULL                                                  END_DATE,
+		        0                                                     QUANTITY,
+		        NULL                                                  PRO_NO
+		     FROM  SY_CODE      A
+		     WHERE  A.PARENT_CODE  = 'ProjectProsTypeCode'
+		        AND  A.ACTIVITY = 1
+		</isEmpty>
+		<include refid="ProjectProcessSearchCondition" />
+	</select>
+	
+	<select id="getProjectProcessListCnt" parameterClass="linkMap" resultClass="int">
+		<isNotEmpty prepend="" property="PRO_NO">
+			SELECT COUNT(*) FROM (
+			    SELECT  CODE_ID                                          PROJ_PROS_TYPE_CODE,
+			        DECODE(#language# ,'en',A.CODE_EN_NAME,A.CODE_NAME)  PROJ_PROS_TYPE_NAME,
+			        TO_CHAR(EPE.START_DATE,'YYYY-MM-DD')                 START_DATE,
+			        TO_CHAR(EPE.END_DATE,'YYYY-MM-DD')                   END_DATE,
+			        NVL(EPE.QUANTITY,0)                                  QUANTITY,
+			        EPE.PRO_NO                                           PRO_NO
+			    FROM  SY_CODE      A,
+			         ESS_PROJECT_EMP EPE
+			    WHERE  A.PARENT_CODE  = 'ProjectProsTypeCode'
+			         AND  A.CODE_ID = EPE.PROJ_PROS_TYPE_CODE(+)
+			         AND  EPE.PRO_NO  =  #PRO_NO#
+			         AND  A.ACTIVITY = 1
+			
+				UNION
+			
+			    SELECT  CODE_ID                                           PROJ_PROS_TYPE_CODE,
+			        DECODE(#language# ,'en',A.CODE_EN_NAME,A.CODE_NAME)   PROJ_PROS_TYPE_NAME,
+			        NULL                                                  START_DATE,
+			        NULL                                                  END_DATE,
+			        0                                                     QUANTITY,
+			        NULL                                                  PRO_NO
+			    FROM  SY_CODE      A,
+			         ESS_PROJECT_EMP EPE
+			    WHERE  A.PARENT_CODE  = 'ProjectProsTypeCode'
+			         AND  A.CODE_ID = EPE.PROJ_PROS_TYPE_CODE(+)
+			         AND  A.ACTIVITY = 1
+			         AND  (EPE.PRO_NO != #PRO_NO# OR EPE.PRO_NO IS NULL)
+			   ) A
+			WHERE 1 = 1
+		</isNotEmpty>
+		<isEmpty prepend="" property="PRO_NO">
+			SELECT COUNT(*)
+		    FROM  SY_CODE      A
+		    WHERE  A.PARENT_CODE  = 'ProjectProsTypeCode'
+		        AND  A.ACTIVITY = 1
+		</isEmpty>
+		<include refid="ProjectProcessSearchCondition" />
+	</select>
+</sqlMap>

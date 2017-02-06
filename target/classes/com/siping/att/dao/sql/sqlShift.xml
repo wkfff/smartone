@@ -1,0 +1,539 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap
+    PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+    "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="att.shift">
+    <select id="getShiftInfo" parameterClass="linkMap" resultClass="linkMap"
+        remapResults="true">
+        <![CDATA[
+            SELECT T.SHIFT_NO,
+                   T.SHIFT_ID,
+                   DECODE(#language#, 'en', T.SHIFT_EN_NAME, T.SHIFT_NAME) SHIFT_NAME,
+                   T.DESCR,
+                   DECODE(#language#, 'en', A.TYPE_EN_NAME, A.TYPE_NAME) DATE_TYPE_NAME,
+                   T.DATE_TYPE_ID DATE_TYPE_CODE
+              FROM AR_SHIFT010 T,AR_CALENDER_TYPE A
+              WHERE T.DATE_TYPE_ID = A.TYPE_ID(+)
+                AND T.ACTIVITY = 1
+        ]]>
+        <isNotEmpty prepend="AND" property="SHIFT_NO">
+            <![CDATA[
+                  T.SHIFT_NO = #SHIFT_NO:VARCHAR#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="CPNY_ID">
+            <![CDATA[
+                  T.CPNY_ID = #CPNY_ID:VARCHAR#
+            ]]>
+        </isNotEmpty>
+    </select>
+
+    <select id="getShiftSelectionList" parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.SHIFT_NO ID,
+                   T.SHIFT_NAME NAME,
+                   T.SHIFT_EN_NAME EN_NAME
+              FROM AR_SHIFT010 T,HR_COMPANY B
+              WHERE T.CPNY_ID = B.CPNY_ID(+)
+                AND T.ACTIVITY = 1
+        ]]>
+        <isNotEmpty prepend="AND" property="CPNY_ID">
+            <![CDATA[
+                  T.CPNY_ID = #CPNY_ID:VARCHAR#
+            ]]>
+        </isNotEmpty>
+    </select>
+
+    <select id="getShiftInfoList" parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.SHIFT_NO,
+                   T.SHIFT_ID,
+                   T.SHIFT_NAME,
+                   T.SHIFT_EN_NAME,
+                   T.DESCR,
+                   DECODE(#language#, 'en', A.TYPE_EN_NAME, A.TYPE_NAME) DATE_TYPE_NAME,
+                   T.DATE_TYPE_ID DATE_TYPE_CODE,
+                   T.ACTIVITY STATUS_ID,
+                   DECODE(T.ACTIVITY,
+                          '1',
+                          DECODE(#language#, 'en', 'Available', '可用'),
+                          DECODE(#language#, 'en', 'Unavailable', '不可用')) STATUS,
+                   T.CPNY_ID,
+                   DECODE(#language#, 'en', B.CPNY_EN_NAME, B.CPNY_NAME) CPNY_NAME
+              FROM AR_SHIFT010 T,AR_CALENDER_TYPE A,HR_COMPANY B
+              WHERE T.DATE_TYPE_ID = A.TYPE_ID(+)
+                AND T.CPNY_ID = B.CPNY_ID(+)
+        ]]>
+        <isNotEmpty prepend="AND" property="SHIFT_NO">
+            <![CDATA[
+                  T.SHIFT_NO = #SHIFT_NO:VARCHAR#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="CPNY_ID">
+            <![CDATA[
+                  T.CPNY_ID = #CPNY_ID:VARCHAR#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                  ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY T.SHIFT_ID
+            ]]>
+        </isEmpty>
+    </select>
+
+    <select id="getShiftInfoCnt" parameterClass="linkMap"
+        resultClass="int">
+        <![CDATA[
+            SELECT COUNT(*)
+              FROM AR_SHIFT010 T,AR_CALENDER_TYPE A,HR_COMPANY B
+              WHERE T.DATE_TYPE_ID = A.TYPE_ID(+)
+                AND T.CPNY_ID = B.CPNY_ID(+)
+        ]]>
+        <isNotEmpty prepend="AND" property="SHIFT_NO">
+            <![CDATA[
+                  T.SHIFT_NO = #SHIFT_NO:VARCHAR#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="CPNY_ID">
+            <![CDATA[
+                  T.CPNY_ID = #CPNY_ID:VARCHAR#
+            ]]>
+        </isNotEmpty>
+    </select>
+
+    <insert id="addShiftInfo" parameterClass="linkMap">
+        <![CDATA[
+            INSERT INTO AR_SHIFT010 (
+                    SHIFT_NO,
+                    SHIFT_ID,
+                    SHIFT_NAME,
+                    SHIFT_EN_NAME,
+                    DATE_TYPE_ID,
+                    DESCR,
+                    ACTIVITY,
+                    CPNY_ID,
+                    CREATE_DATE,
+                    CREATED_BY
+                )
+                VALUES(
+                    AR_SHIFT010_SEQ.NEXTVAL,
+                    'SHIFT_' || AR_SHIFT010_SEQ.CURRVAL,
+                    #SHIFT_NAME:VARCHAR#,
+                    #SHIFT_EN_NAME:VARCHAR#,
+                    #DATE_TYPE_CODE:VARCHAR#,
+                    #DESCR:VARCHAR#,
+                    #STATUS_ID#,
+                    #CPNY_ID:VARCHAR#,
+                    SYSDATE,
+                    #CREATED_BY:VARCHAR#
+
+                )
+        ]]>
+    </insert>
+
+    <update id="updateShiftInfo" parameterClass="linkMap">
+        <![CDATA[
+            UPDATE AR_SHIFT010 SET
+                    SHIFT_NAME = #SHIFT_NAME:VARCHAR#,
+                    SHIFT_EN_NAME = #SHIFT_EN_NAME:VARCHAR#,
+                    DATE_TYPE_ID = #DATE_TYPE_CODE:VARCHAR#,
+                    DESCR   = #DESCR:VARCHAR#,
+                    ACTIVITY = #STATUS_ID:VARCHAR#,
+                    CPNY_ID = #CPNY_ID:VARCHAR#,
+                    UPDATE_DATE = SYSDATE,
+                    UPDATED_BY = #UPDATED_BY:VARCHAR#
+
+            WHERE SHIFT_NO = #SHIFT_NO:VARCHAR#
+        ]]>
+    </update>
+
+    <update id="updateShiftParameterInfo" parameterClass="linkMap">
+        <![CDATA[
+            UPDATE AR_SHIFT020 SET
+                    AR_ITEM_NO = #AR_ITEM_NO#,
+                    BEGIN_DAY_OFFSET = #BEGIN_DAY_OFFSET_CODE#,
+                    FROM_TIME = TO_DATE('2011-12-12'||' '||#FROM_TIME#,'YYYY-MM-DD HH24:MI'),
+                    END_DAY_OFFSET = #END_DAY_OFFSET_CODE#,
+                    TO_TIME = TO_DATE('2011-12-12'||' '||#TO_TIME#,'YYYY-MM-DD HH24:MI'),
+                    UPDATE_DATE = SYSDATE,
+                    UPDATED_BY = #UPDATED_BY:VARCHAR#
+
+            WHERE SHIFT_NO = #SHIFT_NO# AND PK_NO = #PK_NO#
+        ]]>
+    </update>
+
+    <delete id="deleteShiftInfo" parameterClass="linkMap">
+        <![CDATA[
+          DELETE   FROM   AR_SHIFT010
+           WHERE  SHIFT_NO = #SHIFT_NO#
+        ]]>
+    </delete>
+
+    <select id="getShiftParameterInfo" parameterClass="linkMap"
+        resultClass="linkMap">
+        <![CDATA[
+            SELECT T.PK_NO,
+                   T.SHIFT_NO,
+                   T.AR_ITEM_NO,
+                   AI.ITEM_NAME,
+                   T.BEGIN_DAY_OFFSET BEGIN_DAY_OFFSET_CODE,
+                   DECODE(T.BEGIN_DAY_OFFSET,
+                          '0',
+                          DECODE(#language#, 'en', 'Current Day', '当日'),
+                          '1',
+                          DECODE(#language#, 'en', 'Tomorrow', '次日'),
+                          '-1',
+                          DECODE(#language#, 'en', 'Yesterday', '前一日'),'') BEGIN_DAY_OFFSET_NAME,
+                   TO_CHAR(T.FROM_TIME, 'HH24:MI') AS FROM_TIME,
+                   T.END_DAY_OFFSET END_DAY_OFFSET_CODE,
+                   DECODE(T.END_DAY_OFFSET,
+                          '0',
+                          DECODE(#language#, 'en', 'Current Day', '当日'),
+                          '1',
+                          DECODE(#language#, 'en', 'Tomorrow', '次日'),
+                          '-1',
+                          DECODE(#language#, 'en', 'Yesterday', '前一日'),'') END_DAY_OFFSET_NAME,
+                   TO_CHAR(T.TO_TIME, 'HH24:MI') AS TO_TIME
+              FROM AR_SHIFT020 T, AR_ITEM AI
+             WHERE T.AR_ITEM_NO = AI.ITEM_NO
+        ]]>
+        <isNotEmpty prepend="AND" property="SHIFT_NO">
+            <![CDATA[
+                  T.SHIFT_NO = #SHIFT_NO:NUMERIC#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="PK_NO">
+            <![CDATA[
+                  T.PK_NO = #PK_NO:NUMERIC#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                  ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+            ORDER BY T.BEGIN_DAY_OFFSET, T.FROM_TIME
+            ]]>
+        </isEmpty>
+    </select>
+
+    <insert id="addShiftParameterInfo" parameterClass="linkMap">
+        <![CDATA[
+            INSERT INTO AR_SHIFT020 (
+                    PK_NO,
+                    SHIFT_NO,
+                    AR_ITEM_NO,
+                    BEGIN_DAY_OFFSET,
+                    FROM_TIME,
+                    END_DAY_OFFSET,
+                    TO_TIME,
+                    CREATE_DATE,
+                    CREATED_BY
+                )
+                VALUES(
+                    AR_SHIFT020_SEQ.NEXTVAL ,
+                    #SHIFT_NO:NUMERIC#,
+                    #AR_ITEM_NO:NUMERIC#,
+                    #BEGIN_DAY_OFFSET_CODE:NUMERIC#,
+                    TO_DATE('2012-12-12 ' || #FROM_TIME:VARCHAR#, 'YYYY-MM-DD HH24:MI'),
+                    #END_DAY_OFFSET_CODE:NUMERIC#,
+                    TO_DATE('2012-12-12 ' || #TO_TIME:VARCHAR#, 'YYYY-MM-DD HH24:MI'),
+                    SYSDATE,
+                    #CREATED_BY#
+                )
+        ]]>
+    </insert>
+
+    <delete id="deleteShiftParameterInfo" parameterClass="linkMap">
+        <![CDATA[
+            DELETE AR_SHIFT020
+        ]]>
+        <dynamic prepend="WHERE">
+            <isEmpty prepend="AND" property="SHIFT_NO">
+                <![CDATA[
+                      1 = 2
+                ]]>
+            </isEmpty>
+            <isNotEmpty prepend="AND" property="SHIFT_NO">
+                <![CDATA[
+                      SHIFT_NO = #SHIFT_NO:NUMERIC#
+                ]]>
+            </isNotEmpty>
+            <isNotEmpty prepend="AND" property="PK_NO">
+                <![CDATA[
+                      PK_NO = #PK_NO:NUMERIC#
+                ]]>
+            </isNotEmpty>
+        </dynamic>
+    </delete>
+
+    <select id="checkShiftInfo" parameterClass="linkMap"
+        resultClass="int">
+        <![CDATA[
+            SELECT COUNT(*) FROM AR_SHIFT010 T WHERE SHIFT_ID = #SHIFT_ID:VARCHAR#
+        ]]>
+    </select>
+
+    <select id="getShiftGroupInfoList" parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT
+                AG.GROUP_NO,
+                AG.GROUP_ID,
+                AG.GROUP_NAME,
+                AG.GROUP_EN_NAME,
+                AG.DESCR,
+                AI.SHIFT_NO,
+                AI.SHIFT_NAME,
+                AG.ACTIVITY STATUS_ID,
+                DECODE(AG.ACTIVITY,
+                    '1',
+                    DECODE(#language#, 'en', 'Available', '可用'),
+                    DECODE(#language#, 'en', 'Unavailable', '不可用')) STATUS
+            FROM AR_SHIFT_GROUP AG,AR_SHIFT010 AI
+            WHERE AG.SHIFT_NO = AI.SHIFT_NO
+        ]]>
+        <isNotEmpty prepend="AND" property="GROUP_NO">
+            <![CDATA[
+                AG.GROUP_NO = #GROUP_NO#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="CPNY_ID">
+            <![CDATA[
+                AG.CPNY_ID = #CPNY_ID:VARCHAR#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY AG.GROUP_NO
+            ]]>
+        </isEmpty>
+    </select>
+
+    <select id="getShiftGroupInfoCnt" parameterClass="linkMap"
+        resultClass="int">
+        <![CDATA[
+            SELECT COUNT(*)
+            FROM AR_SHIFT_GROUP AG,AR_SHIFT010 AI
+            WHERE AG.SHIFT_ID = AI.SHIFT_ID
+        ]]>
+        <isNotEmpty prepend="AND" property="GROUP_NO">
+            <![CDATA[
+                AG.GROUP_NO = #GROUP_NO#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="CPNY_ID">
+            <![CDATA[
+                AG.CPNY_ID = #CPNY_ID:VARCHAR#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY AG.GROUP_ID
+            ]]>
+        </isEmpty>
+    </select>
+
+    <select id="checkShiftGroupInfo" parameterClass="linkMap"
+        resultClass="int">
+        <![CDATA[
+            SELECT COUNT(*) FROM AR_SHIFT_GROUP WHERE GROUP_ID = #GROUP_ID:VARCHAR#
+        ]]>
+    </select>
+
+    <insert id="addShiftGroupInfo" parameterClass="linkMap">
+        <![CDATA[
+            INSERT INTO AR_SHIFT_GROUP (
+                    GROUP_NO,
+                    GROUP_ID,
+                    GROUP_NAME,
+                    GROUP_EN_NAME,
+                    SHIFT_NO,
+                    DESCR,
+                    ACTIVITY,
+                    CPNY_ID,
+                    CREATE_DATE,
+                    CREATED_BY
+                )
+                VALUES(
+                    AR_SHIFT_GROUP_SEQ.NEXTVAL,
+                    'GROUP_' || AR_SHIFT_GROUP_SEQ.CURRVAL,
+                    #GROUP_NAME:VARCHAR#,
+                    #GROUP_EN_NAME:VARCHAR#,
+                    #SHIFT_NO#,
+                    #DESCR:VARCHAR#,
+                    #STATUS_ID#,
+                    #CPNY_ID:VARCHAR#,
+                    SYSDATE,
+                    #CREATED_BY:VARCHAR#
+                )
+        ]]>
+    </insert>
+
+    <update id="updateShiftGroupInfo" parameterClass="linkMap">
+        <![CDATA[
+            UPDATE AR_SHIFT_GROUP SET
+                    GROUP_NAME = #GROUP_NAME:VARCHAR#,
+                    GROUP_EN_NAME = #GROUP_EN_NAME:VARCHAR#,
+                    SHIFT_NO = #SHIFT_NO#,
+                    DESCR   = #DESCR:VARCHAR#,
+                    ACTIVITY = #STATUS_ID#,
+                    CPNY_ID = #CPNY_ID:VARCHAR#,
+                    UPDATE_DATE = SYSDATE,
+                    UPDATED_BY = #UPDATED_BY:VARCHAR#
+            WHERE GROUP_NO = #GROUP_NO:VARCHAR#
+        ]]>
+    </update>
+
+    <delete id="deleteShiftGroupEmpInfo" parameterClass="linkMap">
+        <![CDATA[
+            DELETE AR_SHIFT_GROUP_EMP WHERE NO = #NO#
+        ]]>
+    </delete>
+
+    <delete id="deleteShiftGroupInfo" parameterClass="linkMap">
+        <![CDATA[
+        DECLARE
+        BEGIN
+            DELETE FROM AR_SHIFT_GROUP_EMP
+            WHERE GROUP_NO = #GROUP_NO#;
+            DELETE FROM AR_SHIFT_GROUP
+            WHERE GROUP_NO = #GROUP_NO#;
+        END;
+        ]]>
+    </delete>
+
+    <insert id="addGroupEmpInfo" parameterClass="linkMap">
+        <![CDATA[
+        INSERT INTO AR_SHIFT_GROUP_EMP (
+            NO,
+            GROUP_NO,
+            EMPID,
+            S_DATE,
+            E_DATE)
+        VALUES (
+            AR_SHIFT_GROUP_EMP_SEQ.NEXTVAL,
+            #GROUP_NO#,
+            #EMPID#,
+            TO_DATE(#S_DATE#,'YYYY-MM-DD'),
+            TO_DATE(#E_DATE#,'YYYY-MM-DD')
+        )
+        ]]>
+    </insert>
+
+    <sql id="getShiftGroupEmpInfoListCondition">
+        <isNotEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+                  ( HRE.EMPID LIKE TRIM(#keyWord:VARCHAR#) || '%'
+                  OR HRE.CHINESENAME LIKE '%' || TRIM(#keyWord:VARCHAR#) || '%'
+                  OR HRE.CHINESE_PINYIN LIKE '%' || TRIM(#keyWord:VARCHAR#) || '%'
+                  OR HRE.ENGLISHNAME LIKE '%' || TRIM(#keyWord:VARCHAR#) || '%')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="CPNY_ID">
+            <![CDATA[
+                  HRD.CPNY_ID = #CPNY_ID:VARCHAR#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="STATUS_CODE">
+            <![CDATA[
+                  HRE.STATUS_CODE = #STATUS_CODE:VARCHAR#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="DEPTID">
+            <![CDATA[
+                      EXISTS(
+                        SELECT * FROM HR_DEPARTMENT WHERE HR_DEPARTMENT.DEPTID!='00110000'
+                      )
+            ]]>
+        </isNotEmpty>
+    </sql>
+
+    <select id="getShiftGroupEmpInfoList" parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+             SELECT HRE.EMPID,
+                    HRE.CHINESENAME,
+                    HRE.ENGLISHNAME,
+                    HRE.STATUS_CODE,
+                    DECODE(#language#, 'en', C.CODE_EN_NAME, C.CODE_NAME) STATUS,
+                    HRD.CPNY_ID,
+                    HRE.POST_ID POST_ID,
+                    DECODE(#language#, 'en', HP.POST_EN_NAME, HP.POST_NAME) POST_NAME,
+                    HRE.DEPTID DEPTID,
+                    DECODE(#language#, 'en', B.CPNY_EN_NAME, B.CPNY_NAME) CPNY_NAME,
+                    DECODE(#language#, 'en', HRD.DEPT_EN_NAME, HRD.DEPTNAME) DEPTNAME,
+                    TO_CHAR(ASGE.S_DATE,'YYYY-MM-DD') S_DATE,
+                    TO_CHAR(ASGE.E_DATE,'YYYY-MM-DD') E_DATE,
+                    ASGE.NO
+            FROM HR_EMPLOYEE HRE, HR_DEPARTMENT HRD,HR_COMPANY B, SY_CODE C,
+                HR_POST HP,AR_SHIFT_GROUP_EMP ASGE
+            WHERE HRE.DEPTID = HRD.DEPTID
+                AND HRE.STATUS_CODE = C.CODE_ID(+)
+                AND HRD.CPNY_ID = B.CPNY_ID(+)
+                AND HRE.POST_ID = HP.POST_ID(+)
+                AND HRE.EMPID = ASGE.EMPID(+)
+                AND ASGE.GROUP_NO = #GROUP_NO#
+        ]]>
+        <include refid="getShiftGroupEmpInfoListCondition" />
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                  ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY S_DATE DESC
+            ]]>
+        </isEmpty>
+    </select>
+
+    <select id="getShiftGroupEmpInfoListCnt" parameterClass="linkMap"
+        resultClass="int">
+        <![CDATA[
+            SELECT COUNT(*)
+            FROM HR_EMPLOYEE HRE, HR_DEPARTMENT HRD,HR_COMPANY B, SY_CODE C,
+                HR_POST HP,AR_SHIFT_GROUP_EMP ASGE
+            WHERE HRE.DEPTID = HRD.DEPTID
+                AND HRE.STATUS_CODE = C.CODE_ID(+)
+                AND HRD.CPNY_ID = B.CPNY_ID(+)
+                AND HRE.POST_ID = HP.POST_ID(+)
+                AND HRE.EMPID = ASGE.EMPID(+)
+                AND ASGE.GROUP_NO = #GROUP_NO#
+        ]]>
+        <include refid="getShiftGroupEmpInfoListCondition" />
+    </select>
+
+    <select id="checkShiftGroupEmpDate" parameterClass="linkMap"
+        resultClass="int">
+        <![CDATA[
+            SELECT COUNT(*) FROM AR_SHIFT_GROUP_EMP ASGE
+            WHERE
+            (   (TO_DATE(#S_DATE#,'YYYY-MM-DD') >= S_DATE
+                    AND TO_DATE(#S_DATE#,'YYYY-MM-DD') <= E_DATE)
+                OR (TO_DATE(#E_DATE#,'YYYY-MM-DD') >= S_DATE
+                    AND TO_DATE(#E_DATE#,'YYYY-MM-DD') <= E_DATE)
+            )
+            AND ASGE.EMPID = #EMPID#
+        ]]>
+    </select>
+</sqlMap>

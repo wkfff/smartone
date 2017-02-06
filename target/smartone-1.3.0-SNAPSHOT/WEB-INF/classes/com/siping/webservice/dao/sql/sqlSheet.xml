@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+    PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+    "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="webservice.salesSheet">
+    <!-- 根据商品、客户、员工、销售方式中的一个条件查询指定日期总额 -->
+    <!--返回根据查询条件的Map -->
+    <resultMap id="salesDataMap" class="salesDataBean">
+        <result property="sales_date" column="ORDER_DATE" />
+        <result property="discount_money" column="DISCOUNT_MONEY" />
+        <result property="entity" column="ENTITY"/>
+    </resultMap>
+    <!-- 根据销售日期判定是年份？是月份？是天数？哪种条件查询的条件语句 -->
+    <sql id="salesReportCondition">
+        <isNotEmpty prepend="AND" property="S_DATE">
+                <![CDATA[
+                     to_char(PSO.ORDER_DATE,'$DATEFORMAT$') >= #S_DATE#
+                ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="E_DATE">
+                <![CDATA[
+                    to_char(PSO.ORDER_DATE,'$DATEFORMAT$')<= #E_DATE#
+                ]]>
+        </isNotEmpty>
+    </sql>
+    <select id="getSalesReport" parameterClass="linkMap" resultMap="salesDataMap">
+        <isEqual property="ENTITY" compareValue="">
+            SELECT TO_CHAR(PSO.ORDER_DATE,'$DATEFORMAT$')     ORDER_DATE,
+                ''                                            ENTITY,
+                SUM(PSO.DISCOUNT_PRICE)                       DISCOUNT_MONEY
+            FROM PROSTOR_SALES_ORDER                          PSO
+            WHERE PSO.AFFIRM_FLAG = 'affirm1'
+                 AND PSO.ACTIVITY = 1
+            <include refid="salesReportCondition" />
+            <![CDATA[
+                GROUP BY TO_CHAR(PSO.ORDER_DATE,'$DATEFORMAT$') ORDER BY ORDER_DATE
+            ]]>
+        </isEqual>
+        <isNotEqual property="ENTITY" compareValue="">
+            <![CDATA[
+                  SELECT to_char(PSO.ORDER_DATE,'$DATEFORMAT$') ORDER_DATE,
+                      $ENTITY$                              ENTITY,
+                      SUM(PSOD.DISCOUNT_MONEY)              DISCOUNT_MONEY
+                  FROM 
+                      HR_EMPLOYEE                  HE,
+                      CUST_BASIC_INFO              CBI,
+                      PROSTOR_SALES_MODEL          PSM,
+                      PROSTOR_SALES_ORDER          PSO,
+                      PROSTOR_SALES_ORDER_DETAIL   PSOD
+                  WHERE
+                      PSO.AFFIRM_FLAG = 'affirm1'
+                      AND PSO.ACTIVITY = 1
+                      AND PSO.CUST_NO = CBI.CUST_NO(+)
+                      AND PSO.EMPID = HE.EMPID(+)
+                      AND PSO.SALES_MODEL_NO = PSM.SALES_MODE_NO(+)
+                      AND PSO.SALES_ORDER_NO=PSOD.SALES_ORDER_NO(+)
+            ]]>
+            <include refid="salesReportCondition" />
+            <![CDATA[
+                GROUP BY $ENTITY$,to_char(PSO.ORDER_DATE,'$DATEFORMAT$') ORDER BY ORDER_DATE
+            ]]>
+        </isNotEqual>
+    </select>
+    <!-- 查询产品库存信息 -->
+    <resultMap class="productStorageBean" id="productStorageMap">
+        <result property="storage_name" column="STORAGE_NAME" />
+        <result property="product_no" column="PRODUCT_NO" />
+        <result property="leftQuantity" column="LEFT_QUANTITY" />
+        <result property="max_quantity" column="MAX_QUANTITY" />
+        <result property="min_quantity" column="MIN_QUANTITY" />
+    </resultMap>
+    <select id="getProductStorageReport" parameterClass="linkMap" resultMap="productStorageMap">
+        <![CDATA[
+            SELECT PSI.STORAGE_NAME   STORAGE_NAME ,
+                PP.PRODUCT_NO       PRODUCT_NO,
+                PSP.LEFT_QUANTITY     LEFT_QUANTITY,
+                NVL(PSPP.MAX_QUANTITY,0)     MAX_QUANTITY,
+                NVL(PSPP.MIN_QUANTITY,0)    MIN_QUANTITY
+            FROM PROSTOR_PRODUCT            PP,
+                SY_CODE                     A,
+                SY_CATEGORY                 D,
+                PROSTOR_STORAGE_PRODUCT     PSP,
+                PROSTOR_STORAGE_INFO        PSI,
+                PROSTOR_STORAGE_PRODUCT_PARAM PSPP
+            WHERE PP.UNIT_CODE_ID = A.CODE_ID(+)
+                AND PP.PRODUCT_CATEGORY_ID = D.CATEGORY_ID(+)
+                AND PSP.PRODUCT_NO=PP.PRODUCT_NO(+)
+                AND PSP.STORAGE_NO=PSI.STORAGE_NO(+)
+                AND PSP.PRODUCT_NO=PSPP.PRODUCT_NO(+)
+                AND PSP.STORAGE_NO=PSPP.STORAGE_NO(+)
+        ]]>
+    </select>
+    <!-- 查询进货信息 -->
+    <sql id="storageInReportCondition">
+        <isNotEmpty prepend="AND" property="MONTH">
+            <![CDATA[
+                to_char(PIP.CREATE_DATE,'YYYYMM')=#MONTH#
+            ]]>
+        </isNotEmpty>
+    </sql>
+    <resultMap class="storageInBean" id="storageInMap">
+        <result property="productName" column="PRODUCT_NAME" />
+        <result property="specification" column="SPECIFICATION" />
+        <result property="purchasePrice" column="UNIT_PRICE" />
+        <result property="productUnit" column="UNIT_NAME" />
+        <result property="productCategory" column="CATEGORY_NAME" />
+        <result property="storageName" column="STORAGE_NAME" />
+        <result property="storageInQuantity" column="QUANTITY" />
+        <result property="storageInDate" column="CREATE_DATE" />
+    </resultMap>
+    <select id="getStorageInReport" parameterClass="linkMap" resultMap="storageInMap">
+        <![CDATA[
+            SELECT PIP.PRODUCT_NAME  ,
+                PIP.SPECIFICATION ,
+                NVL(PIP.UNIT_PRICE,0) UNIT_PRICE,
+                PIP.UNIT_NAME,
+                B.CATEGORY_NAME,
+                PIP.STORAGE_NAME,
+                PIP.QUANTITY,
+                PIP.CREATE_DATE
+            FROM PROSTOR_INSTORAGE_PRODUCT PIP,
+                PROSTOR_PRODUCT        PP,
+                SY_CATEGORY            B 
+            WHERE PIP.PRODUCT_NO=PP.PRODUCT_NO(+)
+                AND PP.PRODUCT_CATEGORY_ID=B.CATEGORY_ID(+)
+        ]]>
+        <include refid="storageInReportCondition" />
+    </select>
+    <!-- 查询下单信息 -->
+    <sql id="storageOutReportCondition">
+        <isNotEmpty prepend="AND" property="MONTH">
+            <![CDATA[
+                to_char(POP_A.CREATE_DATE,'YYYYMM')=#MONTH#
+            ]]>
+        </isNotEmpty>
+    </sql>
+    <resultMap class="storageOutBean" id="storageOutMap">
+        <result property="storageName" column="STORAGE_NAME" />
+        <result property="productName" column="PRODUCT_NAME" />
+        <result property="storageQuantity" column="QUANTITY" />
+        <result property="purchasePrice" column="PRICE" />
+        <result property="purchaser" column="OPERATOR" />
+        <result property="customerName" column="CUST_NAME"></result>
+        <result property="saleMode" column="SALES_MODE_NAME" />
+        <result property="storageOutDate" column="CREATE_DATE" />
+    </resultMap>
+    <select id="getStorageOutReport" parameterClass="linkMap" resultMap="storageOutMap">
+        <![CDATA[
+            SELECT POP_A.STORAGE_NAME,
+                POP_A.PRODUCT_NAME,
+                POP_A.QUANTITY,
+                NVL(POP_A.PRICE,0) PRICE,
+                POI.OPERATOR,   
+                POI.CUST_NAME,
+                PSM.SALES_MODE_NAME, 
+                POP_A.CREATE_DATE
+            FROM PROSTOR_OUTSTORAGE_PRODUCT  POP_A,
+                PROSTOR_OUTSTORAGE_INFO     POI,
+                PROSTOR_SALES_MODEL         PSM,
+                PROSTOR_SALES_ORDER         PSO
+            WHERE POP_A.OUTSTORAGE_ID=POI.OUTSTORAGE_ID(+)
+            AND  POI.SALES_ORDER_ID=PSO.SALES_ORDER_ID(+)
+            AND  PSO.SALES_MODEL_NO=PSM.SALES_MODE_NO(+)
+        ]]>
+        <include refid="storageOutReportCondition" />
+    </select>
+    <!-- 查询所有的仓库 -->
+    <resultMap class="storageBean" id="storageMap">
+        <result property="storage_no" column="STORAGE_NO" />
+        <result property="storage_name" column="STORAGE_NAME" />
+    </resultMap>
+    <select id="getStorageReport" parameterClass="linkMap" resultMap="storageMap">
+        <![CDATA[
+            SELECT STORAGE_NO,
+                STORAGE_NAME
+            FROM PROSTOR_STORAGE_INFO
+        ]]>
+    </select>
+    <!-- 查询所有商品 -->
+    <resultMap class="productBean" id="productMap">
+        <result property="product_no" column="PRODUCT_NO" />
+        <result property="product_name" column="PRODUCT_NAME" />
+        <result property="specification" column="SPECIFICATION" />
+        <result property="product_unit_name" column="PRODUCT_UNIT_NAME" />
+        <result property="product_category_name" column="PRODUCT_CATEGORY_NAME" />
+        <result property="unit_price" column="UNIT_PRICE" />
+    </resultMap>
+    <select id="getProductReport" parameterClass="linkMap" resultMap="productMap">
+        <![CDATA[
+            SELECT PP.PRODUCT_NO,
+                PP.PRODUCT_NAME,
+                PP.SPECIFICATION,
+                NVL(PP.UNIT_PRICE,0) UNIT_PRICE,
+                A.CODE_NAME  PRODUCT_UNIT_NAME,
+                B.CATEGORY_NAME PRODUCT_CATEGORY_NAME
+            FROM PROSTOR_PRODUCT PP,
+                 SY_CODE A,
+                 SY_CATEGORY B
+            WHERE PP.UNIT_CODE_ID=A.CODE_ID(+)
+                AND PP.PRODUCT_CATEGORY_ID=B.CATEGORY_ID(+)
+                AND PP.ACTIVITY=1
+        ]]>
+    </select>
+    <!-- 查询所有的销售形式 -->
+    <resultMap class="salesModelBean" id="salesModelMap">
+        <result property="salesModel_no" column="SALES_MODE_NO" />
+        <result property="salesModel_name" column="SALES_MODE_NAME" />
+    </resultMap>
+    <select id="getSalesModelReport" parameterClass="linkMap" resultMap="salesModelMap">
+         <![CDATA[
+            SELECT SALES_MODE_NO,
+                SALES_MODE_NAME
+            FROM PROSTOR_SALES_MODEL
+         ]]>
+    </select>
+</sqlMap>

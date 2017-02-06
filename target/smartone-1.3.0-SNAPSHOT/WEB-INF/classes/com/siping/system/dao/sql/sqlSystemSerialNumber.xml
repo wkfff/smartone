@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="system.serialNumber">
+        <select id="getAllSerialNum" parameterClass="linkMap"  resultClass="linkMap">
+        <![CDATA[
+            SELECT  SSNA.SERIAL_NUM_ALL_NO SERIAL_NUM_ALL_NO,
+                    SSNA.ORDER_ID ORDER_ID, 
+                    SO.ORDER_NAME  ORDER_NAME,
+                    SSNA.PREFIX PREFIX,
+                    SSNA.MIDDLE_FIELD MIDDLE_FIELD,
+                    SSNA.NUM_LENGTH NUM_LENGTH,
+                    SSNA.RESET_MODEL RESET_MODEL,
+                    TO_CHAR(SSNA.EFFECT_DATE,'YYYY-MM-DD') EFFECT_DATE,
+                    TO_CHAR(SSNA.END_DATE,'YYYY-MM-DD') END_DATE,
+                    TO_CHAR(SSNA.CREATE_DATE,'YYYY-MM-DD') CREATE_DATE,
+                    SSNA.ACTIVITY ACTIVITY,
+                    SSNA.PREFIX || TO_CHAR(SYSDATE, SSNA.MIDDLE_FIELD) || lpad(1, SSNA.NUM_LENGTH, 0) EXAMPLE,
+                    SSNA.CPNY_ID CPNY_ID
+               FROM SY_ORDER SO,
+                    SY_SERIAL_NUM_ALL SSNA
+              WHERE SSNA.ORDER_ID = SO.ORDER_ID(+)
+                AND SSNA.CPNY_ID = #CPNY_ID#
+        ]]> 
+        
+        <isNotEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+                  (UPPER(replace(SO.ORDER_NAME,' ','')) LIKE '%' || UPPER(replace(#keyWord:VARCHAR#,' ','')) || '%' 
+                  OR UPPER(replace(SSNA.PREFIX,' ','')) LIKE '%' || UPPER(replace(#keyWord:VARCHAR#,' ','')) || '%' 
+                  OR UPPER(replace(SSNA.NUM_LENGTH,' ','')) LIKE '%' || UPPER(replace(#keyWord:VARCHAR#,' ','')) || '%')
+            ]]>
+        </isNotEmpty>
+        
+        <isNotEmpty prepend="AND" property="ACTIVITY">
+            <![CDATA[
+                  SSNA.ACTIVITY = #ACTIVITY#
+            ]]>
+        </isNotEmpty>
+        
+        <isNotEmpty prepend="AND" property="E_DATE" >
+            <![CDATA[
+               SSNA.EFFECT_DATE <= TO_DATE(#E_DATE#,'YYYY-MM-DD')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="S_DATE" >
+            <![CDATA[
+               SSNA.EFFECT_DATE >= TO_DATE(#S_DATE#,'YYYY-MM-DD')
+            ]]>
+        </isNotEmpty>
+        
+        <isNotEmpty prepend="AND" property="ORDER_ID">
+            <![CDATA[
+                  SSNA.ORDER_ID = #ORDER_ID#
+            ]]>
+        </isNotEmpty>
+    </select>
+    
+    <select id="getAllSerialNumCnt" parameterClass="linkMap"  resultClass="int">
+        <![CDATA[
+            SELECT    COUNT(*)
+                FROM SY_ORDER SO,
+                     SY_SERIAL_NUM_ALL SSNA
+                WHERE SSNA.ORDER_ID = SO.ORDER_ID(+)
+                AND SSNA.CPNY_ID = #CPNY_ID#
+        ]]> 
+        
+        <isNotEmpty prepend="AND" property="ACTIVITY">
+            <![CDATA[
+                  SSNA.ACTIVITY = #ACTIVITY#
+            ]]>
+        </isNotEmpty>
+        
+        <isNotEmpty prepend="AND" property="E_DATE" >
+            <![CDATA[
+               SSNA.EFFECT_DATE <= TO_DATE(#E_DATE#,'YYYY-MM-DD')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="S_DATE" >
+            <![CDATA[
+               SSNA.EFFECT_DATE >= TO_DATE(#S_DATE#,'YYYY-MM-DD')
+            ]]>
+        </isNotEmpty>
+        
+        <isNotEmpty prepend="AND" property="ORDER_ID">
+            <![CDATA[
+                  SSNA.ORDER_ID = #ORDER_ID#
+            ]]>
+        </isNotEmpty>
+    </select>
+    <insert id="addSerialNum" parameterClass="linkMap" >
+        <![CDATA[
+            DECLARE
+                VAR_SERIAL_NUM_SAMEDAY NUMBER(10);
+                VAR_SEQUENCE_NAME VARCHAR2(50);
+            BEGIN
+                SELECT COUNT(*) INTO VAR_SERIAL_NUM_SAMEDAY 
+                FROM SY_SERIAL_NUM_ALL 
+                WHERE ORDER_ID = #ORDER_ID# 
+                AND TO_CHAR(EFFECT_DATE,'YYYY-MM-DD') = #EFFECT_DATE#;
+                
+                IF VAR_SERIAL_NUM_SAMEDAY > 0 THEN
+                    RAISE_APPLICATION_ERROR(-20004,'同一天只能有一条生效！请检查生效日期');
+                END IF;
+                
+                IF #EFFECT_DATE# = TO_CHAR(SYSDATE, 'YYYY-MM-DD') THEN
+                    UPDATE SY_SERIAL_NUM_ALL 
+                       SET ACTIVITY = 0,
+                           END_DATE = SYSDATE
+                     WHERE TO_CHAR(EFFECT_DATE, 'YYYY-MM-DD') <= #EFFECT_DATE#
+                       AND ACTIVITY = 1
+                       AND ORDER_ID = #ORDER_ID#;
+                    INSERT INTO SY_SERIAL_NUM_ALL
+                            (SERIAL_NUM_ALL_NO,
+                            ORDER_ID,
+                            PREFIX,
+                            MIDDLE_FIELD,
+                            NUM_LENGTH,
+                            RESET_MODEL,
+                            EFFECT_DATE,
+                            CREATE_BY,
+                            CREATE_DATE,
+                            ACTIVITY,
+                            CPNY_ID)
+                        VALUES(SY_SERIAL_NUM_ALL_SEQ.Nextval,
+                            #ORDER_ID#,
+                            #PREFIX#,
+                            #MIDDLE_FIELD#,
+                            #NUM_LENGTH#,
+                            #RESET_MODEL#,
+                            TO_DATE(#EFFECT_DATE#,'yyyy-mm-dd'),
+                            #CREATE_BY#,
+                            SYSDATE,
+                            1,
+                            #CPNY_ID#);
+                     UPDATE SY_SERIAL_NUM
+                        SET PREFIX = #PREFIX#,
+                            MIDDLE_FIELD = #MIDDLE_FIELD#,
+                            NUM_LENGTH = #NUM_LENGTH#,
+                            RESET_MODEL = #RESET_MODEL#,
+                            CPNY_ID = #CPNY_ID#
+                            WHERE ORDER_ID = #ORDER_ID#;
+                     SELECT SEQUENCE_NAME 
+                          INTO VAR_SEQUENCE_NAME
+                          FROM SY_SERIAL_NUM
+                          WHERE ORDER_ID = #ORDER_ID#;
+                     EXECUTE IMMEDIATE 'DROP SEQUENCE '||VAR_SEQUENCE_NAME;
+                     EXECUTE IMMEDIATE 'CREATE SEQUENCE '||VAR_SEQUENCE_NAME||' START WITH 1 NOCYCLE';
+                END IF;
+                IF #EFFECT_DATE# > TO_CHAR(SYSDATE, 'YYYY-MM-DD') THEN
+                    INSERT INTO SY_SERIAL_NUM_ALL
+                            (SERIAL_NUM_ALL_NO,
+                            ORDER_ID,
+                            PREFIX,
+                            MIDDLE_FIELD,
+                            NUM_LENGTH,
+                            RESET_MODEL,
+                            EFFECT_DATE,
+                            CREATE_BY,
+                            CREATE_DATE,
+                            ACTIVITY,
+                            CPNY_ID)
+                        VALUES(SY_SERIAL_NUM_ALL_SEQ.Nextval,
+                            #ORDER_ID#,
+                            #PREFIX#,
+                            #MIDDLE_FIELD#,
+                            #NUM_LENGTH#,
+                            #RESET_MODEL#,
+                            TO_DATE(#EFFECT_DATE#,'yyyy-mm-dd'),
+                            #CREATE_BY#,
+                            SYSDATE,
+                            0,
+                            #CPNY_ID#);
+                END IF;
+            END;
+        ]]>
+    </insert>
+    
+    <delete id="deleteSerialNum" parameterClass="linkMap" >
+        <![CDATA[ 
+            DELETE FROM SY_SERIAL_NUM_ALL 
+                WHERE SERIAL_NUM_ALL_NO = #SERIAL_NUM_ALL_NO# 
+                AND CPNY_ID = #CPNY_ID# 
+        ]]>
+    </delete>
+    
+    <update id="updateSerialNum" parameterClass="linkMap">
+        <![CDATA[
+            DECLARE
+                VAR_SERIAL_NUM_SAMEDAY NUMBER(10);
+            BEGIN
+                SELECT COUNT(*) INTO VAR_SERIAL_NUM_SAMEDAY FROM SY_SERIAL_NUM_ALL 
+                WHERE ORDER_ID = #ORDER_ID# 
+                AND TO_CHAR(EFFECT_DATE,'YYYY-MM-DD') = #EFFECT_DATE#
+                AND SERIAL_NUM_ALL_NO <> #SERIAL_NUM_ALL_NO#;
+                
+                IF VAR_SERIAL_NUM_SAMEDAY > 0 THEN
+                    RAISE_APPLICATION_ERROR(-20004,'同一天只能有一条生效！请检查生效日期');
+                END IF;
+
+                UPDATE SY_SERIAL_NUM_ALL 
+                SET PREFIX = #PREFIX#,
+                    MIDDLE_FIELD = #MIDDLE_FIELD#,
+                    NUM_LENGTH = #NUM_LENGTH#,
+                    RESET_MODEL = #RESET_MODEL#,
+                    EFFECT_DATE = TO_DATE(#EFFECT_DATE#,'yyyy-mm-dd'),
+                    UPDATED_BY = #UPDATED_BY#,
+                    UPDATE_DATE = SYSDATE
+                WHERE SERIAL_NUM_ALL_NO = #SERIAL_NUM_ALL_NO#;
+            END;
+        ]]>
+    </update>
+</sqlMap>

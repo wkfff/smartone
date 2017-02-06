@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="utility.proInfo">
+	
+	<sql id="searchProductCondition" >	 
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[ 
+		 	PBAI.PRODUCT_NAME LIKE CONCAT('%',TRIM(#keyWord#),'%')
+		    ]]>
+		</isNotEmpty>
+	</sql>
+	
+	<select id="getProductList" parameterClass="linkMap"
+		resultClass="linkMap" remapResults="true">
+		<![CDATA[
+      SELECT  PBUI.PRODUCT_ID           PRODUCT_ID,
+              PBAI.PRODUCT_NAME         PRODUCT_NAME,
+              PBUI.LEFT_QUANTITY        LEFT_QUANTITY,
+              PQI.QUOTA_PRICE           PRICE,
+              PBUI.BUSI_DATE            BUSI_DATE,
+              PBUI.SALES_AREA_CODE            SALES_AREA_CODE,
+              PBUI.DIST_CHANNEL_CODE            DIST_CHANNEL_CODE,
+              PBUI.DIVISION_CODE            DIVISION_CODE,
+              IF(#language# = 'en', A.CODE_EN_NAME, A.CODE_NAME)          PRICE_UNIT,   
+              PQI.PRICE_UNIT_CODE       PRICE_UNIT_CODE,            
+              PBUI.MAX_QUANTITY         MAX_QUANTITY
+      FROM PRO_BASIC_INFO    PBAI,
+           PRO_BUSINESS_INFO PBUI,
+           PRO_QUOTA_INFO    PQI,
+           SY_CODE           A
+      WHERE PBUI.PRODUCT_ID=PBAI.PRODUCT_ID
+        AND PQI.PRO_BUSI_ID = PBUI.PRO_BUSI_ID 
+        AND A.CODE_ID(+) = PQI.PRICE_UNIT_CODE
+        AND PQI.STATUS_CODE = 'QuotaStatus002'
+        AND PBAI.ACTIVITY = 1   
+		]]>
+		<include refid="searchProductCondition" />
+	</select>
+	
+	<select id="getProductListCnt" parameterClass="linkMap"
+		resultClass="int">
+		<![CDATA[
+	 SELECT COUNT(0)
+     FROM PRO_BASIC_INFO    PBAI,
+           PRO_BUSINESS_INFO PBUI,
+           PRO_QUOTA_INFO    PQI,
+           SY_CODE           A
+     WHERE PBUI.PRODUCT_ID=PBAI.PRODUCT_ID
+        AND PQI.PRO_BUSI_ID = PBUI.PRO_BUSI_ID 
+        AND A.CODE_ID(+) = PQI.PRICE_UNIT_CODE
+        AND PQI.STATUS_CODE = 'QuotaStatus002'
+        AND PBAI.ACTIVITY = 1
+   	   	]]>
+   	   	<include refid="searchProductCondition" />
+	</select>
+	
+	<select id="getBasicProductList" parameterClass="linkMap"
+		resultClass="linkMap" remapResults="true">
+		<![CDATA[
+      	SELECT  PBAI.PRODUCT_ID           PRODUCT_ID,
+                PBAI.PRODUCT_NAME         PRODUCT_NAME,
+                PBAI.PRO_DESCRIPTION      PRO_DESCRIPTION,
+                PBUI.PRO_COST             PRO_COST,
+                PBUI.COST_UNIT_CODE       COST_UNIT_CODE,
+                PBUI.LEFT_QUANTITY        LEFT_QUANTITY,
+                PBUI.DIVISION_CODE        DIVISION_CODE
+      	FROM PRO_BASIC_INFO    PBAI,
+             PRO_BUSINESS_INFO PBUI
+      	WHERE PBAI.PRODUCT_ID = PBUI.PRODUCT_ID
+      	AND   PBAI.ACTIVITY = 1
+		]]>
+		<include refid="searchProductCondition" />
+	</select>
+	
+	<select id="getBasicProductListCnt" parameterClass="linkMap"
+		resultClass="int">
+		<![CDATA[
+	 	SELECT COUNT(0)
+     	FROM PRO_BASIC_INFO    PBAI,
+           	 PRO_BUSINESS_INFO PBUI
+     	WHERE PBAI.PRODUCT_ID = PBUI.PRODUCT_ID 
+     	AND   PBAI.ACTIVITY = 1
+   	   	]]>
+   	   	<include refid="searchProductCondition" />
+	</select>
+	
+	<sql id="searchStorageCondition" >	 
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+				(	
+					PRST.STORAGE_NAME          LIKE CONCAT('%',TRIM(#keyWord#),'%')
+					OR PRST.PRO_STORAGE_ID   LIKE CONCAT('%',TRIM(#keyWord#),'%')
+					OR PRST.ADDRESS          LIKE CONCAT('%',TRIM(#keyWord#),'%')
+				)
+			]]>
+		</isNotEmpty>
+	</sql>
+	
+	<select id="getStorageList" parameterClass="linkMap"
+		resultClass="linkMap" remapResults="true">
+		<![CDATA[
+      	SELECT  PRST.PRO_STORAGE_ID                                PRO_STORAGE_ID,
+                PRST.STORAGE_NAME                                  STORAGE_NAME,
+                PRST.PLACE_CODE                                    PLACE_CODE,
+                IF(#language# ='en',A.CODE_EN_NAME,A.CODE_NAME) PLACE,
+                PRST.ADDRESS                                       ADDRESS,
+                PRST.REMARK                                        REMARK,
+                DATE_FORMAT(PRST.BEGIN_DATE,'%Y-%m-%d')              BEGIN_DATE,
+                DATE_FORMAT(PRST.END_DATE,'%Y-%m-%d')                END_DATE
+      	FROM PRO_STORAGE_INFO    PRST,
+             SY_CODE A
+      	WHERE PRST.PLACE_CODE = A.CODE_ID
+      	AND   PRST.ACTIVITY = 1
+		]]>
+		<include refid="searchStorageCondition"/>
+	</select>
+	
+	<select id="getStorageListCnt" parameterClass="linkMap"
+		resultClass="int">
+		<![CDATA[
+	 	SELECT COUNT(0)
+     	FROM PRO_STORAGE_INFO    PRST,
+             SY_CODE A
+      	WHERE PRST.PLACE_CODE = A.CODE_ID
+      	AND   PRST.ACTIVITY = 1
+   	   	]]>
+   	   	<include refid="searchStorageCondition"/>
+	</select>
+	
+</sqlMap>

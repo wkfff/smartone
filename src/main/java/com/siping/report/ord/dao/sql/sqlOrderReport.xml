@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="order.orderReport">
+    
+	<select id="getDataInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+		<![CDATA[
+        SELECT $sqlPiece$ 
+          FROM ORDER_INFO_REPORT_V OIRV
+          WHERE OIRV.ACTIVITY = 1
+		]]>
+		
+		<isNotEmpty prepend="AND" property="KEYWORD">
+			<![CDATA[
+				(	
+						OIRV.PRODUCT_NAME LIKE '%'||TRIM(#KEYWORD#)||'%'		
+				)
+			]]>
+		</isNotEmpty>   
+		<isNotEmpty prepend="AND" property="EMPID">
+			<![CDATA[
+			   OIRV.EMPID = #EMPID#
+			]]>			
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="ORDER_STATE">
+			<![CDATA[
+			   OIRV.STATUS_CODE = #ORDER_STATE#
+             ]]>   
+		</isNotEmpty>	   
+		<isNotEmpty prepend="AND" property="ORD_TYPE_CODE">
+			<![CDATA[
+			   OIRV.ORD_TYPE_CODE = #ORD_TYPE_CODE#
+             ]]>   
+		</isNotEmpty> 
+		<isNotEmpty prepend="AND" property="E_DATE" >
+			<![CDATA[
+    		   OIRV.VERIFIED_DATE <= TO_DATE(#E_DATE#,'YYYY-MM-DD')
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="S_DATE" >
+			<![CDATA[
+    		   OIRV.VERIFIED_DATE >= TO_DATE(#S_DATE#,'YYYY-MM-DD')
+			]]>
+		</isNotEmpty>
+	</select>
+	<sql id="orderRecordColumnInfo">
+		<![CDATA[
+				SELECT 'ORDER_ID' AS "COLUMN_NAME", 
+				       	DECODE(#language#, 'en', 'ID', '编号') ITEM_NAME,
+				       1 AS CALCU_ORDER
+				  FROM DUAL
+				UNION ALL
+				SELECT 'CREATED_BY' AS "COLUMN_NAME", 
+				       	DECODE(#language#, 'en', 'Created By', '创建者') ITEM_NAME,
+				       2 AS CALCU_ORDER
+				  FROM DUAL
+				UNION ALL
+				SELECT 'CREATED_DATE' AS "COLUMN_NAME",
+				       	DECODE(#language#, 'en', 'Created Date', '创建日期') ITEM_NAME, 
+				       3 AS CALCU_ORDER
+				  FROM DUAL
+				UNION ALL
+				SELECT 'VERIFIED_DATE' AS "COLUMN_NAME",
+				       	DECODE(#language#, 'en', 'Verified Date', '审核日期') ITEM_NAME,  
+				       4 AS CALCU_ORDER
+				  FROM DUAL
+				UNION ALL
+				SELECT 'PRODUCT_NAME' AS "COLUMN_NAME",
+				       	DECODE(#language#, 'en', 'Product Name', '产品名称') ITEM_NAME,  
+				       5 AS CALCU_ORDER
+				  FROM DUAL 
+				UNION ALL
+				SELECT 'PRO_QUANTITY' AS "COLUMN_NAME",
+				       	DECODE(#language#, 'en', 'Product Count', '产品数量') ITEM_NAME,  
+				       6 AS CALCU_ORDER
+				  FROM DUAL
+				UNION ALL
+				SELECT 'MONEY_TOTAL' AS "COLUMN_NAME",
+				       	DECODE(#language#, 'en', 'Total Money', '总价') ITEM_NAME,  
+				       7 AS CALCU_ORDER
+				  FROM DUAL
+				UNION ALL
+				SELECT 'PURCHASE_OBJECT' AS "COLUMN_NAME",
+				       	DECODE(#language#, 'en', 'Customer', '客户') ITEM_NAME,  
+				       8 AS CALCU_ORDER
+				  FROM DUAL
+				UNION ALL
+				SELECT 'ADDRESS' AS "COLUMN_NAME",
+				       	DECODE(#language#, 'en', 'Address', '送货地址') ITEM_NAME,  
+				       9 AS CALCU_ORDER
+				  FROM DUAL
+				UNION ALL
+				SELECT 'ORDER_STATE' AS "COLUMN_NAME",
+				       	DECODE(#language#, 'en', 'Order State', '订单状态') ITEM_NAME,  
+				       10 AS CALCU_ORDER
+				  FROM DUAL
+				UNION ALL
+				SELECT 'ORDER_TYPE' AS "COLUMN_NAME",
+				       	DECODE(#language#, 'en', 'Order Type', '订单类型') ITEM_NAME,  
+				       11 AS CALCU_ORDER
+				  FROM DUAL
+				 ORDER BY CALCU_ORDER
+			]]>		
+	</sql>
+	
+	<select id="getOrderReportColumnInfo" parameterClass="linkMap" resultClass="linkMap">
+		<include refid="orderRecordColumnInfo"/>
+   </select>
+   
+	<select id="getOrderReportTitleInfo" parameterClass="linkMap" 
+	    resultClass="string" remapResults="true">
+		<![CDATA[
+		SELECT ITEM_NAME FROM (
+		 ]]>
+		 <include refid="orderRecordColumnInfo"/>
+		<![CDATA[		 
+				)
+		    WHERE COLUMN_NAME = #ITEM_ID# 
+		]]> 
+		 
+	</select>
+</sqlMap>

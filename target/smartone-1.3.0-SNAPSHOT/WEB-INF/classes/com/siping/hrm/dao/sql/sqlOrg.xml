@@ -1,0 +1,467 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="org">
+    <select id="getDeptInfoObj" parameterClass="linkMap"  resultClass="linkMap">
+        <![CDATA[
+            SELECT T.DEPTNO,
+                   T.DEPTID,
+                   T.DEPTNAME,
+                   T.DEPT_EN_NAME,
+                   T.DEPT_LEVEL LEVEL_ID,
+                   T.DEPT_LEVEL LEVEL_NAME,
+                   T.DESCRIPTION,
+                   TO_CHAR(T.DATE_CREATED,'YYYY-MM-DD') DATE_CREATED,
+                   TO_CHAR(T.DATE_ENDED,'YYYY-MM-DD') DATE_ENDED,
+                   T.MANAGER_EMP_ID,
+                   DECODE(#language#, 'en', B.ENGLISHNAME, B.CHINESENAME) MANAGER_EMP_NAME,
+                   T.AREA_CODE,
+                   DECODE(#language#, 'en', C.CODE_EN_NAME, C.CODE_NAME) AREA_NAME,
+                   T.CPNY_ID,
+                   DECODE(#language#, 'en', A.CPNY_EN_NAME, A.CPNY_NAME) CPNY_NAME,
+                   T.PARENT_DEPT_ID,
+                   DECODE(#language#, 'en', D.DEPT_EN_NAME, D.DEPTNAME) PARENT_DEPT_NAME,
+                   T.ACTIVITY STATUS_ID,
+                   DECODE(T.ACTIVITY,
+                          '1',
+                          DECODE(#language#, 'en', 'Available', '可用'),
+                          DECODE(#language#, 'en', 'Unavailable', '不可用')) STATUS
+              FROM HR_DEPARTMENT T,HR_COMPANY A,HR_EMPLOYEE B,SY_CODE C,HR_DEPARTMENT D
+             WHERE T.CPNY_ID = A.CPNY_ID(+)
+               AND T.MANAGER_EMP_ID = B.EMPID(+)
+               AND T.AREA_CODE = C.CODE_ID(+)
+               AND T.PARENT_DEPT_ID = D.DEPTID(+)
+               AND T.DEPTNO = #DEPTNO#
+               AND T.CPNY_ID = #CPNY_ID#
+        ]]>
+    </select>
+
+    <select id="getDeptInfo" parameterClass="linkMap"  resultClass="linkMap">
+        <![CDATA[
+            SELECT T.DEPTNO,
+                   T.DEPTID,
+                   DECODE(T.DEPT_LEVEL,
+                          1,
+                          T.DEPTNAME,
+                          2,
+                          '&nbsp;&nbsp;&nbsp;' || T.DEPTNAME,
+                          3,
+                          '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' || T.DEPTNAME,
+                          4,
+                          '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' || T.DEPTNAME,
+                          5,
+                          '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' || T.DEPTNAME,
+                          6,
+                          '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' || T.DEPTNAME,
+                          '') DEPTNAME,
+                   DECODE(T.DEPT_LEVEL,
+                          1,
+                          T.DEPT_EN_NAME,
+                          2,
+                          '&nbsp;&nbsp;&nbsp;' || T.DEPT_EN_NAME,
+                          3,
+                          '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' || T.DEPT_EN_NAME,
+                          4,
+                          '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' || T.DEPT_EN_NAME,
+                          5,
+                          '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' || T.DEPT_EN_NAME,
+                          6,
+                          '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' || T.DEPT_EN_NAME,
+                          '') DEPT_EN_NAME,
+                   T.DEPT_LEVEL LEVEL_ID,
+                   T.DEPT_LEVEL LEVEL_NAME,
+                   T.DESCRIPTION,
+                   TO_CHAR(T.DATE_CREATED,'YYYY-MM-DD') DATE_CREATED,
+                   TO_CHAR(T.DATE_ENDED,'YYYY-MM-DD') DATE_ENDED,
+                   T.MANAGER_EMP_ID,
+                   DECODE(#language#, 'en', B.ENGLISHNAME, B.CHINESENAME) MANAGER_EMP_NAME,
+                   T.AREA_CODE,
+                   DECODE(#language#, 'en', C.CODE_EN_NAME, C.CODE_NAME) AREA_NAME,
+                   T.CPNY_ID,
+                   DECODE(#language#, 'en', A.CPNY_EN_NAME, A.CPNY_NAME) CPNY_NAME,
+                   T.PARENT_DEPT_ID,
+                   DECODE(#language#, 'en', D.DEPT_EN_NAME, D.DEPTNAME) PARENT_DEPT_NAME,
+                   T.ACTIVITY STATUS_ID,
+                   DECODE(T.ACTIVITY,
+                          '1',
+                          DECODE(#language#, 'en', 'Available', '可用'),
+                          DECODE(#language#, 'en', 'Unavailable', '不可用')) STATUS
+              FROM HR_DEPARTMENT T,HR_COMPANY A,HR_EMPLOYEE B,SY_CODE C,HR_DEPARTMENT D
+             WHERE T.CPNY_ID  =  #CPNY_ID#
+               AND T.CPNY_ID = A.CPNY_ID(+)
+               AND T.MANAGER_EMP_ID = B.EMPID(+)
+               AND T.AREA_CODE = C.CODE_ID(+)
+               AND T.PARENT_DEPT_ID = D.DEPTID(+)
+        ]]>
+        <isNotEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+                  (UPPER(replace(T.DEPTNAME,' ','')) LIKE '%' || UPPER(replace(#keyWord:VARCHAR#,' ','')) || '%'
+                  OR UPPER(replace(T.DEPT_EN_NAME,' ','')) LIKE '%' || UPPER(replace(#keyWord:VARCHAR#,' ','')) || '%'
+                  OR UPPER(replace(T.DEPTID,' ','')) LIKE '%' || UPPER(replace(#keyWord:VARCHAR#,' ','')) || '%')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="DEPTNO">
+            <![CDATA[
+                  T.DEPTNO = #DEPTNO#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="MANAGER_EMP_ID">
+            <![CDATA[
+                  T.MANAGER_EMP_ID = #MANAGER_EMP_ID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="AREA_CODE">
+            <![CDATA[
+                  T.AREA_CODE = #AREA_CODE#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="ACTIVITY">
+            <![CDATA[
+                  T.ACTIVITY = #ACTIVITY#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="CPNY_ID">
+            <![CDATA[
+                  T.CPNY_ID = #CPNY_ID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="DEPTID">
+            <![CDATA[
+                EXISTS (
+                    SELECT     *
+                            FROM HR_DEPARTMENT B1
+                            WHERE B1.DEPTID=T.DEPTID
+                        START WITH B1.DEPTID = #DEPTID#
+                        CONNECT BY PRIOR B1.DEPTID = B1.PARENT_DEPT_ID
+                    )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                 START WITH T.PARENT_DEPT_ID = #CPNY_ID#
+                CONNECT BY PRIOR T.DEPTID = T.PARENT_DEPT_ID
+                ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                 START WITH T.PARENT_DEPT_ID = #CPNY_ID#
+                CONNECT BY PRIOR T.DEPTID = T.PARENT_DEPT_ID
+                ORDER BY T.ORDERNO
+            ]]>
+        </isEmpty>
+    </select>
+
+    <select id="getDeptInfoCnt" parameterClass="linkMap"  resultClass="int">
+        <![CDATA[
+            SELECT COUNT(*)
+            FROM HR_DEPARTMENT T,HR_COMPANY A,HR_EMPLOYEE B,SY_CODE C,HR_DEPARTMENT D
+            WHERE T.CPNY_ID = #CPNY_ID#
+               AND T.CPNY_ID = A.CPNY_ID(+)
+               AND T.MANAGER_EMP_ID = B.EMPID(+)
+               AND T.AREA_CODE = C.CODE_ID(+)
+               AND T.PARENT_DEPT_ID = D.DEPTID(+)
+        ]]>
+        <isNotEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+                  (UPPER(replace(T.DEPTNAME,' ','')) LIKE '%' || UPPER(replace(#keyWord:VARCHAR#,' ','')) || '%'
+                  OR UPPER(replace(T.DEPT_EN_NAME,' ','')) LIKE '%' || UPPER(replace(#keyWord:VARCHAR#,' ','')) || '%'
+                  OR UPPER(replace(T.DEPTID,' ','')) LIKE '%' || UPPER(replace(#keyWord:VARCHAR#,' ','')) || '%')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="DEPTNO">
+            <![CDATA[
+                  T.DEPTNO = #DEPTNO#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="MANAGER_EMP_ID">
+            <![CDATA[
+                  T.MANAGER_EMP_ID = #MANAGER_EMP_ID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="AREA_CODE">
+            <![CDATA[
+                  T.AREA_CODE = #AREA_CODE#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="ACTIVITY">
+            <![CDATA[
+                  T.ACTIVITY = #ACTIVITY#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="CPNY_ID">
+            <![CDATA[
+                  T.CPNY_ID = #CPNY_ID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="DEPTID">
+            <![CDATA[
+                EXISTS (
+                    SELECT *
+                    FROM HR_DEPARTMENT B1
+                    WHERE B1.DEPTID=T.DEPTID
+                        START WITH B1.DEPTID = #DEPTID#
+                        CONNECT BY PRIOR B1.DEPTID = B1.PARENT_DEPT_ID
+                )
+            ]]>
+        </isNotEmpty>
+    </select>
+
+    <insert id="addDeptInfo" parameterClass="linkMap" >
+        <![CDATA[
+            INSERT INTO HR_DEPARTMENT(
+                    DEPTNO,
+                    DEPTID,
+                    DEPTNAME,
+                    DEPT_EN_NAME,
+                    CPNY_ID,
+                    DATE_CREATED,
+                    DATE_ENDED,
+                    PARENT_DEPT_ID,
+                    DEPT_LEVEL,
+                    MANAGER_EMP_ID,
+                    DEPTCODE,
+                    AREA_CODE,
+                    DESCRIPTION,
+                    ACTIVITY,
+                    SET_APP,
+                    ORDERNO,
+                    CREATE_DATE,
+                    CREATED_BY
+                )
+            VALUES(
+                    HR_DEPARTMENT_SEQ.NEXTVAL,
+                    #DEPTID:VARCHAR#,
+                    #DEPTNAME:VARCHAR#,
+                    #DEPT_EN_NAME:VARCHAR#,
+                    #CPNY_ID:VARCHAR#,
+                    TO_DATE(#DATE_CREATED#, 'YYYY-MM-DD'),
+                    TO_DATE(#DATE_ENDED#, 'YYYY-MM-DD'),
+                    DECODE(#PARENTDEPTID#,'',#CPNY_ID:VARCHAR#,#PARENTDEPTID#),
+                    DECODE(#PARENTDEPTID#,'',1,
+                    (SELECT DEPT_LEVEL + 1
+                      FROM HR_DEPARTMENT A
+                     WHERE A.DEPTID = #PARENTDEPTID#)),
+                    #EMPID#,
+                    #DEPTCODE#,
+                    #AREA_CODE#,
+                    #DESCRIPTION#,
+                    DECODE(SIGN(TO_DATE(#DATE_ENDED#, 'YYYY-MM-DD') - SYSDATE),
+                                           1,
+                                           1,
+                                           0,
+                                           0,
+                                           -1,
+                                           0,
+                                           1),
+                    'no',
+                    HR_DEPARTMENT_SEQ.CURRVAL,
+                    SYSDATE,
+                    #CREATED_BY:VARCHAR#
+                )
+        ]]>
+    </insert>
+
+    <update id="updateDeptInfo" parameterClass="linkMap"  >
+        <![CDATA[
+            DECLARE
+            BEGIN
+                UPDATE HR_DEPARTMENT
+                SET DEPTNAME       = #DEPTNAME#,
+                    DEPT_EN_NAME   = #DEPT_EN_NAME#,
+                    DATE_CREATED   = TO_DATE(#DATE_CREATED#, 'YYYY-MM-DD'),
+                    DATE_ENDED     = TO_DATE(#DATE_ENDED#, 'YYYY-MM-DD'),
+                    MANAGER_EMP_ID = #EMPID#,
+                    PARENT_DEPT_ID = DECODE(#PARENT_DEPT_NAME#,'',#CPNY_ID:VARCHAR#,#PARENTDEPTID#),
+                    DEPT_LEVEL     = DECODE(#PARENT_DEPT_NAME#,'',1,
+                    (SELECT DEPT_LEVEL + 1
+                        FROM HR_DEPARTMENT A
+                        WHERE A.DEPTID = #PARENTDEPTID#)),
+                    AREA_CODE      = #AREA_CODE#,
+                    DESCRIPTION    = #DESCRIPTION#,
+                    UPDATED_BY     = #UPDATED_BY#,
+                    CPNY_ID        = #CPNY_ID#,
+                    ACTIVITY       = DECODE(SIGN(TO_DATE(#DATE_ENDED#, 'YYYY-MM-DD') - SYSDATE),1,1,0,0,-1,0,1),
+                    UPDATE_DATE = SYSDATE
+                WHERE DEPTNO = #DEPTNO#
+                    AND CPNY_ID = #CPNY_ID#;
+                UPDATE HR_DEPARTMENT
+                SET DEPT_LEVEL = DECODE(#PARENT_DEPT_NAME#,'',1,
+                    (SELECT DEPT_LEVEL + 1
+                        FROM HR_DEPARTMENT A
+                        WHERE A.DEPTID = #PARENTDEPTID#))+1
+                WHERE PARENT_DEPT_ID IN (SELECT B.DEPTID FROM HR_DEPARTMENT B WHERE B.DEPTNO = #DEPTNO#)
+                    AND CPNY_ID = #CPNY_ID#;
+            END;
+        ]]>
+    </update>
+
+    <delete id="deleteDeptInfo" parameterClass="linkMap" >
+        <![CDATA[
+            UPDATE HR_DEPARTMENT T
+            SET T.ACTIVITY = 0
+            WHERE T.DEPTNO = #DEPTNO#
+        ]]>
+    </delete>
+
+    <select id="getDeptInfoTree" resultClass="linkMap">
+        <![CDATA[
+            SELECT HR_DEPARTMENT.DEPTID,
+                HR_DEPARTMENT.DEPTNO,
+                HR_DEPARTMENT.PARENT_DEPT_ID,
+                HR_DEPARTMENT.DEPTNAME,
+                HR_DEPARTMENT.DEPT_LEVEL,
+                (CASE
+                WHEN HR_DEPARTMENT.DEPT_LEVEL > 2 THEN
+                    'false'
+                ELSE
+                    'true'
+                END) AS ISEXPAND
+            FROM HR_DEPARTMENT
+            WHERE (HR_DEPARTMENT.DATE_CREATED <= SYSDATE AND
+                HR_DEPARTMENT.DATE_ENDED >= SYSDATE OR
+                HR_DEPARTMENT.DATE_ENDED IS NULL)
+            AND ACTIVITY = 1
+            START WITH PARENT_DEPT_ID = #CPNY_ID#
+            CONNECT BY PRIOR DEPTID = PARENT_DEPT_ID
+            ORDER BY HR_DEPARTMENT.ORDERNO
+        ]]>
+    </select>
+
+    <select id="getDeptLevel" resultClass="linkMap">
+        <![CDATA[
+            SELECT HR_DEPARTMENT.DEPT_LEVEL
+            FROM HR_DEPARTMENT
+            WHERE (HR_DEPARTMENT.DATE_CREATED < SYSDATE AND
+                HR_DEPARTMENT.DATE_ENDED > SYSDATE OR
+                HR_DEPARTMENT.DATE_ENDED IS NULL)
+            GROUP BY HR_DEPARTMENT.DEPT_LEVEL
+            ORDER BY HR_DEPARTMENT.DEPT_LEVEL
+        ]]>
+    </select>
+
+    <sql id = "deptQuotaCondition">
+        <isNotEmpty prepend="AND" property="DEPTID">
+            HDQ.DEPTID = #DEPTID#
+        </isNotEmpty>
+    </sql>
+
+    <select id="getDeptQuotaList" parameterClass="linkMap"  resultClass="linkMap">
+        <![CDATA[
+            SELECT HDQ.POST_ID                                                       POST_ID,
+                   HDQ.DEPTID                                                        DEPTID,
+                   HD.DEPTNAME                                                       DEPTNAME,
+                   HDQ.CPNY_ID                                                       CPNY_ID,
+                   DECODE(#language#,'en',HP.POST_EN_NAME,HP.POST_NAME)              POST_NAME,
+                   HDQ.QUOTA_NUMBER                                                  QUOTA_NUMBER,
+                   HR_GETDEPTQUOTAREALNUMBER(#CPNY_ID#,HDQ.DEPTID,HDQ.POST_ID)       REAL_NUMBER,
+                   HDQ.DESCRIPTION                                                   DESCRIPTION
+            FROM HR_DEPT_QUOTA HDQ,
+                 HR_POST HP,
+                 HR_DEPARTMENT HD
+            WHERE HDQ.POST_ID = HP.POST_ID(+)
+            AND   HDQ.DEPTID = HD.DEPTID(+)
+            AND   HDQ.ACTIVITY = 1
+            AND   HDQ.CPNY_ID = #CPNY_ID#
+        ]]>
+        <include refid="deptQuotaCondition"/>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY DEPTID
+            ]]>
+        </isEmpty>
+    </select>
+
+    <select id="getDeptQuotaListCnt" parameterClass="linkMap"  resultClass="int">
+        <![CDATA[
+                SELECT count(*)
+                FROM HR_DEPT_QUOTA HDQ,
+                     HR_POST HP
+                WHERE HDQ.POST_ID = HP.POST_ID(+)
+                AND   HDQ.ACTIVITY = 1
+                AND   HDQ.CPNY_ID = #CPNY_ID#
+        ]]>
+        <include refid="deptQuotaCondition"/>
+    </select>
+
+    <select id="getPostIdCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(POST_ID)
+            FROM HR_DEPT_QUOTA HDQ
+            WHERE POST_ID = #POST_ID#
+            AND   CPNY_ID = #CPNY_ID#
+            AND   DEPTID = #DEPTID#
+            AND   ACTIVITY = 1
+        ]]>
+    </select>
+
+    <insert id="addDeptQuotaInfo" parameterClass="linkMap" >
+        <![CDATA[
+            INSERT INTO HR_DEPT_QUOTA (
+                DEPTID,
+                POST_ID,
+                QUOTA_NUMBER,
+                CPNY_ID,
+                CREATED_BY,
+                CREATE_DATE,
+                ACTIVITY,
+                DESCRIPTION)
+            VALUES(
+                #DEPTID:VARCHAR#,
+                #POST_ID:VARCHAR#,
+                #QUOTA_NUMBER#,
+                #CPNY_ID:VARCHAR#,
+                #CREATED_BY:VARCHAR#,
+                SYSDATE,
+                1,
+                #DESCRIPTION#)
+        ]]>
+    </insert>
+
+    <update id="deleteDeptQuotaInfo" parameterClass="linkMap">
+        <![CDATA[
+            UPDATE HR_DEPT_QUOTA
+            SET ACTIVITY = 0,
+                UPDATED_BY = #UPDATED_BY#,
+                UPDATE_DATE = SYSDATE
+            WHERE POST_ID = #POST_ID#
+            AND   CPNY_ID = #CPNY_ID#
+            AND   DEPTID = #DEPTID#
+        ]]>
+    </update>
+
+    <update id="updateDeptQuotaInfo" parameterClass="linkMap">
+        <![CDATA[
+            UPDATE HR_DEPT_QUOTA
+            SET QUOTA_NUMBER = #QUOTA_NUMBER#,
+                UPDATED_BY = #UPDATED_BY#,
+                UPDATE_DATE = SYSDATE,
+                DESCRIPTION = #DESCRIPTION#
+            WHERE POST_ID = #POST_ID#
+            AND   CPNY_ID = #CPNY_ID#
+            AND   DEPTID = #DEPTID#
+        ]]>
+    </update>
+
+    <update id="massTransferEmployees" parameterClass="linkMap">
+        <![CDATA[
+            UPDATE HR_EMPLOYEE
+            SET DEPTID = #DEPTID#,
+                UPDATE_DATE = SYSDATE,
+                UPDATED_BY = #UPDATED_BY:VARCHAR#
+            WHERE EMPID = #EMPID#
+            AND   CPNY_ID = #CPNY_ID#
+        ]]>
+    </update>
+    
+    <select id="checkDeptChildren" parameterClass="linkMap"  resultClass="int">
+        <![CDATA[
+            SELECT COUNT(0)
+            FROM HR_DEPARTMENT
+            WHERE CPNY_ID = #CPNY_ID#
+            AND ACTIVITY = 1
+            START WITH PARENT_DEPT_ID = #DEPTID#
+            CONNECT BY PRIOR DEPTID = PARENT_DEPT_ID
+            ORDER BY HR_DEPARTMENT.ORDERNO
+        ]]>
+    </select>
+</sqlMap>

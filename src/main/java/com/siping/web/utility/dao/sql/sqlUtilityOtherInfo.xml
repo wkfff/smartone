@@ -1,0 +1,1196 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+    PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+    "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="utility.otherInfo">
+     
+    <select id="getMenuModuleSelectList" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT T.MENU_CODE,
+                   IF(#language#= 'en', T.MENU_EN_INTRO, T.MENU_INTRO) MENU_INTRO
+              FROM SY_MENU T
+             WHERE T.ACTIVITY = 1 
+        ]]>   
+        <isNotEmpty prepend="AND" property="MENU_PARENT_CODE">
+            <![CDATA[
+                  T.MENU_PARENT_CODE = #MENU_PARENT_CODE#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="DEPTH">
+            <![CDATA[
+                  T.DEPTH = #DEPTH#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="CPNY_ID">
+            <![CDATA[
+                  T.CPNY_ID = #CPNY_ID#
+            ]]>
+        </isNotEmpty>
+    </select>
+    
+    <select id="getDataTypeSelectList" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT T.CODE_ID DATA_TYPE_CODE,
+                   IF(#language#= 'en', T.CODE_EN_NAME, T.CODE_NAME) DATA_TYPE_NAME
+              FROM SY_CODE T
+             WHERE T.ACTIVITY = 1 
+        ]]>   
+        <isNotEmpty prepend="AND" property="PARENT_CODE">
+            <![CDATA[
+                  T.PARENT_CODE = #PARENT_CODE#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="DEPTH">
+            <![CDATA[
+                  T.DEPTH = #DEPTH#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="CPNY_ID">
+            <![CDATA[
+                  T.CPNY_ID = #CPNY_ID#
+            ]]>
+        </isNotEmpty>
+            <![CDATA[ 
+             ORDER BY T.ORDERNO
+            ]]>
+    </select>
+      
+    <select id="getPostGroupSelectList" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT 
+                POST_GROUP_ID POST_GROUP_ID,
+                (CASE WHEN #language# = 'en' then 
+                    POST_GROUP_EN_NAME
+                ELSE
+                    POST_GROUP_NAME
+                END) AS POST_GROUP_NAME
+            FROM HR_POST_GROUP
+            WHERE ACTIVITY = 1
+        ]]> 
+        <isNotEmpty prepend="AND" property="CPNY_ID">
+            <![CDATA[
+                  T.CPNY_ID = #CPNY_ID#
+            ]]>
+        </isNotEmpty>
+        <![CDATA[
+                ORDER BY POST_GROUP_ID
+            ]]>
+    </select>
+    <select id="getPostColumnSelectList" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT 
+                POST_COLUMN_ID POST_COLUMN_ID,
+                (CASE WHEN #language# = 'en' then 
+                    POST_COLUMN_EN_NAME
+                ELSE
+                    POST_COLUMN_NAME
+                END) AS POST_COLUMN_NAME
+            FROM HR_POST_COLUMN
+            WHERE ACTIVITY = 1
+        ]]> 
+        <isNotEmpty prepend="AND" property="CPNY_ID">
+            <![CDATA[
+                  T.CPNY_ID = #CPNY_ID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="POST_GROUP_ID">
+            <![CDATA[
+                  T.POST_GROUP_ID = #POST_GROUP_ID#
+            ]]>
+        </isNotEmpty>
+        <![CDATA[
+        	ORDER BY convert(if(#language#='en', POST_COLUMN_EN_NAME, POST_COLUMN_NAME)  USING gbk ) COLLATE gbk_chinese_ci ASC
+            ]]>
+    </select>
+    
+    <select id="getPostGradeSelectList" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT 
+                POST_GRADE_ID POST_GRADE_ID,
+                (CASE WHEN #language# = 'en' then 
+                    POST_GRADE_EN_NAME
+                ELSE
+                    POST_GRADE_NAME
+                END) AS POST_GRADE_NAME
+            FROM HR_POST_GRADE
+            WHERE ACTIVITY = 1
+        ]]> 
+        <isNotEmpty prepend="AND" property="CPNY_ID">
+            <![CDATA[
+                  T.CPNY_ID = #CPNY_ID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="POST_GROUP_ID">
+            <![CDATA[
+                  T.POST_GROUP_ID = #POST_GROUP_ID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="POST_COLUMN_ID">
+            <![CDATA[
+                  T.POST_COLUMN_ID = #POST_COLUMN_ID#
+            ]]>
+        </isNotEmpty>
+        <![CDATA[
+            ORDER BY convert(if(#language#='en', POST_GRADE_EN_NAME, POST_GRADE_NAME)  USING gbk ) COLLATE gbk_chinese_ci ASC
+            ]]>
+    </select>
+    
+    <select id="getPostSelectList" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT 
+                POST_ID POST_ID,
+                (CASE WHEN #language# = 'en' then 
+                    POST_EN_NAME
+                ELSE
+                    POST_NAME
+                END) AS POST_NAME
+            FROM HR_POST
+            WHERE ACTIVITY = 1
+        ]]> 
+        <isNotEmpty prepend="AND" property="CPNY_ID">
+            <![CDATA[
+                  T.CPNY_ID = #CPNY_ID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="POST_GROUP_ID">
+            <![CDATA[
+                  T.POST_GROUP_ID = #POST_GROUP_ID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="POST_COLUMN_ID">
+            <![CDATA[
+                  T.POST_COLUMN_ID = #POST_COLUMN_ID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="POST_GRADE_ID">
+            <![CDATA[
+                  T.POST_GRADE_ID = #POST_GRADE_ID#
+            ]]>
+        </isNotEmpty>
+        <![CDATA[
+        	ORDER BY convert(if(#language#='en', POST_EN_NAME, POST_NAME)  USING gbk ) COLLATE gbk_chinese_ci ASC
+            ]]>
+    </select>
+    
+    
+    <select id="getPositionSelectList" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT 
+                POSITION_ID POSITION_ID,
+                (CASE WHEN #language# = 'en' then 
+                    POSITION_EN_NAME
+                ELSE
+                    POSITION_NAME
+                END) AS POSITION_NAME
+            FROM HR_POSITION
+            WHERE ACTIVITY = 1
+        ]]> 
+        <isNotEmpty prepend="AND" property="CPNY_ID">
+            <![CDATA[
+                  T.CPNY_ID = #CPNY_ID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="POST_GROUP_ID">
+            <![CDATA[
+                  T.POST_GROUP_ID = #POST_GROUP_ID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="POST_COLUMN_ID">
+            <![CDATA[
+                  T.POST_COLUMN_ID = #POST_COLUMN_ID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="POST_GRADE_ID">
+            <![CDATA[
+                  T.POST_GRADE_ID = #POST_GRADE_ID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="POST_ID">
+            <![CDATA[
+                  T.POST_ID = #POST_ID#
+            ]]>
+        </isNotEmpty>
+        <![CDATA[
+        	ORDER BY convert(if(#language#='en', POSITION_EN_NAME, POSITION_NAME)  USING gbk ) COLLATE gbk_chinese_ci ASC
+            ]]>
+    </select>
+    
+    <select id="getActivitySelectList"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+         SELECT '1' STATUS_ID,
+                IF(#language#='en', 'Available', '可用') STATUS,
+                'Available' EN_STATUS
+           FROM DUAL
+         UNION
+         SELECT '0' STATUS_ID,
+                IF(#language#='en', 'Unavailable', '不可用') STATUS,
+                'Unavailable' EN_STATUS
+           FROM DUAL
+            ]]>
+    </select>
+     
+    <select id="getCompanySelectList"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.CPNY_ID CPNY_ID,  
+                   IF(#language#= 'en', T.CPNY_EN_NAME, T.CPNY_NAME) CPNY_NAME,
+                   T.CPNY_EN_NAME EN_CPNY_NAME
+              FROM HR_COMPANY T
+             WHERE T.ACTIVITY = 1
+            ]]>
+    </select>
+    
+    <select id="getLeaveTypeSelectList"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.CODE_ID AS LEAVE_TYPE_CODE,
+                  (CASE WHEN #language# = 'en' THEN
+                        IFNULL(T.CODE_EN_NAME, T.CODE_NAME)
+                        ELSE
+                           T.CODE_NAME
+                        END) AS LEAVE_TYPE_NAME
+              FROM SY_CODE T
+             WHERE T.PARENT_CODE = 'LeaveTypeCode'
+               AND T.CPNY_ID = #CPNY_ID# 
+               AND T.ACTIVITY = 1
+             ORDER BY T.ORDERNO
+            ]]>
+    </select>
+    
+    <select id="getEvTypeSelectList"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.CODE_ID AS EV_TYPE_ID,
+                  (CASE WHEN #language# = 'en' THEN
+                        IFNULL(T.CODE_EN_NAME, T.CODE_NAME)
+                        ELSE
+                           T.CODE_NAME
+                        END) AS EV_TYPE_NAME
+              FROM SY_CODE T
+             WHERE T.PARENT_CODE = 'EVTYPE'
+               AND T.CPNY_ID = #CPNY_ID# 
+               AND T.ACTIVITY = 1
+             ORDER BY T.ORDERNO
+            ]]>
+    </select>
+    
+    <select id="getEvTypeProcessSelectList"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.CODE_ID AS EV_PROCESS_ID,
+                  (CASE WHEN #language# = 'en' THEN
+                        IFNULL(T.CODE_EN_NAME, T.CODE_NAME)
+                        ELSE
+                           T.CODE_NAME
+                        END) AS EV_PROCESS_NAME
+              FROM SY_CODE T
+             WHERE T.PARENT_CODE = 'EVPROCESS'
+               AND T.CPNY_ID = #CPNY_ID# 
+               AND T.ACTIVITY = 1
+             ORDER BY T.ORDERNO
+            ]]>
+    </select>
+    
+    <select id="getEvTypeOperationSelectList"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.CODE_ID AS EV_OPERATE_ID,
+                  (CASE WHEN #language# = 'en' THEN
+                        IFNULL(T.CODE_EN_NAME, T.CODE_NAME)
+                        ELSE
+                           T.CODE_NAME
+                        END) AS EV_OPERATE_NAME
+              FROM SY_CODE T
+             WHERE T.PARENT_CODE = 'EVOPERATE'
+               AND T.CPNY_ID = #CPNY_ID# 
+               AND T.ACTIVITY = 1
+             ORDER BY T.ORDERNO
+            ]]>
+    </select>
+    
+    <select id="getEvTypeItemSelectList"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.CODE_ID AS EV_ITEM_ID,
+                  (CASE WHEN #language# = 'en' THEN
+                        IFNULL(T.CODE_EN_NAME, T.CODE_NAME)
+                        ELSE
+                           T.CODE_NAME
+                        END) AS EV_ITEM_NAME
+              FROM SY_CODE T
+             WHERE T.PARENT_CODE = 'EVITEM'
+               AND T.CPNY_ID = #CPNY_ID# 
+               AND T.ACTIVITY = 1
+             ORDER BY T.ORDERNO
+            ]]>
+    </select>
+    
+    <select id="getOTTypeSelectList"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.CODE_ID AS OT_TYPE_CODE,
+                  (CASE WHEN #language# = 'en' THEN
+                        IFNULL(T.CODE_EN_NAME, T.CODE_NAME)
+                        ELSE
+                           T.CODE_NAME
+                        END) AS OT_TYPE_NAME
+              FROM SY_CODE T
+             WHERE T.PARENT_CODE = 'OTTypeCode'
+               AND T.CPNY_ID = #CPNY_ID# 
+               AND T.ACTIVITY = 1
+             ORDER BY T.ORDERNO
+            ]]>
+    </select>
+    
+    <select id="getBTSelectList"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.TYPE_ID,
+                  (CASE WHEN #language# = 'en' THEN
+                        IFNULL(T.TYPE_EN_NAME, T.TYPE_NAME)
+                        ELSE
+                           T.TYPE_EN_NAME
+                        END) AS TYPE_NAME
+              FROM PA_BONUS_TYPE T
+             WHERE T.CPNY_ID = #CPNY_ID# 
+               AND T.ACTIVITY = 1
+             ORDER BY T.ORDERNO
+            ]]>
+    </select>
+    
+    <select id="getExpDetailTypeSelectList"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.CODE_ID AS EXP_TYPE_CODE,
+                  (CASE WHEN #language# = 'en' THEN
+                        IFNULL(T.CODE_EN_NAME, T.CODE_NAME)
+                        ELSE
+                           T.CODE_NAME
+                        END) AS EXP_TYPE_NAME
+              FROM SY_CODE T
+             WHERE T.PARENT_CODE = 'ExpDetailTypeCode'
+               AND T.CPNY_ID = #CPNY_ID# 
+               AND T.ACTIVITY = 1
+             ORDER BY T.ORDERNO
+            ]]>
+    </select>
+    <select id="getProSelectList"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+        SELECT PRO_ID,concat('[',PRO_ID,'] ',PRO_NAME)  PRO_NAME,
+            PRO_EN_NAME,
+            TYPE_CODE 
+        FROM (
+            SELECT T.PRO_NO AS PRO_ID,
+                If(#language# = 'en',IFNULL(T.PRO_EN_NAME, T.PRO_NAME),T.PRO_NAME) PRO_NAME,
+                T.PRO_EN_NAME ,
+                T.TYPE_CODE 
+            FROM ESS_PROJECT T
+            WHERE T.CPNY_ID = #CPNY_ID# 
+                AND T.ACTIVITY = 1 and
+           
+                
+                    T.END_DATE>= str_to_date(#WORK_DATE#,'%Y-%m-%d')
+                    AND T.START_DATE <= str_to_date(#WORK_DATE#,'%Y-%m-%d')
+               
+          AND
+                T.PRO_NO IN(SELECT EPE.PRO_NO 
+                              FROM ESS_PROJECT_EMP EPE 
+                             WHERE EPE.EMPID=#EMPID#)
+           AND
+                T.TYPE_CODE = #TYPE_CODE#
+          
+                ) as bb
+            ]]>
+    </select>
+    <select id="getBTDurationInfo"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.BT_NO,
+                   concat(STR_TO_CHAR(T.BT_FROM_TIME,'%Y-%m-%d %T'),' ~ ', STR_TO_CHAR(T.BT_TO_TIME,'%Y-%m-%d %T')) AS BT_NAME
+              FROM ESS_APPLY_BT T
+             WHERE T.EMPID = #EMPID# 
+               AND T.ACTIVITY = 0
+               ORDER BY T.BT_FROM_TIME DESC
+            ]]>
+    </select>
+    <select id="getAttItemInfo"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.ITEM_NO ID,
+                   (CASE WHEN #language# = 'en' THEN
+                        IFNULL(T.ITEM_EN_NAME, T.ITEM_NAME)
+                        ELSE
+                           T.ITEM_NAME
+                        END) AS NAME
+                    
+              FROM AR_ITEM T
+             WHERE T.ACTIVITY = 1
+               AND T.CPNY_ID = #CPNY_ID# 
+            ]]>
+        <isEqual prepend="AND" property="ITEM_NO" compareValue="183839">
+            <![CDATA[
+                  T.ITEM_NO IN ('1','8','38','39')
+            ]]>
+        </isEqual>
+            <![CDATA[
+               ORDER BY T.ITEM_NO
+            ]]>
+    </select>
+    
+    <select id="getResignTypeSelectList"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.CODE_ID AS RESIGN_TYPE_CODE,
+                  (CASE WHEN #language# = 'en' THEN
+                        IFNULL(T.CODE_EN_NAME, T.CODE_NAME)
+                        ELSE
+                           T.CODE_NAME
+                        END) AS RESIGN_TYPE_NAME
+              FROM SY_CODE T
+             WHERE T.PARENT_CODE = 'ResignTypeCode'
+               AND T.CPNY_ID = #CPNY_ID# 
+               AND T.ACTIVITY = 1
+             ORDER BY T.ORDERNO
+            ]]>
+    </select>
+    
+    <select id="getDisTypeSelectList"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.CODE_ID AS DIS_TYPE_CODE,
+                  (CASE WHEN #language# = 'en' THEN
+                        IFNULL(T.CODE_EN_NAME, T.CODE_NAME)
+                        ELSE
+                           T.CODE_NAME
+                        END) AS DIS_TYPE_NAME
+              FROM SY_CODE T
+             WHERE T.PARENT_CODE = 'DispatchDivision'
+               AND T.CPNY_ID = #CPNY_ID# 
+               AND T.ACTIVITY = 1
+             ORDER BY T.ORDERNO
+            ]]>
+    </select>
+    
+    <select id="getRewardTypeSelectList"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.CODE_ID AS REWARD_TYPE_CODE,
+                  (CASE WHEN #language# = 'en' THEN
+                        IFNULL(T.CODE_EN_NAME, T.CODE_NAME)
+                        ELSE
+                           T.CODE_NAME
+                        END) AS REWARD_TYPE_NAME
+              FROM SY_CODE T
+             WHERE T.PARENT_CODE = 'RewardTypeCode'
+               AND T.CPNY_ID = #CPNY_ID# 
+               AND T.ACTIVITY = 1
+             ORDER BY T.ORDERNO
+            ]]>
+    </select>
+    <select id="getBankSelectList"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.CODE_ID AS BANK_CODE,
+                  (CASE WHEN #language# = 'en' THEN
+                        IFNULL(T.CODE_EN_NAME, T.CODE_NAME)
+                        ELSE
+                           T.CODE_NAME
+                        END) AS BANK_NAME
+              FROM SY_CODE T
+             WHERE T.PARENT_CODE = 'BankCode'
+               AND T.CPNY_ID = #CPNY_ID# 
+               AND T.ACTIVITY = 1
+             ORDER BY T.ORDERNO
+            ]]>
+    </select>
+    <select id="getProTypeCodeSelectList"   parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.CODE_ID AS TYPE_CODE,
+                  IF( #language# = 'en',IFNULL(T.CODE_EN_NAME, T.CODE_NAME),T.CODE_NAME)  TYPE_NAME
+              FROM SY_CODE T
+             WHERE T.PARENT_CODE = 'projectTypeCode'
+               AND T.CPNY_ID = #CPNY_ID# 
+               AND T.ACTIVITY = 1 
+            ]]>
+        <isNotEmpty prepend="AND" property="EMPID">
+            <![CDATA[
+                   T.CODE_ID IN (SELECT EP.TYPE_CODE
+                       FROM ESS_PROJECT EP, ESS_PROJECT_EMP EPE
+                       WHERE EP.PRO_NO = EPE.PRO_NO
+                       AND EPE.EMPID = #EMPID#
+            ]]>
+            <isNotEmpty prepend="AND" property="WORK_DATE">
+                <![CDATA[
+                    EP.END_DATE >= str_to_date('2013-04-01','%Y-%m-%d')
+                ]]>
+            </isNotEmpty> 
+            <![CDATA[
+            )
+            ]]>
+        </isNotEmpty>
+        <![CDATA[
+             ORDER BY T.ORDERNO
+            ]]>
+    </select>
+    <select id="getEvaPeriodSelectList"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.EV_PERIOD_ID AS EV_PERIOD_ID,
+                   T.EV_PERIOD_ID AS ID,
+                  (CASE WHEN #language# = 'en' THEN
+                        IFNULL(T.EV_PERIOD_EN_NAME, T.EV_PERIOD_NAME)
+                        ELSE
+                           T.EV_PERIOD_NAME
+                        END) AS EV_PERIOD_NAME,
+                  (CASE WHEN #language# = 'en' THEN
+                        IFNULL(T.EV_PERIOD_EN_NAME, T.EV_PERIOD_NAME)
+                        ELSE
+                           T.EV_PERIOD_NAME
+                        END) AS NAME
+              FROM EVA_PERIOD T
+             WHERE T.CPNY_ID = #CPNY_ID# 
+               AND T.ACTIVITY = 1
+             ORDER BY T.EV_YEAR,T.EV_PERIOD_ID
+            ]]>
+    </select>
+    <select id="getEvaPeriodTypeSelectList"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+        SELECT EVAPT.EV_PERIOD_ID,
+               EVAPT.EV_TYPE_ID AS EV_TYPE_ID,
+               EVAPT.EV_TYPE_ID AS ID,
+               (CASE
+                 WHEN #language# = 'en' THEN
+                  IFNULL(A.CODE_EN_NAME, A.CODE_NAME)
+                 ELSE
+                  A.CODE_NAME
+               END) AS EV_TYPE_NAME,
+               (CASE
+                 WHEN #language# = 'en' THEN
+                  IFNULL(A.CODE_EN_NAME, A.CODE_NAME)
+                 ELSE
+                  A.CODE_NAME
+               END) AS NAME
+          FROM EVA_PERIOD_TYPE EVAPT,EVA_PERIOD EVAP, SY_CODE A
+         WHERE EVAPT.EV_PERIOD_ID = EVAP.EV_PERIOD_ID
+           AND EVAPT.EV_TYPE_ID = A.CODE_ID(+)
+           AND EVAPT.ACTIVITY = 1
+           AND EVAP.ACTIVITY = 1 
+           AND EVAP.CPNY_ID = #CPNY_ID# 
+            ]]>
+        <isNotEmpty prepend="AND" property="EV_PERIOD_ID">
+            <![CDATA[
+                  EVAPT.EV_PERIOD_ID = #EV_PERIOD_ID# 
+            ]]>
+        </isNotEmpty>
+        <![CDATA[
+                  ORDER BY A.ORDERNO,A.CODE_ID
+            ]]>
+    </select>
+    
+    <select id="getReasonSelectList"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.CODE_ID AS REASON_CODE,
+                  (CASE WHEN #language# = 'en' THEN
+                        IFNULL(T.CODE_EN_NAME, T.CODE_NAME)
+                        ELSE
+                           T.CODE_NAME
+                        END) AS REASON_NAME
+              FROM SY_CODE T
+             WHERE T.PARENT_CODE = 'reasonCode'
+               AND T.CPNY_ID = #CPNY_ID# 
+               AND T.ACTIVITY = 1
+             ORDER BY T.ORDERNO
+            ]]>
+    </select>
+    
+    <select id="getRewardGradeSelectList"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.CODE_ID AS REWARD_GRADE_CODE,
+                  (CASE WHEN #language# = 'en' THEN
+                        IFNULL(T.CODE_EN_NAME, T.CODE_NAME)
+                        ELSE
+                           T.CODE_NAME
+                        END) AS REWARD_GRADE_NAME
+              FROM SY_CODE T
+             WHERE T.PARENT_CODE = 'RewardGradeCode'
+               AND T.CPNY_ID = #CPNY_ID# 
+               AND T.ACTIVITY = 1
+             ORDER BY T.ORDERNO
+            ]]>
+    </select>
+    
+    <select id="getPunishmentTypeSelectList"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.CODE_ID AS PUNISHMENT_TYPE_CODE,
+                  (CASE WHEN #language# = 'en' THEN
+                        IFNULL(T.CODE_EN_NAME, T.CODE_NAME)
+                        ELSE
+                           T.CODE_NAME
+                        END) AS PUNISHMENT_TYPE_NAME
+              FROM SY_CODE T
+             WHERE T.PARENT_CODE = 'TransPunishment'
+               AND T.CPNY_ID = #CPNY_ID# 
+               AND T.ACTIVITY = 1
+             ORDER BY T.ORDERNO
+            ]]>
+    </select>
+    
+    <select id="getTaxWaySelectList"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.CODE_ID AS TAX_WAY_CODE,
+                  (CASE WHEN #language# = 'en' THEN
+                        IFNULL(T.CODE_EN_NAME, T.CODE_NAME)
+                        ELSE
+                           T.CODE_NAME
+                        END) AS TAX_WAY_NAME
+              FROM SY_CODE T
+             WHERE T.PARENT_CODE = 'taxWayCode'
+               AND T.CPNY_ID = #CPNY_ID# 
+               AND T.ACTIVITY = 1
+             ORDER BY T.ORDERNO
+            ]]>
+    </select>
+    
+    <select id="getBIZSelectList"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.CODE_ID AS BIZ_ID,
+                  (CASE WHEN #language# = 'en' THEN
+                        IFNULL(T.CODE_EN_NAME, T.CODE_NAME)
+                        ELSE
+                           T.CODE_NAME
+                        END) AS BIZ_NAME
+              FROM SY_CODE T
+             WHERE T.PARENT_CODE = 'HrBiz'
+               AND T.CPNY_ID = #CPNY_ID# 
+               AND T.ACTIVITY = 1
+             ORDER BY T.ORDERNO
+            ]]>
+    </select>
+    
+    <select id="getStatusSelectList"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.CODE_ID AS STATUS_CODE,
+                  (CASE WHEN #language# = 'en' THEN
+                        IFNULL(T.CODE_EN_NAME, T.CODE_NAME)
+                        ELSE
+                           T.CODE_NAME
+                        END) AS STATUS_NAME
+              FROM SY_CODE T
+             WHERE T.PARENT_CODE = 'EmpStatus'
+               AND T.CPNY_ID = #CPNY_ID# 
+               AND T.ACTIVITY = 1
+            ]]> 
+        <isNotEmpty prepend="AND" property="OFF_PROBATION">
+            <![CDATA[
+                  T.CODE_ID IN ('EmpStatus1','EmpStatus2','EmpStatus6')
+            ]]>
+        </isNotEmpty>
+        <![CDATA[
+             ORDER BY T.ORDERNO
+            ]]>
+    </select>
+    <select id="getOtherRelationlTypeSelectList"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.CODE_ID AS FAM_TYPE_CODE,
+                  (CASE WHEN #language# = 'en' THEN
+                        IFNULL(T.CODE_EN_NAME, T.CODE_NAME)
+                        ELSE
+                           T.CODE_NAME
+                        END) AS FAM_TYPE_NAME
+              FROM SY_CODE T
+             WHERE T.PARENT_CODE = 'OtherRelation'
+               AND T.CPNY_ID = #CPNY_ID# 
+               AND T.ACTIVITY = 1
+             ORDER BY T.ORDERNO
+            ]]>
+    </select>
+    <select id="getRelationalTypeSelectList"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.CODE_ID AS FAM_TYPE_CODE,
+                  (CASE WHEN #language# = 'en' THEN
+                        IFNULL(T.CODE_EN_NAME, T.CODE_NAME)
+                        ELSE
+                           T.CODE_NAME
+                        END) AS FAM_TYPE_NAME
+              FROM SY_CODE T
+             WHERE T.PARENT_CODE = 'RelationalTypeCode'
+               AND T.CPNY_ID = #CPNY_ID# 
+               AND T.ACTIVITY = 1
+             ORDER BY T.ORDERNO
+            ]]>
+    </select>
+    <select id="getDegreeTypeSelectList"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.CODE_ID AS DEGREE_CODE,
+                  (CASE WHEN #language# = 'en' THEN
+                        IFNULL(T.CODE_EN_NAME, T.CODE_NAME)
+                        ELSE
+                           T.CODE_NAME
+                        END) AS DEGREE_NAME
+              FROM SY_CODE T
+             WHERE T.PARENT_CODE = 'DegreeCode'
+               AND T.CPNY_ID = #CPNY_ID# 
+               AND T.ACTIVITY = 1
+             ORDER BY T.ORDERNO
+            ]]>
+    </select>
+    <select id="getEduHisTypeSelectList"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.CODE_ID AS EDU_HIS_CODE,
+                  (CASE WHEN #language# = 'en' THEN
+                        IFNULL(T.CODE_EN_NAME, T.CODE_NAME)
+                        ELSE
+                           T.CODE_NAME
+                        END) AS EDU_HIS_NAME
+              FROM SY_CODE T
+             WHERE T.PARENT_CODE = 'EduHisCode'
+               AND T.CPNY_ID = #CPNY_ID# 
+               AND T.ACTIVITY = 1
+             ORDER BY T.ORDERNO
+            ]]>
+    </select>
+    <select id="getReturnTypeSelectList"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.CODE_ID AS RETURN_TYPE_CODE,
+                  (CASE WHEN #language# = 'en' THEN
+                        IFNULL(T.CODE_EN_NAME, T.CODE_NAME)
+                        ELSE
+                           T.CODE_NAME
+                        END) AS RETURN_TYPE_NAME
+              FROM SY_CODE T
+             WHERE T.PARENT_CODE = 'ReturnTypeCode'
+               AND T.CPNY_ID = #CPNY_ID# 
+               AND T.ACTIVITY = 1
+             ORDER BY T.ORDERNO
+            ]]>
+    </select>
+    
+    <select id="getCurrencyUnitSelectList"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.CODE_ID AS CURRENCY_UNIT_CODE,
+                  (CASE WHEN #language# = 'en' THEN
+                        IFNULL(T.CODE_EN_NAME, T.CODE_NAME)
+                        ELSE
+                           T.CODE_NAME
+                        END) AS CURRENCY_UNIT_NAME
+              FROM SY_CODE T
+             WHERE T.PARENT_CODE = 'CurrencyUnitCode'
+               AND T.CPNY_ID = #CPNY_ID# 
+               AND T.ACTIVITY = 1
+             ORDER BY T.ORDERNO
+            ]]>
+    </select>
+    
+    
+    <select id="getContractTypeSelectList"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.CODE_ID AS CONTRACT_TYPE_CODE,
+                  (CASE WHEN #language# = 'en' THEN
+                        IFNULL(T.CODE_EN_NAME, T.CODE_NAME)
+                        ELSE
+                           T.CODE_NAME
+                        END) AS CONTRACT_TYPE_NAME
+              FROM SY_CODE T
+             WHERE T.PARENT_CODE = 'ContractTypeCode'
+               AND T.CPNY_ID = #CPNY_ID# 
+               AND T.ACTIVITY = 1
+             ORDER BY T.ORDERNO
+            ]]>
+    </select>
+    
+    <select id="getModuleParameter" parameterClass="string"
+        resultClass="string" remapResults="true">
+        <![CDATA[   
+            SELECT T.CONTENT FROM SY_PARAMETER T WHERE T.PARAMETER_ID = #PARAMETER_ID#
+        ]]> 
+    </select>
+    
+    <select id="getShiftAttSelectList"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+         SELECT T.TYPE_ID DATE_TYPE_CODE, 
+                (CASE WHEN #language# = 'en' THEN
+                        IFNULL(T.TYPE_EN_NAME, T.TYPE_NAME)
+                        ELSE
+                           T.TYPE_NAME
+                        END) AS DATE_TYPE_NAME
+            FROM AR_CALENDER_TYPE T
+           WHERE T.ACTIVITY = 1
+             AND T.CPNY_ID = #CPNY_ID#
+            ]]>
+    </select>
+    
+    <select id="getItemInfoSelection" parameterClass="linkMap" 
+    resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.ITEM_NO,
+                  (CASE WHEN #language# = 'en' THEN
+                        IFNULL(T.ITEM_EN_NAME, T.ITEM_NAME)
+                        ELSE
+                           T.ITEM_NAME
+                        END) AS ITEM_NAME 
+              FROM AR_ITEM T, HR_COMPANY A
+             WHERE T.ACTIVITY = 1
+               AND T.CPNY_ID = A.CPNY_ID(+)
+               AND T.CPNY_ID = #CPNY_ID#
+        ]]>  
+          <![CDATA[
+                ORDER BY T.ITEM_NO
+            ]]> 
+    </select>
+    
+    <select id="getToolItemSelectList" parameterClass="linkMap" 
+    resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.DISTINCT_FIELD ITEM_ID,
+                   concat('STA_ITEM.',T.DISTINCT_FIELD) as ITEM_ID_F,
+                  (CASE WHEN #language# = 'en' THEN
+                        IFNULL(T.FIELD_EN_NAME, T.FIELD_NAME)
+                        ELSE
+                           T.FIELD_NAME
+                        END) AS ITEM_NAME_F, 
+                  (CASE WHEN #language# = 'en' THEN
+                        IFNULL(T.FIELD_EN_NAME, T.FIELD_NAME)
+                        ELSE
+                           T.FIELD_NAME
+                        END) AS ITEM_NAME 
+              FROM PA_DISTINCT_LIST T left join HR_COMPANY A on T.CPNY_ID = A.CPNY_ID
+             WHERE T.ACTIVITY = 1  AND T.CPNY_ID = #CPNY_ID# 
+        ]]>  
+        <isNotEmpty prepend="AND" property="TABLE_NAME">
+            <![CDATA[
+                  T.TABLE_NAME = #TABLE_NAME#
+            ]]>
+        </isNotEmpty>
+          <![CDATA[
+                ORDER BY T.ID
+            ]]> 
+    </select>
+    
+    <select id="getMCSelectList" parameterClass="linkMap" 
+    resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.DISTINCT_FIELD MC_CODE,
+                  (CASE WHEN #language# = 'en' THEN
+                        IFNULL(T.FIELD_EN_NAME, T.FIELD_NAME)
+                        ELSE
+                           T.FIELD_NAME
+                        END) AS MC_NAME 
+              FROM PA_DISTINCT_LIST T, HR_COMPANY A
+             WHERE T.ACTIVITY = 1
+               AND T.CPNY_ID = A.CPNY_ID(+)
+               AND T.CPNY_ID = #CPNY_ID#
+        ]]>  
+        <isNotEmpty prepend="AND" property="TABLE_NAME">
+            <![CDATA[
+                  T.TABLE_NAME = #TABLE_NAME#
+            ]]>
+        </isNotEmpty>
+          <![CDATA[
+                ORDER BY T.DISTINCT_FIELD
+            ]]> 
+    </select>
+    
+    <select id="getMC1STSelectList" parameterClass="linkMap" 
+    resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.DISTINCT_FIELD MC_1ST_CODE,
+                  (CASE WHEN #language# = 'en' THEN
+                        IFNULL(T.FIELD_EN_NAME, T.FIELD_NAME)
+                        ELSE
+                           T.FIELD_NAME
+                        END) AS MC_1ST_NAME 
+              FROM PA_DISTINCT_LIST T left join HR_COMPANY A on T.CPNY_ID = A.CPNY_ID
+             WHERE T.ACTIVITY = 1
+               AND T.CPNY_ID = #CPNY_ID#
+        ]]>  
+        <isNotEmpty prepend="AND" property="TABLE_NAME">
+            <![CDATA[
+                  T.TABLE_NAME = #TABLE_NAME#
+            ]]>
+        </isNotEmpty>
+          <![CDATA[
+                ORDER BY T.DISTINCT_FIELD
+            ]]> 
+    </select>
+    
+    <select id="getMCName" parameterClass="linkMap" 
+    resultClass="string" remapResults="true">
+        <![CDATA[
+            SELECT (CASE WHEN #language# = 'en' THEN
+                        IFNULL(T.FIELD_EN_NAME, T.FIELD_NAME)
+                        ELSE
+                           T.FIELD_NAME
+                        END) AS MC_NAME 
+              FROM PA_DISTINCT_LIST T left join HR_COMPANY A on T.CPNY_ID = A.CPNY_ID
+             WHERE T.ACTIVITY = 1
+               AND T.CPNY_ID = #CPNY_ID#
+        ]]>  
+        <isNotEmpty prepend="AND" property="TABLE_NAME">
+            <![CDATA[
+                  T.TABLE_NAME = #TABLE_NAME#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="MC_CODE">
+            <![CDATA[
+                  T.DISTINCT_FIELD = #MC_CODE#
+            ]]>
+        </isNotEmpty>
+    </select>
+    
+    <select id="getMC2NDSelectList" parameterClass="linkMap" 
+    resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.DISTINCT_FIELD MC_2ND_CODE,
+                  (CASE WHEN #language# = 'en' THEN
+                        IFNULL(T.FIELD_EN_NAME, T.FIELD_NAME)
+                        ELSE
+                           T.FIELD_NAME
+                        END) AS MC_2ND_NAME 
+              FROM PA_DISTINCT_LIST T left join HR_COMPANY A on T.CPNY_ID = A.CPNY_ID
+             WHERE T.ACTIVITY = 1
+               AND T.CPNY_ID = #CPNY_ID#
+        ]]>  
+        <isNotEmpty prepend="AND" property="TABLE_NAME">
+            <![CDATA[
+                  T.TABLE_NAME = #TABLE_NAME#
+            ]]>
+        </isNotEmpty>
+          <![CDATA[
+                ORDER BY T.DISTINCT_FIELD
+            ]]> 
+    </select>
+    
+    <select id="getParameterTypeSelectList"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.CODE_ID AS PARAM_TYPE_CODE,
+                  (CASE WHEN #language# = 'en' THEN
+                        IFNULL(T.CODE_EN_NAME, T.CODE_NAME)
+                        ELSE
+                           T.CODE_NAME
+                        END) AS PARAM_TYPE_NAME
+              FROM SY_CODE T
+             WHERE T.PARENT_CODE = 'ParamItemTypeCode'
+               AND T.CPNY_ID = #CPNY_ID# 
+               AND T.ACTIVITY = 1
+             ORDER BY T.ORDERNO
+            ]]>
+    </select>
+    
+    <select id="getUnitSelectList"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.CODE_ID AS UNIT_CODE,
+                  (CASE WHEN #language# = 'en' THEN
+                        IFNULL(T.CODE_EN_NAME, T.CODE_NAME)
+                        ELSE
+                           T.CODE_NAME
+                        END) AS UNIT_NAME
+              FROM SY_CODE T
+             WHERE T.PARENT_CODE = 'ItemUnit'
+               AND T.CPNY_ID = #CPNY_ID# 
+               AND T.ACTIVITY = 1
+             ORDER BY T.ORDERNO
+            ]]>
+    </select>
+    <select id="getCardtimeReasonSelectList"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.CODE_ID AS CARD_REASON_CODE,
+                  (CASE WHEN #language# = 'en' THEN
+                        IFNULL(T.CODE_EN_NAME, T.CODE_NAME)
+                        ELSE
+                           T.CODE_NAME
+                        END) AS CARD_REASON_NAME
+              FROM SY_CODE T
+             WHERE T.PARENT_CODE = 'cardtimeReason'
+               AND T.CPNY_ID = #CPNY_ID# 
+               AND T.ACTIVITY = 1
+             ORDER BY T.ORDERNO
+            ]]>
+    </select>
+    
+    <select id="getStartDateStr"   parameterClass="linkMap"
+        resultClass="string" remapResults="true">
+        <![CDATA[ 
+            SELECT STR_TO_CHAR(AR_GET_STARTDATE(AR_GET_MONTHSTR(#strDate#)),#timeFormat#) FROM DUAL
+            ]]>
+    </select>
+    
+    <select id="getEndDateStr"   parameterClass="linkMap"
+        resultClass="string" remapResults="true">
+        <![CDATA[
+            SELECT STR_TO_CHAR(AR_GET_ENDDATE(AR_GET_MONTHSTR(#strDate#)),#timeFormat#) FROM DUAL
+            ]]>
+    </select>
+    <select id="getAreasByParentID"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.CODE_ID ID,
+                   if(#language#= 'en', T.CODE_EN_NAME, T.CODE_NAME) NAME,
+                   T.PARENT_CODE PARENT_ID
+              FROM SY_CODE T
+             WHERE T.PARENT_CODE = #areaId#
+               AND T.ACTIVITY = 1
+               AND T.CPNY_ID = 'wooribank'
+             ORDER BY T.ORDERNO
+            ]]>
+    </select>
+    
+    <select id="getCustActionStateList"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.CODE_ID ID,
+                   IF(#language#= 'en', T.CODE_EN_NAME, T.CODE_NAME) NAME
+              FROM SY_CODE T
+             WHERE T.PARENT_CODE = 'CustActionStateCode'
+               AND T.ACTIVITY = 1
+               AND T.CPNY_ID = #CPNY_ID#
+             ORDER BY T.ORDERNO
+            ]]>
+    </select>
+    
+    
+    <select id="getCustActionWayList"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.CODE_ID ID,
+                   IF(#language#= 'en', T.CODE_EN_NAME, T.CODE_NAME) NAME
+              FROM SY_CODE T
+             WHERE T.PARENT_CODE = 'CustActionWayCode'
+               AND T.ACTIVITY = 1
+               AND T.CPNY_ID = #CPNY_ID#
+             ORDER BY T.ORDERNO
+            ]]>
+    </select>
+    
+    <select id="getPurchaseTendList"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.CODE_ID ID,
+                   IF(#language#='en', T.CODE_EN_NAME, T.CODE_NAME) NAME
+              FROM SY_CODE T
+             WHERE T.PARENT_CODE = 'PurchaseTendCode'
+               AND T.ACTIVITY = 1
+               AND T.CPNY_ID = #CPNY_ID#
+             ORDER BY T.ORDERNO
+            ]]>
+    </select>
+    
+
+    <select id="getAnnouncementTypeSelectList"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.CODE_ID ID,
+                   IF(#language#= 'en', T.CODE_EN_NAME, T.CODE_NAME) NAME
+              FROM SY_CODE T
+             WHERE T.PARENT_CODE = 'AnnouncementTypeCode'
+               AND T.ACTIVITY = 1
+               AND T.CPNY_ID = #CPNY_ID#
+             ORDER BY T.ORDERNO
+            ]]>
+    </select>
+    
+    <select id="getWorkAreaList" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT T.CODE_ID ID,
+                   IF(#language#= 'en', T.CODE_EN_NAME, T.CODE_NAME) NAME
+              FROM SY_CODE T
+             WHERE T.PARENT_CODE = 'WorkAreaCode'
+               AND T.ACTIVITY = 1
+               AND T.CPNY_ID = #CPNY_ID#
+             ORDER BY T.ORDERNO
+        ]]>     
+    </select>
+    <select id="getSalaryReferenceList" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT T.CODE_ID ID,
+                   IF(#language# = 'en', T.CODE_EN_NAME, T.CODE_NAME) NAME
+              FROM SY_CODE T
+             WHERE T.PARENT_CODE = 'SalaryReferenceCode'
+               AND T.ACTIVITY = 1
+               AND T.CPNY_ID = #CPNY_ID#
+             ORDER BY T.ORDERNO
+        ]]>     
+    </select>
+    
+    <select id="getScreenGrantId" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT T.SCREEN_GRANT_ID SCREEN_GRANT_ID
+              FROM SY_ADMIN T
+             WHERE T.ADMINID = #ADMINID#
+               AND T.ACTIVITY = 1
+        ]]>     
+    </select>
+    
+    <select id="getSyCodeSelectList" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT T.CODE_ID ID,
+                   IF(#language#= 'en', T.CODE_EN_NAME, T.CODE_NAME) NAME
+              FROM SY_CODE T
+             WHERE T.PARENT_CODE = #PARENT_CODE#
+               AND T.ACTIVITY = 1
+               AND T.CPNY_ID = #CPNY_ID#
+             ORDER BY T.ORDERNO
+        ]]>     
+    </select>
+    <select id="getProductionOrderSelectList"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT PROD_NO,
+                   concat(PRO_NAME,'_',DRAWING_NO) PROD_DETAIL
+                   FROM (
+                      SELECT T.PROD_NO PROD_NO,
+                             T.PROD_ID PROD_ID,
+                             T.DRAWING_NO DRAWING_NO,
+                             IF(#language#= 'en', EP.PRO_EN_NAME, EP.PRO_NAME) PRO_NAME
+                           FROM ESS_PRODUCTION_ORDER T left join ESS_PROJECT EP on EP.PRO_NO = T.PRO_NO
+                          WHERE T.CPNY_ID = #CPNY_ID#
+                          AND   EP.ACTIVITY = 1 
+                            AND T.ACTIVITY = 1)
+            ]]>
+    </select>
+    <select id="getApplyFunctionSelectList"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT ORDER_ID,
+                   ORDER_NAME
+            FROM SY_ORDER
+            WHERE CPNY_ID = #CPNY_ID#
+            ]]>
+    </select>
+    <select id="getPaymentModeInfo"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT CODE_ID,
+                    (CASE WHEN #language# = 'en' then 
+                                CODE_EN_NAME
+                     ELSE
+                                CODE_NAME
+                     END) AS CODE_NAME
+              FROM SY_CODE
+              WHERE ACTIVITY = 1
+              AND PARENT_CODE = 'PaymentMode'
+              AND CPNY_ID = #CPNY_ID#
+              ORDER BY NLSSORT(IF(#language# = 'en', CODE_NAME, CODE_EN_NAME),
+                        'NLS_SORT=SCHINESE_PINYIN_M')
+        ]]>
+    </select>
+</sqlMap>

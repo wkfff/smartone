@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMapConfig PUBLIC "-//iBATIS.com//DTD SQL Map Config 2.0//EN"
+"http://www.ibatis.com/dtd/sql-map-config-2.dtd">
+
+<sqlMapConfig>
+    <settings lazyLoadingEnabled="true" useStatementNamespaces="true" />
+
+    <!-- 设置全局 parameterMapping 和 resultMapping 别名 -->
+    <!-- 定义基本数据类型Mapping -->
+    <typeAlias alias="int" type="java.lang.Integer" />
+    <typeAlias alias="float" type="java.lang.Float" />
+    <typeAlias alias="double" type="java.lang.Double" />
+    <typeAlias alias="boolean" type="java.lang.Boolean" />
+    <typeAlias alias="string" type="java.lang.String" />
+    <typeAlias alias="date" type="java.util.Date" />
+
+    <!-- 定义集合类型的Mapping -->
+    <typeAlias alias="linkMap" type="java.util.LinkedHashMap" />
+
+    <!-- 定义JavaBean的Mapping -->
+    <typeAlias alias="AdminBean" type="com.siping.system.bean.AdminBean" />
+    <typeAlias alias="salesOrder" type="com.siping.productStorage.bean.SalesOrder" />
+    <typeAlias alias="customer" type="com.siping.cust.bean.Customer" />
+    <typeAlias alias="receiver" type="com.siping.cust.bean.Receiver" />
+    <typeAlias alias="contact" type="com.siping.cust.bean.Contact" />
+    <typeAlias alias="employee" type="com.siping.productStorage.bean.Employee" />
+    <typeAlias alias="product" type="com.siping.productStorage.bean.Product" />
+    <typeAlias alias="salesDataBean" type="com.siping.webservice.bean.SalesDataBean" />
+    <typeAlias alias="storageInBean" type="com.siping.webservice.bean.StorageInBean" />
+    <typeAlias alias="storageOutBean" type="com.siping.webservice.bean.StorageOutBean" />
+    <typeAlias alias="productStorageBean" type="com.siping.webservice.bean.ProductStorageBean" />
+    <typeAlias alias="storageBean" type="com.siping.webservice.bean.StorageBean" />
+    <typeAlias alias="productBean" type="com.siping.webservice.bean.ProductBean" />
+    <typeAlias alias="salesModelBean" type="com.siping.webservice.bean.SalesModelBean" />
+    <typeAlias alias="license" type="com.siping.system.bean.License" />
+    <typeAlias alias="action" type="com.siping.cust.bean.Action" />
+
+    <!-- LOGIN -->
+    <sqlMap resource="com/siping/system/dao/sql/sqlLogin.xml" />
+
+    <!-- HRM -->
+    <sqlMap resource="com/siping/hrm/dao/sql/sqlHrm.xml" />
+    <sqlMap resource="com/siping/hrm/dao/sql/sqlEmpInfo.xml" />
+    <sqlMap resource="com/siping/hrm/dao/sql/sqlInfo.xml" />
+    <sqlMap resource="com/siping/hrm/dao/sql/sqlContractInfo.xml" />
+    <sqlMap resource="com/siping/hrm/dao/sql/sqlOrg.xml" />
+    <sqlMap resource="com/siping/hrm/dao/sql/sqlTransferOrder.xml" />
+    <sqlMap resource="com/siping/hrm/dao/sql/sqlSearchTransferOrder.xml" />
+    <sqlMap resource="com/siping/hrm/dao/sql/sqlPositionMgt.xml" />
+
+    <!-- ATT -->
+    <sqlMap resource="com/siping/att/dao/sql/sqlCycle.xml" />
+    <sqlMap resource="com/siping/att/dao/sql/sqlItem.xml" />
+    <sqlMap resource="com/siping/att/dao/sql/sqlDynamicGroup.xml" />
+    <sqlMap resource="com/siping/att/dao/sql/sqlShift.xml" />
+    <sqlMap resource="com/siping/att/dao/sql/sqlCompanyCalendar.xml" />
+    <sqlMap resource="com/siping/att/dao/sql/sqlAttMItem.xml" />
+    <sqlMap resource="com/siping/att/dao/sql/sqlAttendanceKeeper.xml" />
+    <sqlMap resource="com/siping/att/dao/sql/sqlAttMFormula.xml" />
+    <sqlMap resource="com/siping/att/dao/sql/sqlEmpShift.xml" />
+    <sqlMap resource="com/siping/att/dao/sql/sqlEmpCalendar.xml" />
+    <sqlMap resource="com/siping/att/dao/sql/sqlAttDetailCalulate.xml" />
+    <sqlMap resource="com/siping/att/dao/sql/sqlAttMonthCalculate.xml" />
+    <sqlMap resource="com/siping/att/dao/sql/sqlAttDetail.xml" />
+    <sqlMap resource="com/siping/att/dao/sql/sqlAttDaliyLock.xml" />
+    <sqlMap resource="com/siping/att/dao/sql/sqlAttMonInfo.xml" />
+
+    <sqlMap resource="com/siping/att/dao/sql/sqlAttMonth.xml" />
+    <sqlMap resource="com/siping/att/dao/sql/sqlAttProgress.xml" />
+    <sqlMap resource="com/siping/att/dao/sql/sqlAttCardRecord.xml" />
+    <sqlMap resource="com/siping/att/dao/sql/sqlAttAnnualLeave.xml" />
+
+    <!-- PA -->
+    <sqlMap resource="com/siping/pa/dao/sql/sqlPaBasic.xml" />
+    <sqlMap resource="com/siping/pa/dao/sql/wagebase/sqlPaBasicItem.xml" />
+    <sqlMap resource="com/siping/pa/dao/sql/wagebase/sqlPaAccount.xml" />
+
+    <sqlMap resource="com/siping/pa/dao/sql/salary/sqlPaItem.xml" />
+    <sqlMap resource="com/siping/pa/dao/sql/salary/sqlPaInputItem.xml" />
+    <sqlMap resource="com/siping/pa/dao/sql/salary/sqlPaFormula.xml" />
+    <sqlMap resource="com/siping/pa/dao/sql/salary/sqlPaCalculate.xml" />
+    <sqlMap resource="com/siping/pa/dao/sql/salary/sqlPaResult.xml" />
+    <sqlMap resource="com/siping/pa/dao/sql/salary/sqlPaProgress.xml" />
+    <sqlMap resource="com/siping/pa/dao/sql/salary/sqlPaHistory.xml" />
+
+    <!-- EVA -->
+    <sqlMap resource="com/siping/eva/dao/sql/sqlBasicInfo.xml" />
+    <sqlMap resource="com/siping/eva/dao/sql/sqlEmpEvaInfo.xml" />
+    <sqlMap resource="com/siping/eva/dao/sql/sqlEvaKpi.xml" />
+
+    <!-- SYS -->
+    <sqlMap resource="com/siping/system/dao/sql/sqlModel.xml" />
+    <sqlMap resource="com/siping/system/dao/sql/sqlMyHome.xml" />
+    <sqlMap resource="com/siping/system/dao/sql/sqlBasicMaintenance.xml" />
+    <sqlMap resource="com/siping/system/dao/sql/sqlSystemMgt.xml" />
+    <sqlMap resource="com/siping/system/dao/sql/sqlRolesGroup.xml" />
+    <sqlMap resource="com/siping/system/dao/sql/sqlAppProcess.xml" />
+    <sqlMap resource="com/siping/system/dao/sql/sqlSystemMenu.xml" />
+    <sqlMap resource="com/siping/system/dao/sql/sqlLoginUser.xml" />
+    <sqlMap resource="com/siping/system/dao/sql/sqlSystemPageStructure.xml" />
+    <sqlMap resource="com/siping/system/dao/sql/sqlSystemParameter.xml" />
+    <sqlMap resource="com/siping/system/dao/sql/sqlSystemSerialNumber.xml" />
+    <sqlMap resource="com/siping/system/dao/sql/sqlLoginSupplier.xml" />
+    <sqlMap resource="com/siping/system/dao/sql/sqlLoginSupplierAdmin.xml" />
+    <sqlMap resource="com/siping/system/dao/sql/sqlLicense.xml" />
+
+    <!-- WEB -->
+    <sqlMap resource="com/siping/web/utility/dao/sql/sqlUtilityDeptInfo.xml" />
+    <sqlMap resource="com/siping/web/utility/dao/sql/sqlUtilityEmpInfo.xml" />
+    <sqlMap resource="com/siping/web/utility/dao/sql/sqlUtilityOtherInfo.xml" />
+    <sqlMap resource="com/siping/web/utility/dao/sql/sqlUtilityProdInfo.xml" />
+    <sqlMap resource="com/siping/web/utility/dao/sql/sqlUtilityChaInfo.xml" />
+    <sqlMap resource="com/siping/web/utility/dao/sql/sqlUtilityCustInfo.xml" />
+    <sqlMap resource="com/siping/web/utility/dao/sql/sqlUtilityDocInfo.xml" />
+    <sqlMap resource="com/siping/web/utility/dao/sql/sqlUtilityMatInfo.xml" />
+    <sqlMap resource="com/siping/web/utility/dao/sql/sqlUtilityProjInfo.xml" />
+    <sqlMap resource="com/siping/web/utility/dao/sql/sqlUtilityPostInfo.xml"/>
+    <sqlMap resource="com/siping/web/dao/sql/sqlFileUpload.xml" />
+    <sqlMap resource="com/siping/web/dao/sql/sqlFileDownload.xml" />
+    <sqlMap resource="com/siping/web/dao/sql/sqlChatterInfo.xml" />
+    <sqlMap resource="com/siping/web/dao/sql/sqlMessage.xml" />
+
+    <!-- ESS -->
+    <sqlMap resource="com/siping/ess/dao/sql/sqlPersonInfo.xml" />
+    <sqlMap resource="com/siping/ess/dao/sql/sqlInfoApp.xml" />
+    <sqlMap resource="com/siping/ess/dao/sql/sqlPassword.xml" />
+    <sqlMap resource="com/siping/ess/dao/sql/sqlAppCheck.xml" />
+    <sqlMap resource="com/siping/ess/dao/sql/sqlViewApp.xml" />
+    <sqlMap resource="com/siping/ess/dao/sql/sqlAffirmApp.xml" />
+    <sqlMap resource="com/siping/ess/dao/sql/sqlInfoCon.xml" />
+    <sqlMap resource="com/siping/ess/dao/sql/sqlFuncTools.xml" />
+
+    <!-- Report -->
+    <sqlMap resource="com/siping/report/hrm/dao/sql/sqlHrReport.xml" />
+    <sqlMap resource="com/siping/report/ess/dao/sql/sqlEssReport.xml" />
+    <sqlMap resource="com/siping/report/pa/dao/sql/ins/sqlInsReport.xml" />
+    <sqlMap resource="com/siping/report/pa/dao/sql/salary/sqlPaReport.xml" />
+    <sqlMap resource="com/siping/report/pa/dao/sql/bonus/sqlBonusReport.xml" />
+    <sqlMap resource="com/siping/report/att/dao/sql/sqlAttReport.xml" />
+    <sqlMap resource="com/siping/report/sales/dao/sql/sqlSalesReport.xml" />
+    <sqlMap resource="com/siping/report/ord/dao/sql/sqlOrderReport.xml" />
+
+    <!-- asset -->
+    <sqlMap resource="com/siping/ass/dao/sql/sqlAssInfo.xml" />
+    <sqlMap resource="com/siping/ass/dao/sql/sqlAssManage.xml" />
+
+    <!-- cust -->
+    <sqlMap resource="com/siping/cust/dao/sql/sqlCustInfo.xml" />
+    <sqlMap resource="com/siping/cust/dao/sql/sqlCustManage.xml" />
+    <sqlMap resource="com/siping/cust/dao/sql/sqlCustAction.xml" />
+    <sqlMap resource="com/siping/cust/dao/sql/sqlCustAppendix.xml" />
+    <sqlMap resource="com/siping/cust/dao/sql/sqlSupplierManager.xml" />
+    <sqlMap resource="com/siping/cust/dao/sql/sqlSupplierProductManager.xml" />
+    <sqlMap resource="com/siping/cust/dao/sql/sqlSupplierAccountManager.xml" />
+    <sqlMap resource="com/siping/cust/dao/sql/sqlSupplierSelfAccountManager.xml" />
+    <sqlMap resource="com/siping/cust/dao/sql/sqlCustContact.xml" />
+    <sqlMap resource="com/siping/cust/dao/sql/sqlCustReceiver.xml" />
+    <sqlMap resource="com/siping/cust/dao/sql/sqlSalesSetting.xml" />
+
+    <!-- process -->
+    <typeAlias alias="state" type="com.siping.process.bean.State" />
+    <typeAlias alias="type" type="com.siping.process.bean.Type" />
+    <typeAlias alias="grant" type="com.siping.process.bean.Grant" />
+    <typeAlias alias="role" type="com.siping.process.bean.Role" />
+    <typeAlias alias="processItem" type="com.siping.process.bean.ProcessItem" />
+    <typeAlias alias="processRunning" type="com.siping.process.bean.ProcessRunning" />
+
+    <sqlMap resource="com/siping/process/dao/sql/sqlObjectStatus.xml" />
+    <sqlMap resource="com/siping/process/dao/sql/sqlObjectType.xml" />
+    <sqlMap resource="com/siping/process/dao/sql/sqlProcessManage.xml" />
+    <sqlMap resource="com/siping/process/dao/sql/sqlProcessAffirm.xml" />
+    <sqlMap resource="com/siping/process/dao/sql/sqlProcessRunning.xml" />
+
+    <!-- doc -->
+    <typeAlias alias="document" type="com.siping.doc.bean.Document" />
+    <typeAlias alias="documentFile" type="com.siping.doc.bean.DocumentFile" />
+
+    <sqlMap resource="com/siping/doc/dao/sql/sqlDocInfo.xml" />
+    <sqlMap resource="com/siping/doc/dao/sql/sqlDocManage.xml" />
+
+    <!-- bom -->
+    <typeAlias alias="bom" type="com.siping.bom.bean.Bom" />
+    <typeAlias alias="bomItem" type="com.siping.bom.bean.BomItem" />
+
+    <sqlMap resource="com/siping/bom/dao/sql/sqlBOMInfo.xml" />
+    <sqlMap resource="com/siping/bom/dao/sql/sqlBOMManage.xml" />
+
+    <!-- material -->
+    <typeAlias alias="material" type="com.siping.mat.bean.Material" />
+
+    <sqlMap resource="com/siping/mat/dao/sql/sqlMatInfo.xml" />
+    <sqlMap resource="com/siping/mat/dao/sql/sqlMatManage.xml" />
+    <sqlMap resource="com/siping/mat/dao/sql/sqlMatCheck.xml" />
+
+    <!-- ecm -->
+    <typeAlias alias="engineerChange" type="com.siping.ecm.bean.EngineerChange" />
+
+    <sqlMap resource="com/siping/ecm/dao/sql/sqlCNInfo.xml" />
+    <sqlMap resource="com/siping/ecm/dao/sql/sqlCNManage.xml" />
+    <sqlMap resource="com/siping/ecm/dao/sql/sqlCNExecute.xml" />
+
+    <!-- Webservice -->
+    <sqlMap resource="com/siping/webservice/dao/sql/sqlSheet.xml" />
+
+    <!-- fico -->
+    <sqlMap resource="com/siping/fico/dao/sql/sqlInvoice.xml" />
+    <sqlMap resource="com/siping/fico/dao/sql/sqlIncomeInvoice.xml" />
+    <sqlMap resource="com/siping/fico/dao/sql/sqlAccount.xml" />
+
+    <!-- productStorage -->
+    <sqlMap resource="com/siping/productStorage/dao/sql/productStorageManage.xml" />
+    <sqlMap resource="com/siping/productStorage/dao/sql/sqlProduct.xml" />
+    <sqlMap resource="com/siping/productStorage/dao/sql/sqlSalesModel.xml" />
+    <sqlMap resource="com/siping/productStorage/dao/sql/sqlStorage.xml" />
+    <sqlMap resource="com/siping/productStorage/dao/sql/productInStorage.xml" />
+    <sqlMap resource="com/siping/productStorage/dao/sql/sqlPurchaseOrder.xml" />
+    <sqlMap resource="com/siping/productStorage/dao/sql/sqlProductSale.xml" />
+
+    <!-- Mobile -->
+    <sqlMap resource="com/siping/mobile/dao/sql/sqlInvitationManage.xml" />
+    <sqlMap resource="com/siping/mobile/dao/sql/sqlMobileManage.xml" />
+    <sqlMap resource="com/siping/mobile/dao/sql/sqlMobileLogin.xml" />
+    <sqlMap resource="com/siping/mobile/dao/sql/sqlMobileAccount.xml" />
+    <sqlMap resource="com/siping/wechat/dao/sql/wechat.xml" />
+    <!-- <sqlMap resource="com/siping/wechat/dao/sql/wechatQiye.xml" /> -->
+</sqlMapConfig>

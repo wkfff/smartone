@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="att.formula">
+ 
+    <select id="getAttMFormulaInfo"  parameterClass="linkMap"  resultClass="linkMap">
+	<![CDATA[
+         SELECT ASF.ITEM_NO, 
+      		    ASF.FORMULAR_NO,
+      		    ASF.CONDITION,
+      		    ASF.FORMULAR,
+      		    ASF.DESCRIPTION
+		   FROM AR_STA_FORMULAR ASF,AR_STA_ITEM ASI
+		  WHERE ASF.ITEM_NO = ASI.ITEM_NO
+		    AND ASI.ACTIVITY = 1  
+      ]]>
+      
+		<isNotEmpty prepend="AND" property="FORMULAR_NO">
+			<![CDATA[
+		 		  ASF.FORMULAR_NO = #FORMULAR_NO#  
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+		 		  ASI.CPNY_ID = #CPNY_ID#  
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="ITEM_NO">
+			<![CDATA[
+		 		  ASF.ITEM_NO = #ITEM_NO# 
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		  ORDER BY $sortname$ $sortorder$
+		    ]]>
+		</isNotEmpty>
+		
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY ASF.ORDERNO DESC
+			]]>
+		</isEmpty>
+   </select>
+   
+	<select id="getAttMFormulaInfoCnt" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+             SELECT COUNT(*)
+			   FROM AR_STA_FORMULAR ASF,AR_STA_ITEM ASI
+			  WHERE ASF.ITEM_NO = ASI.ITEM_NO
+			    AND ASI.ACTIVITY = 1   
+		]]>  
+		<isNotEmpty prepend="AND" property="FORMULAR_NO">
+			<![CDATA[
+		 		  ASI.FORMULAR_NO = #FORMULAR_NO#  
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+		 		  ASI.CPNY_ID = #CPNY_ID#  
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="ITEM_NO">
+			<![CDATA[
+		 		  ASF.ITEM_NO = #ITEM_NO# 
+		    ]]>
+		</isNotEmpty>
+	</select>
+   
+    <select id="getAttMFormulaItemInfo" resultClass="linkMap">
+	<![CDATA[
+			SELECT 'ATT_ITEM.' || AI.ITEM_ID AS ID, AI.ITEM_NAME AS NAME
+			  FROM AR_ITEM AI
+			 WHERE AI.ACTIVITY = 1
+			   AND AI.CPNY_ID = #CPNY_ID# 
+			UNION
+			SELECT 'STA_ITEM.' || ASI.ITEM_ID, ASI.ITEM_NAME
+			  FROM AR_STA_ITEM ASI
+			 WHERE ASI.ACTIVITY = 1
+			   AND ASI.CPNY_ID = #CPNY_ID# 
+			UNION
+			SELECT 'STA_ITEM.' || PDL.DISTINCT_FIELD, PDL.FIELD_NAME
+			  FROM PA_DISTINCT_LIST PDL
+			 WHERE PDL.TABLE_NAME = 'PA_HR_V'	
+   			   AND PDL.CPNY_ID = #CPNY_ID# 	      
+      ]]>
+   </select> 
+    
+ <insert id="addAttMFormulaInfo" parameterClass="linkMap" >
+		<![CDATA[
+		INSERT INTO AR_STA_FORMULAR(
+				FORMULAR_NO, 
+				ITEM_NO, 
+				CONDITION, 
+				FORMULAR,
+				ORDERNO,
+				DESCRIPTION,
+				CREATE_DATE,
+				CREATED_BY)
+        VALUES(
+        		AR_STA_FORMULAR_SEQ.NEXTVAL,
+        		#ITEM_NO#,
+        		#CONDITION#,
+        		#FORMULAR#,
+        		(SELECT NVL(MAX(ORDERNO), 0) + 1 AS ORDERNO
+				  FROM AR_STA_FORMULAR
+				 WHERE ITEM_NO = #ITEM_NO#),
+        		#DESCRIPTION#,
+        		SYSDATE,
+        		#CREATED_BY#)
+         ]]>
+ </insert>
+ <update id="updateAttMFormulaInfo" parameterClass="linkMap"  >
+		<![CDATA[
+		UPDATE AR_STA_FORMULAR 
+			SET CONDITION = #CONDITION#,
+			    FORMULAR = #FORMULAR#,
+			    DESCRIPTION = #DESCRIPTION#,
+			    UPDATE_DATE = SYSDATE,
+			    UPDATED_BY = #UPDATED_BY#
+		  WHERE FORMULAR_NO=#FORMULAR_NO#
+	 
+         ]]>
+ </update>
+ 
+ <delete  id="deleteAttMFormulaInfo" parameterClass="linkMap">
+ <![CDATA[
+		DELETE FROM AR_STA_FORMULAR 
+		 WHERE FORMULAR_NO=#FORMULAR_NO#  
+	 
+         ]]>
+ </delete>
+ 
+</sqlMap>

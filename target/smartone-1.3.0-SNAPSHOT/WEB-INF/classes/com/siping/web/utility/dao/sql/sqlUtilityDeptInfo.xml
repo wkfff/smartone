@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="utility.deptInfo">
+	  
+	  <select id="getDeptTreeInfo" parameterClass="linkMap" resultClass="linkMap"> 
+		<![CDATA[
+			SELECT HD.DEPTID, 
+			       if(#language#='en', HD.DEPT_EN_NAME, HD.DEPTNAME) DEPTNAME,
+			       HD.PARENT_DEPT_ID, 
+			       'false' AS ISCHECKED
+			  FROM HR_DEPARTMENT HD
+			 WHERE HD.ACTIVITY = 1
+			 START WITH HD.PARENT_DEPT_ID = #CPNY_ID#
+			CONNECT BY PRIOR HD.DEPTID = HD.PARENT_DEPT_ID	 
+ 		    ORDER BY HD.ORDERNO
+		]]> 
+	</select>
+	  
+	  
+	<select id="getDeptSelectList" parameterClass="linkMap"  resultClass="linkMap">
+		<![CDATA[
+			SELECT T.DEPTID,  
+			       if(#language#= 'en', T.DEPT_EN_NAME, T.DEPTNAME) DEPTNAME
+			  FROM HR_DEPARTMENT T left join HR_COMPANY A on T.CPNY_ID = A.CPNY_ID
+			 WHERE T.ACTIVITY = 1
+		]]>  
+		
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+		 		  T.CPNY_ID = #CPNY_ID#
+		    ]]>
+		</isNotEmpty>
+		  
+	</select>
+	
+	<select id="getDepartmentInfoList" parameterClass="linkMap"  resultClass="linkMap">
+		<![CDATA[
+			SELECT T.DEPTID, 
+			       DECODE(T.DEPT_LEVEL,
+			              1,
+			              T.DEPTNAME,
+			              2,
+			              '&nbsp;&nbsp;&nbsp;' || T.DEPTNAME,
+			              3,
+			              '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' || T.DEPTNAME,
+			              4,
+			              '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' || T.DEPTNAME,
+			              5,
+			              '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' || T.DEPTNAME,
+			              6,
+			              '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' || T.DEPTNAME,
+			              '') DEPTNAME,
+			       DECODE(T.DEPT_LEVEL,
+			              1,
+			              T.DEPT_EN_NAME,
+			              2,
+			              '&nbsp;&nbsp;&nbsp;' || T.DEPT_EN_NAME,
+			              3,
+			              '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' || T.DEPT_EN_NAME,
+			              4,
+			              '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' || T.DEPT_EN_NAME,
+			              5,
+			              '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' || T.DEPT_EN_NAME,
+			              6,
+			              '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' || T.DEPT_EN_NAME,
+			              '') DEPT_EN_NAME, 
+			       T.DEPT_LEVEL,
+			       T.CPNY_ID,
+			       DECODE(#language#, 'en', A.CPNY_EN_NAME, A.CPNY_NAME) CPNY_NAME,
+			       T.ACTIVITY STATUS_ID,
+			       DECODE(T.ACTIVITY,
+			              '1',
+			              DECODE(#language#, 'en', 'Available', '可用'),
+			              DECODE(#language#, 'en', 'Unavailable', '不可用')) STATUS
+			  FROM HR_DEPARTMENT T,HR_COMPANY A
+			 WHERE T.ACTIVITY = 1
+			   AND T.CPNY_ID = A.CPNY_ID(+)	
+		]]> 
+		
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+		 		  (UPPER(replace(T.DEPTNAME,' ','')) LIKE '%' || UPPER(replace(#keyWord:VARCHAR#,' ','')) || '%' 
+		 		  OR UPPER(replace(T.DEPT_EN_NAME,' ','')) LIKE '%' || UPPER(replace(#keyWord:VARCHAR#,' ','')) || '%' 
+		 		  OR UPPER(replace(T.DEPTID,' ','')) LIKE '%' || UPPER(replace(#keyWord:VARCHAR#,' ','')) || '%')
+		    ]]>
+		</isNotEmpty> 
+		
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+		 		  T.CPNY_ID = #CPNY_ID#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="DEPTID">
+			<![CDATA[
+				EXISTS (
+					SELECT     *
+	                     	FROM HR_DEPARTMENT B1
+	                     	WHERE B1.DEPTID=T.DEPTID
+	                 	START WITH B1.DEPTID = #DEPTID#
+	                 	CONNECT BY PRIOR B1.DEPTID = B1.PARENT_DEPT_ID
+	                )
+		    ]]>
+		</isNotEmpty> 
+		  
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+				 START WITH T.PARENT_DEPT_ID = #CPNY_ID#
+				CONNECT BY PRIOR T.DEPTID = T.PARENT_DEPT_ID
+	 		    ORDER BY $sortname$ $sortorder$
+		    ]]>
+		</isNotEmpty>
+		
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+				 START WITH T.PARENT_DEPT_ID = #CPNY_ID#
+				CONNECT BY PRIOR T.DEPTID = T.PARENT_DEPT_ID	 
+	 		    ORDER BY T.ORDERNO
+			]]>
+		</isEmpty>
+		
+	</select>
+	
+	<select id="getDepartmentInfoListCnt" parameterClass="linkMap"  resultClass="int">
+		<![CDATA[
+			SELECT COUNT(*)
+			  FROM HR_DEPARTMENT T,HR_COMPANY A
+			 WHERE T.ACTIVITY = 1
+			   AND T.CPNY_ID = A.CPNY_ID(+)	
+		]]> 
+		
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+		 		  (UPPER(replace(T.DEPTNAME,' ','')) LIKE '%' || UPPER(replace(#keyWord:VARCHAR#,' ','')) || '%' 
+		 		  OR UPPER(replace(T.DEPT_EN_NAME,' ','')) LIKE '%' || UPPER(replace(#keyWord:VARCHAR#,' ','')) || '%' 
+		 		  OR UPPER(replace(T.DEPTID,' ','')) LIKE '%' || UPPER(replace(#keyWord:VARCHAR#,' ','')) || '%')
+		    ]]>
+		</isNotEmpty> 
+		
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+		 		  T.CPNY_ID = #CPNY_ID#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="DEPTID">
+			<![CDATA[
+				EXISTS (
+					SELECT     *
+	                     	FROM HR_DEPARTMENT B1
+	                     	WHERE B1.DEPTID=T.DEPTID
+	                 	START WITH B1.DEPTID = #DEPTID#
+	                 	CONNECT BY PRIOR B1.DEPTID = B1.PARENT_DEPT_ID
+	                )
+		    ]]>
+		</isNotEmpty> 
+		
+	</select>
+	 
+</sqlMap>

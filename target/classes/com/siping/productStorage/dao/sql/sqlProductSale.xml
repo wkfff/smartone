@@ -1,0 +1,673 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap  PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="prostor.productSale">
+    <sql id="selectMobileStatusCondition">
+        <isNotEmpty prepend="AND" property="AFFIRM_FLAG">
+            <![CDATA[
+                ps.AFFIRM_FLAG = #AFFIRM_FLAG#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="TRA_STATUS">
+            <![CDATA[
+                ps.TRA_STATUS = #TRA_STATUS#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="OUT_STATUS">
+            <![CDATA[
+                ps.STATUS = #OUT_STATUS#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="IN_DOGING">
+            <![CDATA[
+                (
+                    ps.AFFIRM_FLAG <> 'affirm2'
+                    AND ps.TRA_STATUS <> 'SaleOrderState1'
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="SALES_ORDER_NO">
+            <![CDATA[
+                ps.sales_order_no = #SALES_ORDER_NO#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="custID">
+            <![CDATA[
+                ps.created_by = #custID#
+            ]]>
+        </isNotEmpty>
+    </sql>
+
+    <sql id="selectAllSalesOrdersCondition">
+  from prostor_sales_order ps left join 
+ prostor_sales_model psm on ps.sales_model_no = psm.sales_mode_no
+left join hr_company hrcpny on ps.cpny_id = hrcpny.cpny_id
+left join hr_employee hrowner on ps.empid = hrowner.empid
+left join  hr_employee hraffirm on ps.affirmed_by = hraffirm.empid
+left join  cust_basic_info cust on ps.cust_no = cust.cust_no
+left join  sy_admin sa on  ps.empid = sa.adminid
+left join cust_basic_info cust_info on ps.empid = cust_info.cust_id
+left join  sy_code s on ps.affirm_flag = s.code_id
+left join sy_code b on ps.status = b.code_id
+left join  sy_code c on ps.tra_status = c.code_id
+where ps.activity = 1 and ps.cpny_id = #cpnyId#
+        <include refid="selectMobileStatusCondition" />
+        <include refid="searchSalesOrderCondition"/>
+        order by ps.order_date desc
+    </sql>
+
+    <sql id="salesOrderFields">
+        ps.sales_order_no                 sales_order_no,
+        ps.sales_order_id                 sales_order_id,
+        ps.cust_no                        customer_no,
+        cust.cust_id                      customer_id,
+        cust.cust_name                    customer_name,
+        ps.invoice_title                  invoice_title,
+        ps.empid                          owner_id,
+        hrowner.chinesename               owner_name,
+        ps.sales_model_no                 sales_mode_no,
+        psm.sales_mode_name               sales_mode_name,
+        ps.original_price                 order_price,
+        ps.consignee                      consignee,
+        ps.delivery_address               delivery_address,
+        ps.order_date                     order_date,
+        ps.discount_price                 order_discount_price,
+        ps.discount                       order_discount,
+        ps.transport_mode                 transport_mode,
+        ps.delivery_date                  delivery_Date,
+        ps.affirmed_by                    affirmed_emp_id,
+        hraffirm.chinesename              affirmed_emp_name,
+        ps.affirm_flag                    affirm_flag,
+        s.code_name                       affirm_flag_name,
+        ps.status                         status_flag,
+        b.code_name                       status_flag_name,
+        ps.tra_status                     traStatus_flag,
+        c.code_name                       traStatus_flag_name,
+        ps.cpny_id                        cpny_id,
+        hrcpny.cpny_name                  cpny_name,
+        hrcpny.cpny_addr                  cpny_addr,
+        hrcpny.cpny_tel_no                cpny_tel_no,
+        ifnull(ps.remarks,'')                remark,
+        ps.received_money                 receivedMoney,
+        ps.processid                      processid,
+        ps.invoice_title_type             invoice_title_type,
+        ps.invoice_content                invoice_content,
+        ps.receiver_mobile                receiver_mobile
+    </sql>
+
+    <sql id="salesOrderTables">
+        prostor_sales_order             ps,
+        prostor_sales_model             psm,
+        hr_employee                     hrowner,
+        hr_employee                     hraffirm,
+        cust_basic_info                 cust,
+        hr_company                      hrcpny,
+        sy_code                         s,
+        sy_code                         b,
+        sy_code                         c
+    </sql>
+
+    <sql id="productFieldsInSalesOrder">
+        psd.product_no                  product_no,
+        pp.product_id                   product_id,
+        psd.quantity                    quantity,
+        psd.remarks                     remark,
+        psd.price                       pro_original_unit_price,
+        (psd.price*quantity)            pro_original_amount,
+        psd.discount                    pro_discount,
+        psd.discount_money              pro_discount_price,
+        psd.product_name                product_name,
+        psd.specification               specification,
+        psd.unit_code_name              unit_code_name,
+        psd.unit_code_no                unit_code_no
+    </sql>
+
+    <sql id="salesOrderDetailTables">
+        prostor_sales_order_detail      psd,
+        prostor_product                 pp
+    </sql>
+
+    <sql id="searchSalesOrderCondition">
+        <isNotEmpty prepend="and" property="keyWord">
+            <![CDATA[
+             (
+                ps.sales_order_id LIKE concat('%',TRIM(#keyWord#),'%')
+                OR cust.cust_name LIKE concat('%',TRIM(#keyWord#),'%')
+                OR hrowner.chinesename LIKE concat('%',TRIM(#keyWord#),'%')
+                OR psm.sales_mode_name LIKE concat('%',TRIM(#keyWord#),'%'))
+              ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="and" property="s_date">
+            <![CDATA[
+                (
+                    ps.order_date >= str_to_date(#s_date#, '%Y-%m-%d')
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="and" property="e_date">
+            <![CDATA[
+                (
+                    ps.order_date <= str_to_date(#e_date#, '%Y-%m-%d')
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="and" property="adminID">
+            <![CDATA[
+                ps.empid in(
+                    select '$adminID$' as ownerid from dual
+                    union
+                    select hre.EMPID as ownerid from hr_employee hre where hre.DEPTID in 
+                        (select ssi.SUPERVISED_DEPTID from SALES_SUPERVISOR_INFO ssi where ssi.SUPERVISOR_ID = #adminID#)
+                )
+            ]]>
+        </isNotEmpty>
+    </sql>
+
+    <resultMap id="allSalesOrdersMap" class="salesOrder" groupBy="salesOrderNo">
+        <result property="salesOrderNo" column="sales_order_no" />
+        <result property="salesOrderId" column="sales_order_id" />
+        <result property="customer.customerNo" column="customer_no" />
+        <result property="customer.customerId" column="customer_id" />
+        <result property="customer.customerName" column="customer_name" />
+        <result property="invoiceTitle" column="invoice_title" />
+        <result property="owner.empId" column="owner_id" />
+        <result property="owner.empName" column="owner_name" />
+        <result property="owner.company.companyId" column="cpny_id" />
+        <result property="owner.company.companyName" column="cpny_name" />
+        <result property="owner.company.companyAddr" column="cpny_addr" />
+        <result property="owner.company.companyTel" column="cpny_tel_no" />
+        <result property="salesMode.salesModeNo" column="sales_mode_no" />
+        <result property="salesMode.salesModeName" column="sales_mode_name" />
+        <result property="price.price" column="order_price" />
+        <result property="consignee" column="consignee" />
+        <result property="deliveryAddress" column="delivery_address" />
+        <result property="deliveryDate" column="delivery_date" />
+        <result property="orderDate" column="order_date" />
+        <result property="price.discountPrice" column="order_discount_price" />
+        <result property="price.discount" column="order_discount" />
+        <result property="transportMode" column="transport_mode" />
+        <result property="affirmedEmp.empId" column="affirmed_emp_id" />
+        <result property="affirmedEmp.empName" column="affirmed_emp_name" />
+        <result property="affirmFlag.codeId" column="affirm_flag" />
+        <result property="affirmFlag.codeName" column="affirm_flag_name" />
+        <result property="statusFlag.codeId" column="status_flag" />
+        <result property="statusFlag.codeName" column="status_flag_name" />
+        <result property="traStatusFlag.codeId" column="traStatus_flag" />
+        <result property="traStatusFlag.codeName" column="traStatus_flag_name" />
+        <result property="receivedMoney" column="receivedMoney" />
+        <result property="remark" column="remark" />
+        <result property="processid" column="processid" />
+        <result property="receiver.receiverName" column="consignee" />
+        <result property="receiver.address.wholeAddress" column="delivery_address" />
+        <result property="receiver.mobilePhone" column="receiver_mobile" />
+        <result property="invoiceTitleType" column="invoice_title_type" />
+        <result property="invoiceContent" column="invoice_content" />
+    </resultMap>
+
+    <resultMap id="salesOrderMap" class="salesOrder" groupBy="salesOrderNo">
+        <result property="salesOrderNo" column="sales_order_no" />
+        <result property="salesOrderId" column="sales_order_id" />
+        <result property="invoiceTitle" column="invoice_title" />
+        <result property="price.price" column="order_price" />
+        <result property="receiver.receiverName" column="consignee" />
+        <result property="receiver.address.wholeAddress" column="delivery_address" />
+        <result property="price.discountPrice" column="order_discount_price" />
+        <result property="price.discount" column="order_discount" />
+        <result property="orderDate" column="order_date" />
+        <result property="deliveryDate" column="delivery_date" />
+        <result property="affirmFlag.codeNo" column="affirm_flag" />
+        <result property="customer.customerNo" column="customer_no" />
+        <result property="customer.customerId" column="customer_id" />
+        <result property="customer.customerName" column="customer_name" />
+        <result property="owner.empId" column="owner_id" />
+        <result property="owner.empName" column="owner_name" />
+        <result property="owner.company.companyId" column="cpny_id" />
+        <result property="owner.company.companyName" column="cpny_name" />
+        <result property="owner.company.companyAddr" column="cpny_addr" />
+        <result property="owner.company.companyTel" column="cpny_tel_no" />
+        <result property="affirmedEmp.empId" column="affirmed_emp_id" />
+        <result property="affirmedEmp.empName" column="affirmed_emp_name" />
+        <result property="affirmFlag.codeId" column="affirm_flag" />
+        <result property="affirmFlag.codeName" column="affirm_flag_name" />
+        <result property="statusFlag.codeId" column="status_flag" />
+        <result property="statusFlag.codeName" column="status_flag_name" />
+        <result property="traStatusFlag.codeId" column="traStatus_flag" />
+        <result property="traStatusFlag.codeName" column="traStatus_flag_name" />
+        <result property="soldProducts" resultMap="prostor.productSale.productResultMap" />
+    </resultMap>
+
+    <resultMap id="productResultMap" class="product">
+        <result property="no" column="product_no" />
+        <result property="id" column="product_id" />
+        <result property="quantity" column="quantity" />
+        <result property="remark" column="remark" />
+        <result property="sellingPrice.price" column="pro_original_unit_price" />
+        <result property="amount" column="pro_original_amount" />
+        <result property="sellingPrice.discount" column="pro_discount" />
+        <result property="sellingPrice.discountPrice" column="pro_discount_price" />
+        <result property="name" column="product_name" />
+        <result property="specification" column="specification" />
+        <result property="unit.unitName" column="unit_code_name" />
+        <result property="unit.unitNo" column="unit_code_no" />
+    </resultMap>
+
+    <select id="getSalesOrderIdSerialNum" resultClass="string">
+     select fn_sy_sales_serial_num() from dual 
+  <!--     找不到函数fn_sy_sales_serial_num()对应的SY_SALES_SERIAL_SEQ表 ,该函数有错误-->
+  
+    </select>
+    
+
+    <insert id="insertSalesOrder" parameterClass="salesOrder">
+        <selectKey resultClass="string" keyProperty="salesOrderNo">
+          <!--   select prostor_sales_order_seq.nextval as salesOrderNo from dual  -->
+          SELECT Auto_increment as salesOrderNo
+			FROM information_schema.`TABLES`
+			WHERE Table_Schema='smartone_v1'
+			AND table_name = 'prostor_sales_order'
+   
+        </selectKey>
+        
+        
+         <![CDATA[
+             insert into prostor_sales_order(
+                 SALES_ORDER_NO,
+                 SALES_ORDER_ID,
+                 CUST_NO,
+                 INVOICE_TITLE,
+                 EMPID,
+                 SALES_MODEL_NO,
+                 ORIGINAL_PRICE,
+                 CONSIGNEE,
+                 DELIVERY_ADDRESS,
+                 RECEIVER_MOBILE,
+                 CREATE_DATE,
+                 CREATED_BY,
+                 UPDATE_DATE,
+                 UPDATED_BY,
+                 ACTIVITY,
+                 CPNY_ID,
+                 ORDER_DATE,
+                 DISCOUNT_PRICE,
+                 DISCOUNT,
+                 TRANSPORT_MODE,
+                 DELIVERY_DATE,
+                 AFFIRM_FLAG,
+                 STATUS,
+                 TRA_STATUS,
+                 AFFIRMED_BY,
+                 PROCESSID,
+                 REMARKS,
+                 TAOBAO_ORDERID,
+                 INVOICE_TYPE,
+                 INVOICE_TITLE_TYPE,
+                 INVOICE_TITLE_CONTENT,
+                 INVOICE_CONTENT,
+                 PAYMENT_MODE
+             )
+             values (
+                 #salesOrderNo#,
+                 #salesOrderId#,
+                 #customer.customerNo#,
+                 #invoiceTitle#,
+                 #owner.empId#,
+                 #salesMode.salesModeNo#,
+                 #price.price#,
+                 #receiver.receiverName#,
+                 #receiver.address.wholeAddress#,
+                 #receiver.mobilePhone#,
+                 sysdate(),
+                 #operator.adminID#,
+                 sysdate(),
+                 #operator.adminID#,
+                 1,
+                 #operator.cpnyId#,
+                 #orderDate#,
+                 #price.discountPrice#,
+                 #price.discount#,
+                 #transportMode#,
+                 #deliveryDate#,
+                 #affirmFlag.codeId#,
+                 'outStatus0',
+                 'SaleOrderState0',
+                 #affirmedEmp.empId#,
+                 #processid#,
+                 #remark#,
+                 #taobaoOrderId#,
+                 #invoiceType#,
+                 #invoiceTitleType#,
+                 #invoiceTitleContent#,
+                 #invoiceContent#,
+                 #paymentMode#
+             )
+            ]]>
+    </insert>
+
+    <insert id="insertProductInSalesOrder" parameterClass="salesOrder">
+        insert 
+        <iterate property="soldProducts">
+            <![CDATA[
+                into prostor_sales_order_detail(
+                    SALES_ORDER_NO,
+                    PRODUCT_NO,
+                    QUANTITY,
+                    PRICE,
+                    REMARKS,
+                    CREATE_DATE,
+                    CREATED_BY,
+                    UPDATE_DATE,
+                    UPDATED_BY,
+                    ACTIVITY,
+                    CPNY_ID,
+                    OUT_QUANTITY,
+                    DISCOUNT,
+                    DISCOUNT_MONEY,
+                    PRODUCT_NAME,
+                    SPECIFICATION,
+                    UNIT_CODE_NAME,
+                    UNIT_CODE_NO,
+                    SALES_ORDER_ID,
+                    PRODUCT_ID
+                )
+                values (
+                    #salesOrderNo#,
+                    #soldProducts[].no#,
+                    #soldProducts[].quantity#,
+                    #soldProducts[].sellingPrice.price#,
+                    #soldProducts[].remark#,
+                    sysdate(),
+                    #operator.adminID#,
+                    sysdate(),
+                    #operator.adminID#,
+                    1,
+                    #operator.cpnyId#,
+                    0,
+                    #soldProducts[].sellingPrice.discount#,
+                    #soldProducts[].sellingPrice.discountPrice#,
+                    #soldProducts[].name#,
+                    #soldProducts[].specification#,
+                    #soldProducts[].unit.unitName#,
+                    #soldProducts[].unit.unitNo#,
+                    #salesOrderId#,
+                    #soldProducts[].id#
+                )
+            ]]>
+        </iterate>
+      <!--  select 1 from dual  -->
+    </insert>
+
+    <select id="getAllSalesOrder" parameterClass="linkMap" resultMap="allSalesOrdersMap">
+        select
+        <include refid="salesOrderFields" />
+        <include refid="selectAllSalesOrdersCondition" />
+    </select>
+
+    <select id="getAllSalesOrdersCount" parameterClass="linkMap" resultClass="int">
+        select count(distinct ps.sales_order_no)
+        <include refid="selectAllSalesOrdersCondition" />
+    </select>
+
+    <select id="searchSalesOrder" parameterClass="linkMap" resultMap="allSalesOrdersMap">
+        select
+        <include refid="salesOrderFields" />
+        from
+           prostor_sales_order ps left join prostor_sales_model psm on ps.sales_model_no = psm.sales_mode_no
+inner  join  hr_company hrcpny on ps.cpny_id = hrcpny.cpny_id
+left join hr_employee hrowner on ps.empid = hrowner.empid
+left join  hr_employee hraffirm on ps.affirmed_by = hraffirm.empid
+left join  cust_basic_info cust on ps.cust_no = cust.cust_no
+left join sy_code s on ps.affirm_flag = s.code_id
+left join  sy_code b on ps.status = b.code_id
+left join sy_code c on ps.tra_status = c.code_id
+where ps.activity = 1 and ps.cpny_id = #user.adminID#
+
+        <include refid="searchSalesOrderCondition"/>
+    </select>
+
+    <!-- <select id="getSalesOrder" parameterClass="linkMap" resultMap="salesOrderMap">
+        select
+        <include refid="salesOrderFields" />,
+        <include refid="productFieldsInSalesOrder" />
+        from
+        <include refid="salesOrderTables" />,
+        <include refid="salesOrderDetailTables" />
+        where ps.sales_order_no = #salesOrderNo#
+        and ps.sales_order_no = psd.sales_order_no(+)
+        and psd.product_no = pp.product_no(+)
+        and ps.sales_model_no = psm.sales_mode_no(+)
+        and ps.cpny_id = hrcpny.cpny_id
+        and ps.empid = hrowner.empid(+)
+        and ps.affirmed_by = hraffirm.empid(+)
+        and ps.cust_no = cust.cust_no(+)
+        and ps.activity = 1
+        and ps.cpny_id = #user.cpnyId#
+        and ps.affirm_flag = s.code_id(+)
+        and ps.status = b.code_id(+)
+        and ps.tra_status = c.code_id(+)
+    </select>
+ -->
+  <select id="getSalesOrder" parameterClass="linkMap" resultMap="salesOrderMap">
+        select
+        <include refid="salesOrderFields" />,
+        <include refid="productFieldsInSalesOrder" />
+        from
+        
+        prostor_sales_order    ps left join  prostor_sales_model  psm on ps.sales_model_no = psm.sales_mode_no
+    left join  hr_employee  hrowner on ps.empid = hrowner.empid
+    left join hr_employee    hraffirm on ps.affirmed_by = hraffirm.empid
+    left join cust_basic_info  cust on ps.cust_no = cust.cust_no
+    inner join  hr_company  hrcpny on ps.cpny_id = hrcpny.cpny_id
+    left join   sy_code  s on ps.affirm_flag = s.code_id
+    left join sy_code   b on ps.status = b.code_id
+    left join sy_code    c  on ps.tra_status = c.code_id
+    left join prostor_sales_order_detail    psd on ps.sales_order_no = psd.sales_order_no
+    left join  prostor_product              pp on  psd.product_no = pp.product_no
+where ps.sales_order_no =#salesOrderNo#
+ and ps.activity = 1
+ and ps.cpny_id = #user.cpnyId#
+    </select>
+ 
+    <select id="getSalesOrderById" parameterClass="linkMap" resultMap="salesOrderMap">
+        select
+        <include refid="salesOrderFields" />,
+        <include refid="productFieldsInSalesOrder" />
+        from
+        <include refid="salesOrderTables" />,
+        <include refid="salesOrderDetailTables" />
+        where ps.sales_order_id = #salesOrderId#
+        and ps.sales_order_no = psd.sales_order_no(+)
+        and psd.product_no = pp.product_no
+        and ps.sales_model_no = psm.sales_mode_no(+)
+        and ps.cpny_id = hrcpny.cpny_id
+        and ps.empid = hrowner.empid(+)
+        and ps.affirmed_by = hraffirm.empid(+)
+        and ps.cust_no = cust.cust_no(+)
+        and ps.activity = 1
+        and ps.affirm_flag = s.code_id(+)
+        and ps.status = b.code_id(+)
+        and ps.tra_status = c.code_id(+)
+    </select>
+
+    <update id="deleteSalesOrder" parameterClass="linkMap">
+        <![CDATA[
+            update prostor_sales_order ps
+            set ps.activity=0
+            where ps.sales_order_no = #salesOrderNo#
+            and ps.cpny_id = #user.cpnyId#
+            and ps.activity = 1
+        ]]>
+    </update>
+
+    <update id="deleteSalesOrderDetail" parameterClass="linkMap">
+        <![CDATA[
+            update prostor_sales_order_detail psd
+            set psd.activity = 0
+            where psd.sales_order_no = #salesOrderNo#
+            and psd.activity = 1
+            and psd.cpny_id = #user.cpnyId#
+        ]]>
+    </update>
+
+    <select id="getSalesOrderInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+           SELECT PSO.SALES_ORDER_ID,
+               PSO.SALES_ORDER_NO,
+               CBI.CUST_NAME,
+               CBI.CUST_ID,
+               concat(CBI.TELEPHONE,'  ',CBI.MOBILEPHONE)PHONE_NUM,
+               PSO.RECEIVER_MOBILE MOBILE,
+               HRE.CHINESENAME ORDER_PER,
+               HRE1.CHINESENAME CHECKER,
+               date_format(PSO.ORDER_DATE,'%Y-%m-%d %H:%i:%s') ORDER_DATE,
+               PSM.SALES_MODE_NAME,
+               PSO.INVOICE_TITLE,
+               PSO.ORIGINAL_PRICE,
+               PSO.DISCOUNT,
+               PSO.DISCOUNT_PRICE,
+               PSO.TRANSPORT_MODE,
+               PSO.DELIVERY_DATE,
+               PSO.CONSIGNEE,
+               PSO.DELIVERY_ADDRESS,
+               PSO.REMARKS,
+               HC.CPNY_NAME,
+               HC.CPNY_TEL_NO,
+               HC.CPNY_ADDR,
+               PSO.ORDER_DATE
+          FROM PROSTOR_SALES_ORDER PSO left join 
+               CUST_BASIC_INFO CBI on PSO.CUST_NO = CBI.CUST_NO
+                left join HR_EMPLOYEE HRE on PSO.EMPID = HRE.EMPID
+               left join PROSTOR_SALES_MODEL PSM on PSO.SALES_MODEL_NO = PSM.SALES_MODE_NO
+               left join HR_COMPANY HC on PSO.CPNY_ID = HC.CPNY_ID
+               left join HR_EMPLOYEE HRE1 on PSO.AFFIRMED_BY = HRE1.EMPID
+         WHERE 
+               PSO.ACTIVITY = 1
+               AND PSO.CPNY_ID = #CPNY_ID#
+               AND PSO.SALES_ORDER_ID = #SALES_ORDER_ID#
+    </select>
+
+    <select id="getSalesOrderDetailForCheck" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        SELECT PP.PRODUCT_ID,
+               PP.PRODUCT_NAME,
+               PP.SPECIFICATION,
+               PSOD.UNIT_CODE_NAME,
+               PP.PRODUCT_CAS,
+               PSOD.PRICE,
+               PSOD.QUANTITY,
+               PSOD.PRICE*PSOD.QUANTITY MONEY,
+               PSOD.DISCOUNT,
+               PSOD.DISCOUNT_MONEY,
+               PSOD.REMARKS
+        FROM PROSTOR_SALES_ORDER_DETAIL PSOD left join 
+               PROSTOR_PRODUCT PP on PSOD.PRODUCT_NO = PP.PRODUCT_NO
+               
+        WHERE 
+                PSOD.ACTIVITY = 1
+               AND PSOD.CPNY_ID = #CPNY_ID#
+               AND PSOD.SALES_ORDER_ID = #SALES_ORDER_ID#
+    </select>
+
+    <select id="getSalesOrderDetailForCheckCnt" parameterClass="linkMap" resultClass="int" remapResults="true">
+        SELECT COUNT(PP.PRODUCT_ID)
+        FROM PROSTOR_SALES_ORDER_DETAIL PSOD left join 
+               PROSTOR_PRODUCT PP on PSOD.PRODUCT_NO = PP.PRODUCT_NO
+        WHERE 
+                PSOD.ACTIVITY = 1
+               AND PSOD.CPNY_ID = #CPNY_ID#
+               AND PSOD.SALES_ORDER_ID = #SALES_ORDER_ID#
+    </select>
+
+    <update id="updateSalesOrderStatus0" parameterClass="linkMap">
+        UPDATE
+            PROSTOR_SALES_ORDER
+        SET
+            RECEIVED_MONEY = TO_NUMBER(#RECEIVEDMONEY#),
+            REMARKS = #REMARKS#,
+            UPDATE_DATE = SYSDATE,
+            UPDATED_BY = #UPDATED_BY#
+        WHERE
+            SALES_ORDER_ID = #SALES_ORDER_ID#
+    </update>
+
+    <update id="updateSalesOrderStatus1" parameterClass="linkMap">
+        UPDATE
+            PROSTOR_SALES_ORDER
+        SET
+            RECEIVED_MONEY = TO_NUMBER(#RECEIVEDMONEY#),
+            REMARKS = #REMARKS#,
+            UPDATE_DATE = SYSDATE,
+            UPDATED_BY = #UPDATED_BY#,
+            TRA_STATUS = 'SaleOrderState1'
+        WHERE
+            SALES_ORDER_ID = #SALES_ORDER_ID#
+    </update>
+
+    <select id="getProductBySalesOrder" parameterClass="linkMap" resultMap="productResultMap">
+        select
+            psd.product_no                  product_no,
+            pp.product_id                   product_id,
+            psd.quantity                    quantity,
+            psd.remarks                     remark,
+            psd.price                       pro_original_unit_price,
+            (psd.price*quantity)            pro_original_amount,
+            psd.discount                    pro_discount,
+            psd.discount_money              pro_discount_price,
+            psd.product_name                product_name,
+            psd.specification               specification,
+            psd.unit_code_name              unit_code_name,
+            psd.unit_code_no                unit_code_no
+        from
+            prostor_sales_order_detail psd,
+            prostor_product pp
+        where psd.product_no = pp.product_no(+)
+        and pp.activity = 1
+        and pp.cpny_id = #cpnyId#
+        and psd.activity = 1
+        and psd.cpny_id = #cpnyId#
+        and psd.sales_order_no = #SALES_ORDER_NO#
+    </select>
+    
+    <select id="checkOrderTaobao" parameterClass="linkMap" resultClass="int" remapResults="true">
+        SELECT COUNT(0)
+        FROM PROSTOR_SALES_ORDER PSO
+        WHERE PSO.CPNY_ID = #CPNY_ID#
+        AND PSO.ACTIVITY = 1
+        AND PSO.TAOBAO_ORDERID = #TAOBAO_ORDERID#
+    </select>
+
+    <select id="getSaleOrdersRecords" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+          SELECT PSO.SALES_ORDER_ID,
+                date_format(PSO.ORDER_DATE,'%Y-%m-%d %H:%i:%s') ORDER_DATE,
+                HRE.CHINESENAME,
+                CBI.CUST_NAME,
+                PSM.SALES_MODE_NAME,
+                A.CODE_NAME OUT_STATUS,
+                date_format(POI.OUT_DATE,'%Y-%m-%d %H:%i:%s') OUT_DATE,
+                PP.PRODUCT_ID,
+                PP.PRODUCT_NAME,
+                PSOD.SPECIFICATION,
+                PSOD.UNIT_CODE_NAME,
+                PSOD.QUANTITY,
+                PSOD.PRICE,
+                PSOD.DISCOUNT_MONEY
+            FROM PROSTOR_SALES_ORDER PSO left join 
+                PROSTOR_SALES_ORDER_DETAIL PSOD on PSO.SALES_ORDER_NO = PSOD.SALES_ORDER_NO
+               left join  HR_EMPLOYEE HRE on PSO.EMPID = HRE.EMPID
+               left join  CUST_BASIC_INFO CBI on PSO.CUST_NO = CBI.CUST_NO
+                left join PROSTOR_SALES_MODEL PSM on PSO.SALES_MODEL_NO = PSM.SALES_MODE_NO
+               left join  SY_CODE A on PSO.STATUS = A.CODE_ID
+              left join PROSTOR_OUTSTORAGE_INFO POI on PSO.SALES_ORDER_ID = POI.SALES_ORDER_ID
+               left join  PROSTOR_PRODUCT PP on PSOD.PRODUCT_NO = PP.PRODUCT_NO
+            WHERE  PSO.ACTIVITY = 1 AND PSO.CPNY_ID = #CPNY_ID#
+        ]]>
+        <isNotEmpty prepend="AND" property="FROM_DATE">
+            <![CDATA[
+                pso.order_date >= str_to_date(#FROM_DATE#, '%Y-%m-%d')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="END_DATE">
+            <![CDATA[
+                pso.order_date <= str_to_date(#END_DATE#, '%Y-%m-%d')+1
+            ]]>
+        </isNotEmpty>
+        ORDER BY PSO.SALES_ORDER_ID
+    </select>
+</sqlMap>

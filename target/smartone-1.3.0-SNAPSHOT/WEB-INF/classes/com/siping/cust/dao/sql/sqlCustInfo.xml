@@ -1,0 +1,444 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap
+        PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+        "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="cust.custInfo">
+    <sql id="CustSearchCondition">
+        <isNotEmpty prepend="AND" property="keyWord">
+             <!-- <![CDATA[
+                (
+                     CBI.CUST_NAME          LIKE concat('%',TRIM(#keyWord#),'%')
+                    OR CBI.CUST_EN_NAME    LIKE concat('%',TRIM(#keyWord#),'%')
+                    OR CBI.DESCRIPTION     LIKE concat('%',TRIM(#keyWord#),'%')
+                    OR if(#language#='en',PR.CODE_EN_NAME,PR.CODE_NAME)||
+                 if(#language#='en',CI.CODE_EN_NAME,CI.CODE_NAME)||
+                    if(#language#='en',AR.CODE_EN_NAME,AR.CODE_NAME)||
+                    CBI.ADDRESS          LIKE concat('%',TRIM(#keyWord#),'%')
+                )
+            ]]>  -->
+           <![CDATA[
+                (
+                     CBI.CUST_NAME          LIKE concat('%',TRIM(#keyWord#),'%')
+                    OR CBI.CUST_EN_NAME    LIKE concat('%',TRIM(#keyWord#),'%')
+                    OR CBI.DESCRIPTION     LIKE concat('%',TRIM(#keyWord#),'%')
+                    OR concat(if(#language#='en',PR.CODE_EN_NAME,PR.CODE_NAME),
+                 if(#language#='en',CI.CODE_EN_NAME,CI.CODE_NAME),
+                    if(#language#='en',AR.CODE_EN_NAME,AR.CODE_NAME),
+                    CBI.ADDRESS          LIKE concat('%',TRIM(#keyWord#),'%'))
+                )
+            ]]>  
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="OWNER_ID">
+            <![CDATA[
+                CBI.OWNER_ID= #OWNER_ID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="CUST_TYPE_CODE">
+            <![CDATA[
+                CBI.CUST_TYPE_CODE= #CUST_TYPE_CODE#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="CUST_LEVEL_CODE">
+            <![CDATA[
+                CBI.CUST_LEVEL_CODE= #CUST_LEVEL_CODE#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="CUST_STATUS_CODE">
+            <![CDATA[
+                CBI.CUST_STATUS_CODE= #CUST_STATUS_CODE#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="E_DATE">
+            <![CDATA[
+               CBI.CREATED_DATE <= str_to_date(#E_DATE#,'%Y-%m-%d')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="S_DATE">
+            <![CDATA[
+               CBI.CREATED_DATE >= str_to_date(#S_DATE#,'%Y-%m-%d')
+            ]]>
+        </isNotEmpty>
+        <isEqual prepend="AND" property="isSupervisor" compareValue="false">
+            <![CDATA[
+                CBI.OWNER_ID = #EMP_ID#
+            ]]>
+        </isEqual>
+        <isEqual prepend="AND" property="isSupervisor" compareValue="true">
+            <![CDATA[
+                (HE.DEPTID IN (SELECT SUPERVISED_DEPTID FROM SALES_SUPERVISOR_INFO WHERE SUPERVISOR_ID = #EMP_ID# )
+                OR CBI.OWNER_ID IS NULL)
+            ]]>
+        </isEqual>
+    </sql>
+
+    <resultMap id="customerListMap" class="customer">
+        <result property="customerNo" column="CUST_NO" />
+        <result property="customerId" column="CUST_ID" />
+        <result property="customerName" column="CUST_NAME" />
+        <result property="customerType.codeNo" column="CUST_TYPE_CODE" />
+        <result property="customerType.codeName" column="CUST_TYPE" />
+        <result property="custSalesMode.codeNo" column="CUST_SALES_MODE_CODE" />
+        <result property="custSalesMode.codeName" column="CUST_SALES_MODE" />
+        <result property="customerStatus.codeNo" column="CUST_TYPE_CODE" />
+        <result property="customerStatus.codeName" column="CUST_STATUS" />
+        <result property="customerLevel.codeNo" column="CUST_LEVEL_CODE" />
+        <result property="customerLevel.codeName" column="CUST_LEVEL" />
+        <result property="registerAddress.province.codeName" column="CUST_PROVINCE" />
+        <result property="registerAddress.city.codeName" column="CUST_CITY" />
+        <result property="registerAddress.area.codeName" column="CUST_AREA" />
+        <result property="registerAddress.address" column="ADDRESS" />
+        <result property="owner.empName" column="OWNER" />
+        <result property="owner.empId" column="OWNER_ID" />
+        <result property="description" column="DESCRIPTION" />
+        <result property="remark" column="REMARK" />
+    </resultMap>
+
+    <select id="getCustomerList" parameterClass="linkMap" resultMap="customerListMap">
+        <![CDATA[
+            SELECT  CBI.CUST_NO                                           CUST_NO,
+                    CBI.CUST_ID                                           CUST_ID,
+                    CUST_NAME                                             CUST_NAME,
+                    CBI.CUST_TYPE_CODE                                    CUST_TYPE_CODE,
+                   ifnull(PSM.SALES_MODE_NO,'')                             CUST_SALES_MODE_CODE,
+                    CBI.CUST_STATUS_CODE                                  CUST_STATUS_CODE,
+                    CBI.CUST_LEVEL_CODE                                   CUST_LEVEL_CODE,
+                    if(#language#='en',A.CODE_EN_NAME,A.CODE_NAME)    CUST_TYPE,
+                   ifnull(PSM.SALES_MODE_NAME,'')                           CUST_SALES_MODE,
+                    if(#language#='en',B.CODE_EN_NAME,B.CODE_NAME)    CUST_STATUS,
+                    if(#language#='en',C.CODE_EN_NAME,C.CODE_NAME)    CUST_LEVEL,
+                   ifnull(if(#language#='en',PR.CODE_EN_NAME,PR.CODE_NAME),' ')  CUST_PROVINCE,
+                   ifnull(if(#language#='en',CI.CODE_EN_NAME,CI.CODE_NAME),' ')  CUST_CITY,
+                   ifnull(if(#language#='en',AR.CODE_EN_NAME,AR.CODE_NAME),' ')  CUST_AREA,
+                    CBI.OFFICE_ADDRESS                                    ADDRESS,
+                    HE.CHINESENAME                                        OWNER,
+                    CBI.OWNER_ID                                          OWNER_ID,
+                    CBI.DESCRIPTION                                       DESCRIPTION,
+                    CBI.REMARK                                            REMARK
+
+            FROM    CUST_BASIC_INFO     CBI left join 
+                    HR_EMPLOYEE  HE on  CBI.OWNER_ID = HE.EMPID
+                   left join  SY_CODE             A on  CBI.CUST_TYPE_CODE = A.CODE_ID
+                    left join   SY_CODE             B on CBI.CUST_STATUS_CODE = B.CODE_ID
+                    left join  SY_CODE             C on CBI.CUST_LEVEL_CODE = C.CODE_ID
+                   left join  PROSTOR_SALES_MODEL PSM on  CBI.CUST_SALES_MODE_CODE = PSM.SALES_MODE_NO
+                   left join  SY_CODE             PR on  CBI.OFFICE_PROVINCE = PR.CODE_ID
+                    left join SY_CODE             CI on  CBI.OFFICE_CITY = CI.CODE_ID
+                    left join SY_CODE             AR on CBI.OFFICE_AREA = AR.CODE_ID
+            WHERE   CBI.ACTIVITY = 1
+            
+        ]]>
+        <include refid="CustSearchCondition" />
+        <![CDATA[
+            ORDER BY CBI.CUST_NO,CBI.CREATED_DATE DESC
+        ]]>
+    </select>
+    <select id="getAllCustomersList" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+           SELECT  CBI.CUST_NO                                           CUST_NO,
+                    CBI.CUST_ID                                           CUST_ID,
+                    CUST_NAME                                             CUST_NAME,
+                    CBI.CUST_TYPE_CODE                                    CUST_TYPE_CODE,
+                   ifnull(PSM.SALES_MODE_NO,'')                             CUST_SALES_MODE_CODE,
+                    CBI.CUST_STATUS_CODE                                  CUST_STATUS_CODE,
+                    CBI.CUST_LEVEL_CODE                                   CUST_LEVEL_CODE,
+                    if(#language#='en',A.CODE_EN_NAME,A.CODE_NAME)    CUST_TYPE,
+                   ifnull(PSM.SALES_MODE_NAME,'')                           CUST_SALES_MODE,
+                    if(#language#='en',B.CODE_EN_NAME,B.CODE_NAME)    CUST_STATUS,
+                    if(#language#='en',C.CODE_EN_NAME,C.CODE_NAME)    CUST_LEVEL,
+                   ifnull(if(#language#='en',PR.CODE_EN_NAME,PR.CODE_NAME),' ')  CUST_PROVINCE,
+                   ifnull(if(#language#='en',CI.CODE_EN_NAME,CI.CODE_NAME),' ')  CUST_CITY,
+                   ifnull(if(#language#='en',AR.CODE_EN_NAME,AR.CODE_NAME),' ')  CUST_AREA,
+                    CBI.OFFICE_ADDRESS                                    ADDRESS,
+                    HE.CHINESENAME                                        OWNER,
+                    CBI.OWNER_ID                                          OWNER_ID,
+                    CBI.DESCRIPTION                                       DESCRIPTION,
+                    CBI.REMARK                                            REMARK
+
+            FROM    CUST_BASIC_INFO     CBI left join 
+                    HR_EMPLOYEE  HE on  CBI.OWNER_ID = HE.EMPID
+                   left join  SY_CODE             A on  CBI.CUST_TYPE_CODE = A.CODE_ID
+                    left join   SY_CODE             B on CBI.CUST_STATUS_CODE = B.CODE_ID
+                    left join  SY_CODE             C on CBI.CUST_LEVEL_CODE = C.CODE_ID
+                   left join  PROSTOR_SALES_MODEL PSM on  CBI.CUST_SALES_MODE_CODE = PSM.SALES_MODE_NO
+                   left join  SY_CODE             PR on  CBI.OFFICE_PROVINCE = PR.CODE_ID
+                    left join SY_CODE             CI on  CBI.OFFICE_CITY = CI.CODE_ID
+                    left join SY_CODE             AR on CBI.OFFICE_AREA = AR.CODE_ID
+            WHERE   CBI.ACTIVITY = 1
+            
+        ]]>
+    </select>
+    <resultMap id="allCustomerMap" class="customer">
+        <result property="customerNo" column="CUST_NO" />
+        <result property="customerId" column="CUST_ID" />
+        <result property="customerName" column="CUST_NAME" />
+        <result property="customerType.codeNo" column="CUST_TYPE_CODE" />
+        <result property="customerType.codeName" column="CUST_TYPE" />
+        <result property="customerStatus.codeNo" column="CUST_TYPE_CODE" />
+        <result property="customerStatus.codeName" column="CUST_STATUS" />
+        <result property="contact" column="CONTACT" />
+        <result property="officeAddress" column="ADDRESS" />
+        <result property="owner.empName" column="OWNER" />
+        <result property="description" column="DESCRIPTION" />
+        <result property="remark" column="REMARK" />
+        <result property="customerLevel.codeName" column="CUST_LEVEL" />
+    </resultMap>
+    <select id="getAllCustomersListUsingBeanMap" parameterClass="adminBean" resultMap="allCustomerMap">
+        <![CDATA[
+            SELECT  CBI.CUST_NO                                        CUST_NO,
+                    CBI.CUST_ID                                        CUST_ID,
+                    CUST_NAME                                          CUST_NAME,
+                    CBI.CUST_TYPE_CODE                                 CUST_TYPE_CODE,
+                    CBI.CUST_STATUS_CODE                               CUST_STATUS_CODE,
+                    CBI.CONTACT                                        CONTACT,
+                    concat(PR.CODE_NAME,
+                    CI.CODE_NAME,
+                    AR.CODE_NAME,
+                    CBI.ADDRESS)                                       ADDRESS,
+                    HE.CHINESENAME                                     OWNER,
+                    CBI.DESCRIPTION                                    DESCRIPTION,
+                    CBI.REMARK                                         REMARK,
+                    A.CODE_NAME                                        CUST_TYPE,
+                    B.CODE_NAME                                        CUST_STATUS,
+                    C.CODE_NAME                                        CUST_LEVEL
+            FROM    CUST_BASIC_INFO     CBI
+                    left join HR_EMPLOYEE         HE on CBI.OWNER_ID = HE.EMPID
+                    left join SY_CODE             A  on CBI.CUST_TYPE_CODE = A.CODE_ID
+                    left join SY_CODE             B  on CBI.CUST_STATUS_CODE = B.CODE_ID
+                    left join SY_CODE             C  on CBI.CUST_LEVEL_CODE = C.CODE_ID
+                    left join SY_CODE             PR on CBI.PROVINCE = PR.CODE_ID
+                    left join SY_CODE             CI on CBI.CITY = CI.CODE_ID
+                    left join SY_CODE             AR on CBI.AREA = AR.CODE_ID
+            WHERE   CBI.ACTIVITY = 1
+        ]]>
+    </select>
+
+    <select id="getCustomerListCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(0)
+            FROM    CUST_BASIC_INFO     CBI
+                    left join HR_EMPLOYEE         HE on CBI.OWNER_ID = HE.EMPID
+                    left join SY_CODE             A  on CBI.CUST_TYPE_CODE = A.CODE_ID
+                    left join SY_CODE             B  on CBI.CUST_STATUS_CODE = B.CODE_ID
+                    left join SY_CODE             C  on CBI.CUST_LEVEL_CODE = C.CODE_ID
+                    left join SY_CODE             PR on CBI.PROVINCE = PR.CODE_ID
+                    left join SY_CODE             CI on CBI.CITY = CI.CODE_ID
+                    left join SY_CODE             AR on CBI.AREA = AR.CODE_ID
+            WHERE   CBI.ACTIVITY = 1
+        ]]>
+        <include refid="CustSearchCondition" />
+    </select>
+
+    <resultMap id="customerMap" class="customer">
+        <result property="customerNo" column="CUST_NO" />
+        <result property="customerId" column="CUST_ID" />
+        <result property="customerName" column="CUST_NAME" />
+        <result property="customerType.codeNo" column="CUST_TYPE_CODE" />
+        <result property="customerType.codeName" column="CUST_TYPE" />
+        <result property="custSalesMode.codeNo" column="CUST_SALES_MODE_CODE" />
+        <result property="custSalesMode.codeName" column="CUST_SALES_MODE" />
+        <result property="customerStatus.codeNo" column="CUST_STATUS_CODE" />
+        <result property="customerStatus.codeName" column="CUST_STATUS" />
+        <result property="customerLevel.codeNo" column="CUST_LEVEL_CODE" />
+        <result property="customerLevel.codeName" column="CUST_LEVEL" />
+
+        <result property="registerAddress.province.codeNo" column="PROVINCE_CODE" />
+        <!-- <result property="registerAddress.province.codeName" column="PROVINCE" /> -->
+        <result property="registerAddress.city.codeNo" column="CITY_CODE" />
+        <!-- <result property="registerAddress.city.codeName" column="CITY" /> -->
+        <result property="registerAddress.area.codeNo" column="AREA_CODE" />
+        <!-- <result property="registerAddress.area.codeName" column="AREA" /> -->
+        <result property="registerAddress.address" column="ADDRESS" />
+
+        <result property="officeAddress.province.codeNo" column="OFFICE_PROVINCE_CODE" />
+        <!-- <result property="officeAddress.province.codeName" column="OFFICE_PROVINCE" /> -->
+        <result property="officeAddress.city.codeNo" column="OFFICE_CITY_CODE" />
+        <!-- <result property="officeAddress.city.codeName" column="OFFICE_CITY" /> -->
+        <result property="officeAddress.area.codeNo" column="OFFICE_AREA_CODE" />
+        <!-- <result property="officeAddress.area.codeName" column="OFFICE_AREA" /> -->
+        <result property="officeAddress.address" column="OFFICE_ADDRESS" />
+
+        <result property="owner.empName" column="OWNER" />
+        <result property="owner.empId" column="OWNER_ID" />
+        <result property="description" column="DESCRIPTION" />
+        <result property="remark" column="REMARK" />
+
+        <result property="bankName" column="BANK_NAME" />
+        <result property="bankCode" column="BANK_ACCOUNT" />
+        <result property="credit.amount" column="CREDIT_AMOUNT" />
+
+        <result property="telePhone" column="TELEPHONE" />
+        <result property="mobilePhone" column="MOBILEPHONE" />
+        <result property="fax" column="FAX" />
+        <result property="email" column="EMAIL" />
+        <result property="taxPayerCode" column="TAXPAYER_IDCODE" />
+    </resultMap>
+    <select id="getCustomerDetailByUpdate" parameterClass="linkMap" resultMap="customerMap" remapResults="true">
+        <![CDATA[
+            SELECT  CBI.CUST_NO                                        CUST_NO,
+                    CBI.CUST_ID                                        CUST_ID,
+                    CBI.CUST_NAME                                      CUST_NAME,
+                    CBI.CUST_TYPE_CODE                                 CUST_TYPE_CODE,
+                    CBI.CUST_STATUS_CODE                               CUST_STATUS_CODE,
+                    PSD.SALES_MODE_NO                                  CUST_SALES_MODE_CODE,
+                    CBI.CUST_LEVEL_CODE                                CUST_LEVEL_CODE,
+                    if(#language#='en',A.CODE_EN_NAME,A.CODE_NAME)    CUST_TYPE,
+                    if(#language#='en',B.CODE_EN_NAME,B.CODE_NAME)    CUST_STATUS,
+                    if(#language#f='en',D.CODE_EN_NAME,D.CODE_NAME)    CUST_LEVEL,
+                    PSD.SALES_MODE_NAME                              CUST_SALES_MODE,
+                    HEA.CHINESENAME                                    OWNER,
+                    CBI.OWNER_ID                                       OWNER_ID,
+                    CBI.CREDIT_AMOUNT                                  CREDIT_AMOUNT,
+                    CBI.TELEPHONE                                    TELEPHONE,
+                    CBI.MOBILEPHONE                                  MOBILEPHONE,
+                    CBI.FAX                                          FAX,
+                    CBI.EMAIL                                        EMAIL,
+                    CBI.DESCRIPTION                                  DESCRIPTION,
+                    CBI.REMARK                                       REMARK,
+
+                    CBI.BANK                                         BANK_NAME,
+                    CBI.BANK_ACCOUNT                                 BANK_ACCOUNT,
+                    CBI.TAXPAYER_IDCODE                              TAXPAYER_IDCODE,
+
+                    CBI.PROVINCE                                     PROVINCE_CODE,
+                    CBI.CITY                                         CITY_CODE,
+                    CBI.AREA                                         AREA_CODE,
+                    CBI.ADDRESS                                      ADDRESS,
+                    CBI.OFFICE_PROVINCE                              OFFICE_PROVINCE_CODE,
+                    CBI.OFFICE_CITY                                  OFFICE_CITY_CODE,
+                    CBI.OFFICE_AREA                                  OFFICE_AREA_CODE,
+                    CBI.OFFICE_ADDRESS                               OFFICE_ADDRESS
+            FROM    CUST_BASIC_INFO     CBI
+                    left join HR_EMPLOYEE         HEA on CBI.OWNER_ID = HEA.EMPID
+                    left join SY_CODE             A   on CBI.CUST_TYPE_CODE = A.CODE_ID
+                    left join SY_CODE             B   on CBI.CUST_STATUS_CODE = B.CODE_ID
+                    left join SY_CODE             D   on CBI.CUST_LEVEL_CODE = D.CODE_ID
+                    left join PROSTOR_SALES_MODEL PSD on CBI.CUST_SALES_MODE_CODE = PSD.SALES_MODE_NO
+                    left join SY_CODE             PR  on CBI.PROVINCE = PR.CODE_ID
+                    left join SY_CODE             CI  on CBI.CITY = CI.CODE_ID
+                    left join SY_CODE             AR  on CBI.AREA = AR.CODE_ID
+            WHERE   CBI.ACTIVITY = 1
+        ]]>
+    </select>
+    
+       <resultMap id="customerMap1" class="customer">
+        <result property="customerNo" column="CUST_NO" />
+        <result property="customerId" column="CUST_ID" />
+        <result property="customerName" column="CUST_NAME" />
+        <result property="customerType.codeNo" column="CUST_TYPE_CODE" />
+        <result property="customerType.codeName" column="CUST_TYPE" />
+        <result property="custSalesMode.codeNo" column="CUST_SALES_MODE_CODE" />
+        <result property="custSalesMode.codeName" column="CUST_SALES_MODE" />
+        <result property="customerStatus.codeNo" column="CUST_STATUS_CODE" />
+        <result property="customerStatus.codeName" column="CUST_STATUS" />
+        <result property="customerLevel.codeNo" column="CUST_LEVEL_CODE" />
+        <result property="customerLevel.codeName" column="CUST_LEVEL" />
+
+        <result property="registerAddress.province.codeName" column="RPROVINCE" />
+        <!-- <result property="registerAddress.province.codeName" column="PROVINCE" /> -->
+        <result property="registerAddress.city.codeName" column="CITY" />
+        <!-- <result property="registerAddress.city.codeName" column="CITY" /> -->
+        <result property="registerAddress.area.codeName" column="AREA" />
+        <!-- <result property="registerAddress.area.codeName" column="AREA" /> -->
+        <result property="registerAddress.address" column="ADDRESS" />
+
+        <result property="officeAddress.province.codeName" column="OFFICE_PROVINCE" />
+        <!-- <result property="officeAddress.province.codeName" column="OFFICE_PROVINCE" /> -->
+        <result property="officeAddress.city.codeName" column="OFFICE_CITY" />
+        <!-- <result property="officeAddress.city.codeName" column="OFFICE_CITY" /> -->
+        <result property="officeAddress.area.codeName" column="OFFICE_AREA" />
+        <!-- <result property="officeAddress.area.codeName" column="OFFICE_AREA" /> -->
+        <result property="officeAddress.address" column="OFFICE_ADDRESS" />
+
+        <result property="owner.empName" column="OWNER" />
+        <result property="owner.empId" column="OWNER_ID" />
+        <result property="description" column="DESCRIPTION" />
+        <result property="remark" column="REMARK" />
+
+        <result property="bankName" column="BANK_NAME" />
+        <result property="bankCode" column="BANK_ACCOUNT" />
+        <result property="credit.amount" column="CREDIT_AMOUNT" />
+
+        <result property="telePhone" column="TELEPHONE" />
+        <result property="mobilePhone" column="MOBILEPHONE" />
+        <result property="fax" column="FAX" />
+        <result property="email" column="EMAIL" />
+        <result property="taxPayerCode" column="TAXPAYER_IDCODE" />
+    </resultMap>
+    <select id="getCustomerDetail" parameterClass="linkMap" resultMap="customerMap1" remapResults="true">
+        <![CDATA[
+            SELECT  CBI.CUST_NO                                        CUST_NO,
+                    CBI.CUST_ID                                        CUST_ID,
+                    CBI.CUST_NAME                                      CUST_NAME,
+                    CBI.CUST_TYPE_CODE                                 CUST_TYPE_CODE,
+                    CBI.CUST_STATUS_CODE                               CUST_STATUS_CODE,
+                    PSD.SALES_MODE_NO                                  CUST_SALES_MODE_CODE,
+                    CBI.CUST_LEVEL_CODE                                CUST_LEVEL_CODE,
+                    if(#language#='en',A.CODE_EN_NAME,A.CODE_NAME)    CUST_TYPE,
+                    if(#language#='en',B.CODE_EN_NAME,B.CODE_NAME)    CUST_STATUS,
+                    if(#language#='en',D.CODE_EN_NAME,D.CODE_NAME)    CUST_LEVEL,
+                    PSD.SALES_MODE_NAME                              CUST_SALES_MODE,
+                    HEA.CHINESENAME                                    OWNER,
+                    CBI.OWNER_ID                                       OWNER_ID,
+                    CBI.CREDIT_AMOUNT                                  CREDIT_AMOUNT,
+                    CBI.TELEPHONE                                    TELEPHONE,
+                    CBI.MOBILEPHONE                                  MOBILEPHONE,
+                    CBI.FAX                                          FAX,
+                    CBI.EMAIL                                        EMAIL,
+                    CBI.DESCRIPTION                                  DESCRIPTION,
+                    CBI.REMARK                                       REMARK,
+
+                    CBI.BANK                                         BANK_NAME,
+                    CBI.BANK_ACCOUNT                                 BANK_ACCOUNT,
+                    CBI.TAXPAYER_IDCODE                              TAXPAYER_IDCODE,
+
+                    IFNULL(IF(#language#='en',PR.CODE_EN_NAME,PR.CODE_NAME),' ')    RPROVINCE,
+                    IFNULL(IF(#language#='en',CI.CODE_EN_NAME,CI.CODE_NAME),' ')    CITY,
+                    IFNULL(IF(#language#='en',AR.CODE_EN_NAME,AR.CODE_NAME),' ')    AREA,
+                    CBI.ADDRESS                                                         ADDRESS,                     
+                    IFNULL(IF(#language#='en',PR1.CODE_EN_NAME,PR1.CODE_NAME),' ')    OFFICE_PROVINCE,
+                    IFNULL(IF(#language#='en',CI1.CODE_EN_NAME,CI1.CODE_NAME),' ')    OFFICE_CITY,
+                    IFNULL(IF(#language#='en',AR1.CODE_EN_NAME,AR1.CODE_NAME),' ')    OFFICE_AREA,
+                    CBI.OFFICE_ADDRESS                               OFFICE_ADDRESS
+            FROM    CUST_BASIC_INFO     CBI
+                    LEFT JOIN HR_EMPLOYEE         HEA ON CBI.OWNER_ID = HEA.EMPID
+                    LEFT JOIN SY_CODE             A   ON CBI.CUST_TYPE_CODE = A.CODE_ID
+                    LEFT JOIN SY_CODE             B   ON CBI.CUST_STATUS_CODE = B.CODE_ID
+                    LEFT JOIN SY_CODE             D   ON CBI.CUST_LEVEL_CODE = D.CODE_ID
+                    LEFT JOIN PROSTOR_SALES_MODEL PSD ON CBI.CUST_SALES_MODE_CODE = PSD.SALES_MODE_NO
+                    LEFT JOIN SY_CODE             PR  ON CBI.PROVINCE = PR.CODE_ID
+                    LEFT JOIN SY_CODE             CI  ON CBI.CITY = CI.CODE_ID
+                    LEFT JOIN SY_CODE             AR  ON CBI.AREA = AR.CODE_ID
+                    LEFT JOIN SY_CODE             PR1 ON CBI.OFFICE_PROVINCE = PR1.CODE_ID
+                    LEFT JOIN SY_CODE             CI1 ON CBI.OFFICE_CITY = CI1.CODE_ID
+                    LEFT JOIN SY_CODE             AR1 ON CBI.OFFICE_AREA = AR1.CODE_ID
+            WHERE   CBI.ACTIVITY = 1
+            AND     CBI.CUST_ID = #CUST_ID#
+        ]]>
+    </select>
+    <sql id="getCustIdByTaobaoIdCondition">
+        <isNotEmpty prepend="AND" property="TAOBAO_ID">
+            <![CDATA[
+               CBI.TAOBAO_ID = #TAOBAO_ID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="CUST_ID">
+            <![CDATA[
+               CBI.CUST_ID = #CUST_ID#
+            ]]>
+        </isNotEmpty>
+    </sql>
+    <select id="getCustById" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT 
+                CBI.CUST_NO,
+                CBI.CUST_ID,
+                CBI.CUST_NAME,
+                CBI.OWNER_ID,
+                CBI.TAOBAO_ID
+            FROM CUST_BASIC_INFO CBI
+            WHERE CBI.ACTIVITY = 1
+            AND CBI.CPNY_ID = #CPNY_ID#
+        ]]>
+        <include refid="getCustIdByTaobaoIdCondition" />
+    </select>
+</sqlMap>

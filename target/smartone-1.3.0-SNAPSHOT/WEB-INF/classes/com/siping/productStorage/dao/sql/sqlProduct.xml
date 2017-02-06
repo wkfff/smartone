@@ -1,0 +1,1060 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap
+        PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+        "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="prostor.product">
+    <resultMap id="productsBySalesModeResultMap" class="com.siping.productStorage.bean.Product">
+        <result property="id" column="PRODUCT_ID"/>
+        <result property="no" column="PRODUCT_NO"/>
+        <result property="name" column="PRODUCT_NAME"/>
+        <result property="specification" column="SPECIFICATION"/>
+        <result property="unit.unitId" column="UNIT_CODE_ID"/>
+        <result property="unit.unitName" column="UNIT_CODE_NAME"/>
+        <result property="sellingPrice.price" column="PRICE"/>
+    </resultMap>
+
+    <sql id="ProProductCondition">
+        <isNotEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+                (    
+                    PP.PRODUCT_NAME LIKE concat('%',TRIM(#keyWord#),'%')
+                    OR PP.PRODUCT_ID LIKE concat('%',TRIM(#keyWord#),'%')
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="PRODUCT_CATEGORY_ID">
+            <![CDATA[
+                PP.PRODUCT_CATEGORY_ID IN(
+                    SELECT SC.CATEGORY_ID
+                    FROM SY_CATEGORY SC
+                    WHERE SC.ACTIVITY = 1
+                    where PRIOR SC.CATEGORY_ID = SC.PARENT_ID and ( SC.CATEGORY_ID = #PRODUCT_CATEGORY_ID# or SC.PARENT_ID= #PRODUCT_CATEGORY_ID#)
+                    
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="UNIT_CODE_ID">
+            <![CDATA[
+                PP.UNIT_CODE_ID = #UNIT_CODE_ID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="STATUS">
+            <![CDATA[
+                PP.STATUS = #STATUS#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="PRODUCT_ID">
+            <![CDATA[
+                PP.PRODUCT_ID = #PRODUCT_ID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="PRODUCT_NO">
+            <![CDATA[
+                PP.PRODUCT_NO = #PRODUCT_NO#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="PRODUCT_ID_LIKE">
+            <![CDATA[
+                UPPER(PP.PRODUCT_ID) LIKE UPPER(TRIM(#PRODUCT_ID_LIKE#))||'%'
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="PRODUCT_NAME_LIKE">
+            <![CDATA[
+                UPPER(PP.PRODUCT_NAME) LIKE '%'||UPPER(TRIM(#PRODUCT_NAME_LIKE#))||'%'
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="INSTORAGE_ID">
+            <![CDATA[
+                PP.PRODUCT_NO IN(
+                    SELECT PIP.PRODUCT_NO FROM PROSTOR_INSTORAGE_PRODUCT PIP
+                    WHERE PIP.ACTIVITY = 1
+                    AND PIP.INSTORAGE_ID = #INSTORAGE_ID#
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="M_AREA_NO">
+            <![CDATA[
+                PP.PRODUCT_NO IN(
+                    SELECT MAP.PRODUCT_NO
+                    FROM MOBILE_AREA_PRODUCT MAP
+                    WHERE MAP.ACTIVITY = 1
+                    AND MAP.M_AREA_NO = #M_AREA_NO#
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="NOT_M_AREA_NO">
+            <![CDATA[
+                PP.PRODUCT_NO NOT IN(
+                    SELECT MAP.PRODUCT_NO
+                    FROM MOBILE_AREA_PRODUCT MAP
+                    WHERE MAP.ACTIVITY = 1
+                    AND MAP.M_AREA_NO = #NOT_M_AREA_NO#
+                )
+            ]]>
+        </isNotEmpty>
+    </sql>
+    <sql id="ProProductCondition2">
+        <isNotEmpty prepend="AND" property="S_SUM">
+            <![CDATA[
+                RES.LEFT_QUANTITY >= #S_SUM#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="E_SUM">
+            <![CDATA[
+                RES.LEFT_QUANTITY <= #E_SUM#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="PURCHASE_ORDER_ID">
+            <![CDATA[
+                PP.PRODUCT_NO IN(
+                    SELECT PPOD.PRODUCT_NO
+                    FROM PROSTOR_PURCHASE_ORDER_DETAIL PPOD
+                    WHERE PPOD.ACTIVITY = 1
+                    AND   PPOD.SUPPLIER_NO = #SUPPLIER_NO#
+                    AND   PPOD.PURCHASE_ORDER_ID = #PURCHASE_ORDER_ID#
+                    AND   PPOD.QUANTITY > ifnull(INQUANTITY,0)
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="SALES_MODE_NO">
+            <![CDATA[
+                PP.PRODUCT_NO IN(
+                    SELECT
+                        PSOD.PRODUCT_NO 
+                    FROM PROSTOR_PRODUCT_SALES_MODEL PSOD
+                    WHERE PSOD.SALES_MODE_NO = #SALES_MODE_NO#
+                )
+            ]]>
+        </isNotEmpty>
+    </sql>
+    <sql id="ProProductOrderCondition">
+        <isNotEmpty prepend=" " property="ORDER_BY">
+            <![CDATA[
+                ORDER BY $ORDER_BY$ $ASC_OR_DESC$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend=" " property="ORDER_BY">
+            <![CDATA[
+                ORDER BY PP.PRODUCT_NO
+            ]]>
+        </isEmpty>
+    </sql>
+   <!--  <select id="getProductList" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT * FROM(
+                SELECT
+                    PP.PRODUCT_NO               PRODUCT_NO,
+                    PP.PRODUCT_ID               PRODUCT_ID,
+                    PP.PRODUCT_NAME             PRODUCT_NAME,
+                    PP.SPECIFICATION            SPECIFICATION,
+                    PP.PRODUCT_CAS              PRODUCT_CAS,
+                    PP.PRODUCT_NUM              PRODUCT_NUM,
+                    ifnull(DATE_FORMAT(PP.UNIT_PRICE,2),'')  UNIT_PRICE,
+                    A.CODE_ID                   UNIT_CODE_ID,
+                    A.CODE_NAME                 UNIT_CODE,
+                    D.CATEGORY_ID               PRODUCT_CATEGORY_ID,
+                    D.CATEGORY_NAME             PRODUCT_CATEGORY_NAME
+                    $nvl$
+                    ,PP.REMARK                  REMARK,
+                    PP.STATUS                   STATUS_ID,
+                   ifnull(PP.STATUS,0)            STATUS,
+                   if(ifnull(PP.STATUS,0)=1,'启用','停用') STATUS_NAME
+              from
+               PROSTOR_PRODUCT PP left join 
+                    SY_CODE         A on  PP.UNIT_CODE_ID = A.CODE_ID
+                   left join  SY_CATEGORY      D on  PP.PRODUCT_CATEGORY_ID = D.CATEGORY_ID
+                WHERE   PP.ACTIVITY = 1
+               
+        ]]>
+        <include refid="ProProductCondition"/>
+        <include refid="ProProductOrderCondition"/>
+        <![CDATA[
+            ) RES
+            WHERE 1=1
+        ]]>
+        <include refid="ProProductCondition2"/>
+    </select> -->
+    
+     <select id="getProductList" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT * FROM(
+                SELECT
+                    PP.PRODUCT_NO               PRODUCT_NO,
+                    PP.PRODUCT_ID               PRODUCT_ID,
+                    PP.PRODUCT_NAME             PRODUCT_NAME,
+                    PP.SPECIFICATION            SPECIFICATION,
+                    PP.PRODUCT_CAS              PRODUCT_CAS,
+                    PP.PRODUCT_NUM              PRODUCT_NUM,
+                    ifnull(DATE_FORMAT(PP.UNIT_PRICE,2),'')  UNIT_PRICE,
+                    A.CODE_ID                   UNIT_CODE_ID,
+                    A.CODE_NAME                 UNIT_CODE,
+                    D.CATEGORY_ID               PRODUCT_CATEGORY_ID,
+                    D.CATEGORY_NAME             PRODUCT_CATEGORY_NAME
+                    $ifnull$,
+                    PP.REMARK                  REMARK,
+                    PP.STATUS                   STATUS_ID,
+                    
+                   ifnull(PP.STATUS,0)            STATUS,
+                   if(ifnull(PP.STATUS,0)=1,'启用','停用') STATUS_NAME
+              from
+               PROSTOR_PRODUCT PP left join 
+                    SY_CODE         A on  PP.UNIT_CODE_ID = A.CODE_ID
+                   left join  SY_CATEGORY      D on  PP.PRODUCT_CATEGORY_ID = D.CATEGORY_ID
+                WHERE   PP.ACTIVITY = 1
+               
+        ]]>
+        <include refid="ProProductCondition"/>
+        <include refid="ProProductOrderCondition"/>
+        <![CDATA[
+            ) RES
+            WHERE 1=1
+        ]]>
+        <include refid="ProProductCondition2"/>
+    </select>
+
+    <select id="getProductListCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT
+                COUNT(PP.PRODUCT_NO)
+            FROM
+                PROSTOR_PRODUCT    PP
+            WHERE    PP.ACTIVITY = 1
+        ]]>
+        <include refid="ProProductCondition"/>
+    </select>
+
+    <select id="getProStorageDetail" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT
+                PSI.STORAGE_NO,
+                PSP.MIN_QUANTITY,
+                PSP.MAX_QUANTITY,
+                PSP.STOR_ADDR,
+                PSPP.STOR
+            FROM PROSTOR_STORAGE_INFO PSI
+            LEFT JOIN(
+                SELECT PSPP.STORAGE_NO,
+                    PSPP.MIN_QUANTITY,
+                    PSPP.MAX_QUANTITY,
+                    PSPP.STOR_ADDR 
+                FROM PROSTOR_STORAGE_PRODUCT_PARAM PSPP
+                WHERE PSPP.PRODUCT_NO = #PRODUCT_NO#
+                AND PSPP.ACTIVITY = 1
+                AND PSPP.CPNY_ID = #CPNY_ID#
+            ) PSP
+            ON PSI.STORAGE_NO = PSP.STORAGE_NO
+            LEFT JOIN(
+                SELECT P.STORAGE_NO,SUM(P.LEFT_QUANTITY) STOR FROM PROSTOR_STORAGE_PRODUCT P
+                WHERE P.PRODUCT_NO = #PRODUCT_NO#
+                AND P.CPNY_ID = #CPNY_ID#
+                AND P.ACTIVITY = 1
+                GROUP BY STORAGE_NO
+            ) PSPP
+            ON PSPP.STORAGE_NO = PSI.STORAGE_NO
+            WHERE PSI.ACTIVITY = 1
+            AND PSI.CPNY_ID = #CPNY_ID#
+        ]]>
+    </select>
+    <select id="getProSaleDetail" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT
+                PSI.SALES_MODE_NO,
+                PSP.PRODUCT_NO,
+                PSP.PRICE
+            FROM PROSTOR_SALES_MODEL PSI
+            LEFT JOIN(
+                SELECT PSPP.SALES_MODE_NO,
+                    PSPP.PRODUCT_NO,
+                    PSPP.PRICE
+                FROM PROSTOR_PRODUCT_SALES_MODEL PSPP
+                WHERE PSPP.PRODUCT_NO = #PRODUCT_NO#
+                AND PSPP.ACTIVITY = 1
+                AND PSPP.CPNY_ID = #CPNY_ID#
+            ) PSP
+            ON PSI.SALES_MODE_NO = PSP.SALES_MODE_NO
+            WHERE PSI.ACTIVITY = 1
+            AND PSI.CPNY_ID = #CPNY_ID#
+        ]]>
+    </select>
+    <select id="getProPropertyValueDetail" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT 
+                SP.P_VALUE_ID,
+                SP.P_VALUE,
+                PPD.PROPERTY_ID,
+                SC.PROPERTY_NAME
+            FROM SY_PROPERTY_VALUE SP,
+                 PRODUCT_PROPERTY_DETAIL PPD,
+                 SY_CATEGORY_PROPERTY SC
+            WHERE SP.ACTIVITY = 1
+            AND SP.CPNY_ID = #CPNY_ID#
+            AND SP.P_VALUE_ID = PPD.P_VALUE_ID
+            AND PPD.ACTIVITY = 1
+            AND PPD.CPNY_ID = #CPNY_ID#
+            AND PPD.PRODUCT_NO = #PRODUCT_NO#
+            AND PPD.PROPERTY_ID = SC.PROPERTY_ID
+        ]]>
+    </select>
+    
+
+    <insert id="addProduct" parameterClass="linkMap">
+        <![CDATA[
+            DECLARE
+                VAR_TYPE VARCHAR2(20);
+                VAR_PRODUCT_ID VARCHAR2(100);
+                VAR_PRECODE VARCHAR2(20);
+                VAR_MAXCID VARCHAR2(20);
+                NUM_MAXCID NUMBER;
+            BEGIN
+                VAR_TYPE := #PRODUCT_ID_TYPE#;
+                IF VAR_TYPE = '3' THEN
+                    BEGIN
+                        SELECT SC.PRE_CODE INTO VAR_PRECODE
+                        FROM SY_CATEGORY SC
+                        WHERE SC.CPNY_ID = #CPNY_ID#
+                        AND SC.CATEGORY_ID = #PRODUCT_CATEGORY_ID_IN#
+                        AND SC.ACTIVITY = 1;
+                    EXCEPTION
+                        WHEN NO_DATA_FOUND THEN
+                          VAR_PRECODE := '';
+                    END;
+                
+                    BEGIN
+                        SELECT MAX(PP.PRODUCT_ID) INTO VAR_MAXCID
+                        FROM PROSTOR_PRODUCT PP
+                        WHERE PP.CPNY_ID = #CPNY_ID#
+                        AND PP.PRODUCT_ID LIKE VAR_PRECODE||'%'
+                        AND PP.ACTIVITY = 1;
+                    EXCEPTION
+                        WHEN NO_DATA_FOUND THEN
+                          VAR_MAXCID := '000';
+                    END;
+                    
+                    IF VAR_MAXCID = '' OR VAR_MAXCID IS NULL THEN
+                        VAR_MAXCID := '000';
+                    END IF;
+                    VAR_MAXCID := SUBSTR(VAR_MAXCID, -3, 3);
+                    
+                    BEGIN
+                        NUM_MAXCID := VAR_MAXCID + 1;
+                    EXCEPTION
+                        WHEN VALUE_ERROR THEN
+                            NUM_MAXCID := 1;
+                    END;
+                    
+                    IF LENGTH(NUM_MAXCID) = 1 THEN
+                        VAR_MAXCID := '00'||NUM_MAXCID;
+                    ELSIF LENGTH(NUM_MAXCID) = 2 THEN
+                        VAR_MAXCID := '0'||NUM_MAXCID;
+                    ELSE
+                        VAR_MAXCID := ''||NUM_MAXCID;
+                    END IF;
+                    
+                    VAR_PRODUCT_ID := VAR_PRECODE||VAR_MAXCID;
+                ELSE
+                    VAR_PRODUCT_ID := #PRODUCT_ID_IN#;
+                END IF;
+                
+                INSERT INTO PROSTOR_PRODUCT (
+                    PRODUCT_NO,
+                    PRODUCT_ID,
+                    PRODUCT_NAME,
+                    PRODUCT_EN_NAME,
+                    UNIT_PRICE,
+                    UNIT_CODE_ID,
+                    PRODUCT_CATEGORY_ID,
+                    CREATE_DATE,
+                    CREATED_BY,
+                    ACTIVITY,
+                    CPNY_ID,
+                    REMARK,
+                    STATUS,
+                    SPECIFICATION,
+                    PRODUCT_CAS,
+                    PRODUCT_NUM)
+                VALUES(
+                    PROSTOR_PRODUCT_SEQ.NEXTVAL,
+                    VAR_PRODUCT_ID,
+                    #PRODUCT_NAME_IN#,
+                    #PRODUCT_EN_NAME_IN#,
+                    #UNIT_PRICE_IN#,
+                    #UNIT_CODE_ID_IN#,
+                    #PRODUCT_CATEGORY_ID_IN#,
+                    SYSDATE,
+                    #CREATED_BY#,
+                    1,
+                    #CPNY_ID#,
+                    #REMARK_IN#,
+                    #STATUS_IN#,
+                    #SPECIFICATION_IN#,
+                    #PRODUCT_CAS_IN#,
+                    #PRODUCT_NUM_IN#);
+                
+                $salesSql$
+                
+                $storageSql$
+                
+                $propertySql$
+            END;
+        ]]>
+    </insert>
+
+    <!-- <select id="getProColumns" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+                SELECT 'PRODUCT_ID' AS "COLUMN_NAME",
+                    '货品编号' AS ITEM_NAME,
+                    1 AS ORDER_NO
+                FROM DUAL
+                
+                UNION ALL
+                SELECT 'PRODUCT_NAME' AS "COLUMN_NAME",
+                    '货物品名' AS ITEM_NAME,
+                    2 AS ORDER_NO
+                FROM DUAL
+
+                UNION ALL
+                SELECT 'SPECIFICATION' AS "COLUMN_NAME",
+                    '货品规格' AS ITEM_NAME,
+                    3 AS ORDER_NO
+                FROM DUAL
+
+                UNION ALL
+                SELECT 'PRODUCT_CATEGORY_NAME' AS "COLUMN_NAME",
+                    '货物类别' AS ITEM_NAME,
+                    4 AS ORDER_NO
+                FROM DUAL
+
+                UNION ALL
+                SELECT 'UNIT_CODE' AS "COLUMN_NAME",
+                    '单位' AS ITEM_NAME,
+                    5 AS ORDER_NO
+                FROM DUAL
+                
+                UNION ALL
+                SELECT 'LEFT_QUANTITY' AS "COLUMN_NAME",
+                    '库存' AS ITEM_NAME,
+                    6 AS ORDER_NO
+                FROM DUAL
+                
+                UNION ALL
+                SELECT 'UNIT_PRICE' AS "COLUMN_NAME",
+                    '平均进货价' AS ITEM_NAME,
+                    7 AS ORDER_NO
+                FROM DUAL
+
+                UNION ALL
+                SELECT
+                    RES.COLUMN_NAME AS COLUMN_NAME,
+                    RES.ITEM_NAME AS ITEM_NAME,
+                    ROWNUM+8 AS ORDER_NO
+                FROM (
+                    SELECT 'SALE'||PS.SALES_MODE_NO AS COLUMN_NAME,
+                    PS.SALES_MODE_NAME ITEM_NAME
+                    FROM PROSTOR_SALES_MODEL PS
+                    WHERE PS.ACTIVITY = 1
+                    AND PS.CPNY_ID = #CPNY_ID#
+                    AND PS.STATUS = 1
+                    ORDER BY PS.SALES_MODE_NO
+                ) RES
+
+                UNION ALL
+                SELECT 'STATUS' AS "COLUMN_NAME",
+                    '启用状态' AS ITEM_NAME,
+                    999997 AS ORDER_NO
+                FROM DUAL
+
+                UNION ALL
+                SELECT 'SHOWDETAIL' AS "COLUMN_NAME",
+                    '详细信息' AS ITEM_NAME,
+                    999998 AS ORDER_NO
+                FROM DUAL ORDER BY ORDER_NO
+            ]]>
+    </select> -->
+
+<select id="getProColumns" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+        SELECT 'PRODUCT_ID' AS "COLUMN_NAME",
+                    '货品编号' AS ITEM_NAME,
+                    1 AS ORDER_NO
+                FROM DUAL
+                
+                UNION ALL
+                SELECT 'PRODUCT_NAME' AS "COLUMN_NAME",
+                    '货物品名' AS ITEM_NAME,
+                    2 AS ORDER_NO
+                FROM DUAL
+
+                UNION ALL
+                SELECT 'SPECIFICATION' AS "COLUMN_NAME",
+                    '货品规格' AS ITEM_NAME,
+                    3 AS ORDER_NO
+                FROM DUAL
+
+                UNION ALL
+                SELECT 'PRODUCT_CATEGORY_NAME' AS "COLUMN_NAME",
+                    '货物类别' AS ITEM_NAME,
+                    4 AS ORDER_NO
+                FROM DUAL
+
+                UNION ALL
+                SELECT 'UNIT_CODE' AS "COLUMN_NAME",
+                    '单位' AS ITEM_NAME,
+                    5 AS ORDER_NO
+                FROM DUAL
+                
+                UNION ALL
+                SELECT 'LEFT_QUANTITY' AS "COLUMN_NAME",
+                    '库存' AS ITEM_NAME,
+                    6 AS ORDER_NO
+                FROM DUAL
+                
+                UNION ALL
+                SELECT 'UNIT_PRICE' AS "COLUMN_NAME",
+                    '平均进货价' AS ITEM_NAME,
+                    7 AS ORDER_NO
+                FROM DUAL
+
+                UNION ALL
+                SELECT
+                    RES.COLUMN_NAME AS COLUMN_NAME,
+                    RES.ITEM_NAME AS ITEM_NAME,
+                   @rownum:=@rownum+8  AS ORDER_NO
+                FROM (
+                    SELECT concat('SALE',PS.SALES_MODE_NO) AS COLUMN_NAME,
+                    PS.SALES_MODE_NAME ITEM_NAME
+                    FROM PROSTOR_SALES_MODEL PS
+                    WHERE PS.ACTIVITY = 1
+                    AND PS.CPNY_ID = #CPNY_ID#
+                    AND PS.STATUS = 1
+                    ORDER BY PS.SALES_MODE_NO
+                ) RES
+
+                UNION ALL
+                SELECT 'STATUS' AS "COLUMN_NAME",
+                    '启用状态' AS ITEM_NAME,
+                    999997 AS ORDER_NO
+                FROM DUAL
+
+                UNION ALL
+                SELECT 'SHOWDETAIL' AS "COLUMN_NAME",
+                    '详细信息' AS ITEM_NAME,
+                    999998 AS ORDER_NO
+                FROM DUAL     
+                
+           ]]>
+        </select>
+    <select id="checkProductId" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT
+                COUNT(PP.PRODUCT_NO)
+            FROM
+                PROSTOR_PRODUCT    PP
+            WHERE    PP.ACTIVITY = 1
+            AND      PP.PRODUCT_ID = #PRODUCT_ID_IN#
+            AND      PP.CPNY_ID = #CPNY_ID#
+        ]]>
+    </select>
+
+    <update id="updateProduct" parameterClass="linkMap">
+        <![CDATA[
+            DECLARE
+                BEGIN
+                    UPDATE PROSTOR_PRODUCT
+                SET PRODUCT_NAME = #PRODUCT_NAME_IN#,
+                    SPECIFICATION = #SPECIFICATION_IN#,
+                    STATUS = #STATUS_IN#,
+                    UNIT_CODE_ID = #UNIT_CODE_ID_IN#,
+                    PRODUCT_CATEGORY_ID = #PRODUCT_CATEGORY_ID_IN#,
+                    REMARK = #REMARK_IN#,
+                    UNIT_PRICE = #UNIT_PRICE_IN#,
+                    UPDATE_DATE = SYSDATE,
+                    UPDATED_BY = #UPDATED_BY#,
+                    PRODUCT_CAS = #PRODUCT_CAS_IN#,
+                    PRODUCT_NUM = #PRODUCT_NUM_IN#
+                WHERE PRODUCT_NO = #PRODUCT_NO#
+                AND   ACTIVITY = 1;
+                
+                $salesSql$
+                
+                $storageSql$
+                
+                $propertySql$
+            END;
+        ]]>
+    </update>
+    
+    <update id="updateProductById" parameterClass="linkMap">
+        <![CDATA[
+            DECLARE
+                BEGIN
+                    UPDATE PROSTOR_PRODUCT
+                SET PRODUCT_NAME = #PRODUCT_NAME_IN#,
+                    STATUS = #STATUS_IN#,
+                    PRODUCT_CATEGORY_ID = #PRODUCT_CATEGORY_ID_IN#,
+                    UNIT_PRICE = #UNIT_PRICE_IN#,
+                    UPDATE_DATE = SYSDATE,
+                    UPDATED_BY = #UPDATED_BY#
+                WHERE PRODUCT_ID = #PRODUCT_ID_IN#
+                AND   ACTIVITY = 1
+                AND   CPNY_ID = #CPNY_ID#;
+                
+                $salesSql$
+            END;
+        ]]>
+    </update>
+
+    <delete id="deleteProduct" parameterClass="linkMap">
+        <![CDATA[
+            DECLARE
+            BEGIN
+                UPDATE PROSTOR_PRODUCT
+                    SET ACTIVITY = 0,
+                    UPDATED_BY = #UPDATED_BY#,
+                    UPDATE_DATE = SYSDATE
+                WHERE    PRODUCT_NO = #PRODUCT_NO#
+                AND        CPNY_ID = #CPNY_ID#;
+                
+                DELETE FROM PROSTOR_STORAGE_PRODUCT
+                WHERE PRODUCT_NO = #PRODUCT_NO#
+                AND CPNY_ID = #CPNY_ID#;
+                
+                DELETE FROM PROSTOR_PRODUCT_SALES_MODEL
+                WHERE PRODUCT_NO = #PRODUCT_NO#
+                AND   CPNY_ID = #CPNY_ID#;
+                
+                DELETE FROM PRODUCT_PROPERTY_DETAIL
+                WHERE PRODUCT_NO = #PRODUCT_NO#
+                AND CPNY_ID = #CPNY_ID#;
+            END;
+        ]]>
+    </delete>
+
+    <select id="getStorageList" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT
+                PSI.STORAGE_NO    STORAGE_NO,
+                PSI.STORAGE_ID    STORAGE_ID,
+                DECODE(#language#, 'en', PSI.STORAGE_EN_NAME, PSI.STORAGE_NAME) STORAGE_NAME
+            FROM
+                PROSTOR_STORAGE_INFO    PSI
+            WHERE       PSI.ACTIVITY = 1
+            AND         PSI.CPNY_ID = #CPNY_ID#
+            ORDER BY PSI.STORAGE_NO
+        ]]>
+    </select>
+
+    <select id="getProductSymple" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+        SELECT * FROM(
+            SELECT
+                PP.PRODUCT_NO       PRODUCT_NO,
+                PP.PRODUCT_ID       PRODUCT_ID,
+                PP.PRODUCT_NAME     PRODUCT_NAME,
+                PP.PRODUCT_CAS,
+                NVL(PP.SPECIFICATION,'') SPECIFICATION,
+                PP.UNIT_CODE_ID UNIT_CODE_ID,
+                NVL(PP.UNIT_PRICE,'') UNIT_PRICE,
+                A.CODE_NAME         CODE_NAME,
+                B.CODE_NAME         PRODUCT_CATEGORY_NAME
+            FROM
+                PROSTOR_PRODUCT     PP,
+                SY_CODE             A,
+                SY_CODE             B
+            WHERE                   PP.ACTIVITY = 1
+            AND                     PP.UNIT_CODE_ID = A.CODE_ID(+)
+            AND                     PP.PRODUCT_CATEGORY_ID = B.CODE_ID(+)
+        ]]>
+        <include refid="ProProductCondition"/>
+        <include refid="ProProductCondition2"/>
+        <![CDATA[
+            ORDER BY PRODUCT_NO
+        ) WHERE ROWNUM<21
+        ]]>
+    </select>
+
+    <sql id="getProductByOrderCondition">
+        <isNotEmpty prepend="AND" property="PRODUCT_ID">
+            <![CDATA[
+                PP.PRODUCT_ID = #PRODUCT_ID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="SUPPLIER_NO">
+            <![CDATA[
+                PPOD.SUPPLIER_NO = #SUPPLIER_NO#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="PURCHASE_ORDER_ID">
+            <![CDATA[
+                PPOD.PURCHASE_ORDER_ID = #PURCHASE_ORDER_ID#
+            ]]>
+        </isNotEmpty>
+    </sql>
+    <select id="getProductByOrder" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT
+                PP.PRODUCT_NO     PRODUCT_NO,
+                PP.PRODUCT_ID     PRODUCT_ID,
+                PP.PRODUCT_NAME     PRODUCT_NAME,
+                PP.SPECIFICATION SPECIFICATION,
+                A.CODE_ID         UNIT_CODE_ID,
+                A.CODE_NAME         UNIT_CODE,
+                B.CODE_ID         PRODUCT_CATEGORY_ID,
+                B.CODE_NAME         PRODUCT_CATEGORY_NAME,
+                PPOD.QUANTITY     QUANTITY,
+                PPOD.UNIT_PRICE  UNIT_PRICE,
+                NVL(PPOD.INQUANTITY,0) INQUANTITY
+            FROM
+                PROSTOR_PRODUCT    PP,
+                SY_CODE            A,
+                SY_CODE            B,
+                PROSTOR_PURCHASE_ORDER_DETAIL PPOD
+            WHERE    PP.ACTIVITY = 1
+            AND        PPOD.ACTIVITY = 1
+            AND        PP.PRODUCT_NO = PPOD.PRODUCT_NO(+)
+            AND        PP.UNIT_CODE_ID = A.CODE_ID(+)
+            AND        PP.PRODUCT_CATEGORY_ID = B.CODE_ID(+)
+        ]]>
+        <include refid="getProductByOrderCondition"/>
+        <![CDATA[
+            AND        ROWNUM = 1
+        ]]>
+    </select>
+
+
+    <sql id="getProStorDetailListCondition">
+        <isNotEmpty prepend="AND" property="STORAGE_NO">
+            <![CDATA[
+                PSI.STORAGE_NO = #STORAGE_NO#
+            ]]>
+        </isNotEmpty>
+    </sql>
+    <select id="getProStorDetailList" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT 
+                PSI.STORAGE_NO,
+                PSI.STORAGE_ID,
+                PSI.STORAGE_NAME,
+                NVL(PSP.LEFT_QUANTITY,'') LEFT_QUANTITY,
+                S.CODE_NAME,
+                PSPP.MIN_QUANTITY,
+                PSPP.MAX_QUANTITY,
+                PSPP.STOR_ADDR
+            FROM PROSTOR_STORAGE_INFO PSI,
+                PROSTOR_STORAGE_PRODUCT PSP,
+                (SELECT P.STORAGE_NO,P.MIN_QUANTITY,P.MAX_QUANTITY,P.STOR_ADDR FROM PROSTOR_STORAGE_PRODUCT_PARAM P WHERE PRODUCT_NO = #PRODUCT_NO#) PSPP,
+                SY_CODE S
+            WHERE PSI.STORAGE_NO = PSP.STORAGE_NO(+)
+            AND   PSI.STORAGE_NO = PSPP.STORAGE_NO(+)
+            AND   PSI.ACTIVITY = 1
+            AND   PSI.CPNY_ID = 'wooribank'
+            AND   PSP.ACTIVITY = 1
+            AND   PSP.CPNY_ID = 'wooribank'
+            AND   PSP.QUANTITY_UNIT_CODE = S.CODE_ID(+)
+            AND   PSP.PRODUCT_NO = #PRODUCT_NO#
+        ]]>
+        <include refid="getProStorDetailListCondition"/>
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY PSI.STORAGE_NO
+            ]]>
+        </isEmpty>
+    </select>
+
+    <select id="getProStorDetailListCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT 
+                COUNT(PSI.STORAGE_NO)
+            FROM PROSTOR_STORAGE_INFO PSI,
+                PROSTOR_STORAGE_PRODUCT PSP
+            WHERE PSI.STORAGE_NO = PSP.STORAGE_NO
+            AND   PSI.ACTIVITY = 1
+            AND   PSI.CPNY_ID = #CPNY_ID#
+            AND   PSP.ACTIVITY = 1
+            AND   PSP.CPNY_ID = #CPNY_ID#
+            AND   PSP.PRODUCT_NO = #PRODUCT_NO#
+        ]]>
+    </select>
+
+    <select id="getProSaleDetailList" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT
+                PSM.SALES_MODE_NO,
+                PSM.SALES_MODE_ID,
+                PSM.SALES_MODE_NAME,
+                PPSM.PRICE
+            FROM PROSTOR_SALES_MODEL PSM,
+                PROSTOR_PRODUCT_SALES_MODEL PPSM
+            WHERE PSM.SALES_MODE_NO = PPSM.SALES_MODE_NO
+            AND PSM.ACTIVITY = 1
+            AND PSM.CPNY_ID = #CPNY_ID#
+            AND PPSM.ACTIVITY = 1
+            AND PPSM.CPNY_ID = #CPNY_ID#
+            AND PPSM.PRODUCT_NO = #PRODUCT_NO#
+        ]]>
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY PSM.SALES_MODE_NO
+            ]]>
+        </isEmpty>
+    </select>
+
+    <select id="getProSaleDetailListCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT
+                COUNT(PSM.SALES_MODE_NO)
+            FROM PROSTOR_SALES_MODEL PSM,
+                PROSTOR_PRODUCT_SALES_MODEL PPSM
+            WHERE PSM.SALES_MODE_NO = PPSM.SALES_MODE_NO
+            AND PSM.ACTIVITY = 1
+            AND PSM.CPNY_ID = #CPNY_ID#
+            AND PPSM.ACTIVITY = 1
+            AND PPSM.CPNY_ID = #CPNY_ID#
+            AND PPSM.PRODUCT_NO = #PRODUCT_NO#
+        ]]>
+    </select>
+
+    <select id="getProductsBySalesMode" parameterClass="linkmap" resultMap="productsBySalesModeResultMap">
+        <![CDATA[
+            SELECT
+                PP.PRODUCT_NO                       PRODUCT_NO,
+                PP.PRODUCT_ID                       PRODUCT_ID,
+                PP.PRODUCT_NAME                     PRODUCT_NAME,
+                PP.SPECIFICATION                    SPECIFICATION,
+                PP.UNIT_CODE_ID                     UNIT_CODE_ID,
+                A.CODE_NAME                         UNIT_CODE_NAME,
+                PS.PRICE                            PRICE
+            FROM
+                PROSTOR_PRODUCT                     PP left join
+                PROSTOR_PRODUCT_SALES_MODEL         PS on  PP.PRODUCT_NO = PS.PRODUCT_NO
+                left join  SY_CODE A on  PP.UNIT_CODE_ID = A.CODE_ID
+            WHERE
+                PP.ACTIVITY = 1
+            AND
+                PS.SALES_MODE_NO = #salesModeNo#
+            AND
+                PP.CPNY_ID = #CPNY_ID#
+            AND
+                PS.CPNY_ID = #CPNY_ID#
+        ]]>
+    </select>
+    
+    <select id="getProductNoById" parameterClass="linkmap" resultClass="String" remapResults="true">
+        <![CDATA[
+                SELECT
+                    PP.PRODUCT_NO               PRODUCT_NO
+                FROM
+                    PROSTOR_PRODUCT             PP
+                WHERE   PP.ACTIVITY = 1
+                AND     PP.CPNY_ID = #CPNY_ID#
+                AND     PP.PRODUCT_ID = #PRODUCT_ID#
+        ]]>
+    </select>
+    
+    <select id="getProductIdSerial" resultClass="String" remapResults="true">
+        <![CDATA[
+                SELECT FN_SY_PRODUCT_SERIAL_NUM() FROM DUAL
+        ]]>
+    </select>
+    
+    <select id="checkProTaobao" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT
+                COUNT(0)
+            FROM
+                PROSTOR_PRODUCT    PP
+            WHERE   PP.ACTIVITY = 1
+            AND     PP.CPNY_ID = #CPNY_ID#
+            AND     PP.PRODUCT_ID = #PRODUCT_ID#
+        ]]>
+        <include refid="ProProductCondition"/>
+    </select>
+
+    <select id="queryProColumnTitles" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT DISTINCT T.COLUMN_NAME COLUMN_NAME, T.DATA_TYPE DATA_TYPE, 
+                T.DATA_LENGTH DATA_LENGTH, C.COMMENTS COMMENTS 
+            FROM USER_TAB_COLUMNS T, USER_COL_COMMENTS C
+            WHERE C.TABLE_NAME = 'PROSTOR_PRODUCT'
+                AND T.TABLE_NAME = C.TABLE_NAME 
+                AND T.COLUMN_NAME = C.COLUMN_NAME
+        ]]>
+        <isNotEmpty prepend="AND" property="LIKE">
+            <![CDATA[
+                C.COMMENTS like #LIKE#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="UNLIKE">
+            <![CDATA[
+                C.COMMENTS not like #UNLIKE#
+            ]]>
+        </isNotEmpty>
+    </select>
+
+    <select id="queryProCellOptions" parameterClass="linkMap" resultClass="string">
+        <![CDATA[
+            SELECT $COLUMN_NAME$ CODE_NAME FROM $TABLE_NAME$
+            WHERE ACTIVITY = 1
+        ]]>
+        <isNotEmpty prepend="AND" property="PARENT_CODE">
+            <![CDATA[
+                PARENT_CODE = #PARENT_CODE#
+            ]]>
+        </isNotEmpty>
+    </select>
+
+    <update id="createTempProInfo" parameterClass="linkMap">
+        <![CDATA[
+            DECLARE
+            V_NUM NUMBER;
+            BEGIN
+                SELECT COUNT(0) INTO V_NUM FROM DUAL WHERE EXISTS(SELECT 1 FROM USER_TABLES WHERE TABLE_NAME = 'TEMP_PRODUCT_INFO');
+                IF V_NUM>0 THEN
+                    EXECUTE IMMEDIATE 'DROP TABLE TEMP_PRODUCT_INFO';
+                END IF;
+                EXECUTE IMMEDIATE 'CREATE TABLE TEMP_PRODUCT_INFO(FLAG VARCHAR2(20), $TITLES$)';
+                SELECT COUNT(0) INTO V_NUM FROM DUAL WHERE EXISTS(SELECT 1 FROM USER_TABLES WHERE TABLE_NAME = 'TEMP_PRODUCT_TITLES');
+                IF V_NUM>0 THEN
+                    EXECUTE IMMEDIATE 'DROP TABLE TEMP_PRODUCT_TITLES';
+                END IF;
+                EXECUTE IMMEDIATE 'CREATE TABLE TEMP_PRODUCT_TITLES(TITLE_CODE VARCHAR2(40), TITLE_NAME VARCHAR2(40), 
+                    DATATYPE VARCHAR2(40), PARENT_CODE VARCHAR2(40), TABLE_NAME VARCHAR2(40), COLUMN_CODE VARCHAR2(40),
+                    COLUMN_NAME VARCHAR2(40), ORDER_NO NUMBER(3))' ;
+            END;
+        ]]>
+    </update>
+
+    <insert id="updateTempProTitles" parameterClass="linkMap">
+        <![CDATA[
+            INSERT INTO TEMP_PRODUCT_TITLES (TITLE_CODE,TITLE_NAME,DATATYPE,PARENT_CODE,TABLE_NAME,COLUMN_CODE,COLUMN_NAME,ORDER_NO)
+            VALUES( #TITLE_CODE# , #TITLE_NAME# , #DATA_TYPE#, #PARENT_CODE#, #TABLE_NAME#, #COLUMN_CODE#, #COLUMN_NAME#,#ORDERNO#)
+        ]]>
+    </insert>
+    <update id="updateTempProInfo" parameterClass="linkMap">
+        <![CDATA[
+            DECLARE
+            V_NUM NUMBER;
+            BEGIN
+                SELECT COUNT(0) INTO V_NUM FROM PROSTOR_PRODUCT WHERE PRODUCT_ID= #PRODUCT_ID:VARCHAR# ;
+                IF V_NUM=1 THEN
+                    EXECUTE IMMEDIATE 'INSERT INTO TEMP_PRODUCT_INFO(FLAG, $TITLESSTR$ ) VALUES(''ID已存在'', $VALUESSTR$ )' ;
+                ELSE 
+                    EXECUTE IMMEDIATE 'INSERT INTO TEMP_PRODUCT_INFO(FLAG, $TITLESSTR$ ) VALUES(''新增'', $VALUESSTR$ )' ;
+                END IF;
+            END;
+        ]]>
+    </update>
+
+    <select id="getProColumnList" resultClass="linkMap">
+        <![CDATA[
+            SELECT TITLE_NAME TITLE_NAME, TITLE_CODE TITLE_CODE  FROM TEMP_PRODUCT_TITLES ORDER BY ORDER_NO
+        ]]>
+    </select>
+
+    <select id="getProTmpInfoList" resultClass="linkMap">
+        <![CDATA[
+        SELECT T.FLAG,
+            T.PRODUCT_ID,
+            T.PRODUCT_NAME,
+            T.UNIT_PRICE,
+            T.SPECIFICATION,
+            T.UNIT_CODE_ID,
+            T.PRODUCT_CATEGORY_ID,
+            T.REMARK
+        FROM TEMP_PRODUCT_INFO T
+        ]]>
+    </select>
+
+    <update id="modifyProTmpTable">
+        <![CDATA[
+            DECLARE 
+                CURSOR TITLECURSOR IS SELECT TITLE_CODE, TABLE_NAME, PARENT_CODE, COLUMN_CODE, COLUMN_NAME FROM TEMP_PRODUCT_TITLES;
+                TYPE CUR_TYPE IS REF CURSOR;
+                CUR CUR_TYPE;
+                STR VARCHAR2(500);
+                SUB_STR VARCHAR2(200);
+                QUERYSTR VARCHAR2(500);
+                QUERYREC VARCHAR2(100);
+                QUERYEMPID VARCHAR2(20);
+            BEGIN
+                FOR TITLEOBJECT IN TITLECURSOR LOOP
+                    IF NOT TITLEOBJECT.TABLE_NAME = '-1' THEN
+                        QUERYSTR := 'SELECT PRODUCT_ID, '||TITLEOBJECT.TITLE_CODE||' FROM TEMP_PRODUCT_INFO ';
+                        SUB_STR := 'SELECT '||TITLEOBJECT.COLUMN_CODE||' FROM '||TITLEOBJECT.TABLE_NAME||' WHERE ';
+                        IF NOT TITLEOBJECT.PARENT_CODE = '-1' THEN
+                            SUB_STR := SUB_STR||'PARENT_CODE = '''||TITLEOBJECT.PARENT_CODE||''' AND ';
+                        END IF;
+                        OPEN CUR FOR QUERYSTR;
+                        LOOP
+                            FETCH CUR INTO QUERYEMPID, QUERYREC;
+                            EXIT WHEN CUR%NOTFOUND;
+                            STR := 'UPDATE TEMP_PRODUCT_INFO SET '||TITLEOBJECT.TITLE_CODE||' = ('||SUB_STR||TITLEOBJECT.COLUMN_NAME||' = '''||
+                            QUERYREC||''' ) WHERE PRODUCT_ID = '''||QUERYEMPID||'''';
+                            EXECUTE IMMEDIATE STR;
+                        END LOOP;
+                    END IF;
+                END LOOP;
+            END;
+        ]]>
+    </update>
+
+    <select id="getProInsertList" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+        SELECT T.FLAG,
+            T.PRODUCT_ID,
+            T.PRODUCT_NAME,
+            T.UNIT_PRICE,
+            T.SPECIFICATION,
+            T.UNIT_CODE_ID,
+            T.PRODUCT_CATEGORY_ID,
+            T.REMARK,
+            #ADMIN_ID# CREATED_BY 
+        FROM TEMP_PRODUCT_INFO T
+        WHERE T.FLAG = '新增'
+        ]]>
+    </select>
+
+    <insert id="insertPro" parameterClass="linkMap"> 
+        <![CDATA[
+            INSERT INTO PROSTOR_PRODUCT (
+                    PRODUCT_NO,
+                    PRODUCT_ID,
+                    PRODUCT_NAME,
+                    UNIT_PRICE,
+                    UNIT_CODE_ID,
+                    PRODUCT_CATEGORY_ID,
+                    CREATE_DATE,
+                    CREATED_BY,
+                    ACTIVITY,
+                    CPNY_ID,
+                    REMARK,
+                    STATUS,
+                    SPECIFICATION
+                    )
+                VALUES(
+                    PROSTOR_PRODUCT_SEQ.NEXTVAL,
+                    #PRODUCT_ID#,
+                    #PRODUCT_NAME#,
+                    #UNIT_PRICE#,
+                    #UNIT_CODE_ID#,
+                    #PRODUCT_CATEGORY_ID#,
+                    SYSDATE,
+                    #CREATED_BY#,
+                    1,
+                    #CPNY_ID#,
+                    #REMARK#,
+                    1,
+                    #SPECIFICATION#
+                    )
+        ]]>
+    </insert>
+</sqlMap>

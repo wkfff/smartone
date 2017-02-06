@@ -1,0 +1,346 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+    PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+    "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="system.loginUser">
+    <select id="getLoginUserRolesGroupList" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT LS.SCREEN_GRANT_ID,
+                DECODE(#language#, 'en', LS.SCREEN_GRANT_EN_NAME, LS.SCREEN_GRANT_NAME) SCREEN_GRANT_NAME,
+                T.USER_GRANT_NO,
+                (CASE
+                    WHEN INSTR(T.USER_GRANT_NO, ',' || LS.SCREEN_GRANT_ID || ',') > 0 
+                    THEN
+                        1
+                    ELSE
+                        0
+                END) AS CHECKED
+            FROM SY_LOGIN_SCREEN LS,
+                (SELECT ',' || SCREEN_GRANT_ID || ',' AS USER_GRANT_NO
+                    FROM SY_ADMIN
+                    WHERE ADMINID = #ADMINID:VARCHAR#) T
+            WHERE LS.SCREEN_GRANT_ID not in ('1','558')
+        ]]>
+        <isNotEmpty prepend="AND" property="CPNY_ID">
+            <![CDATA[
+                LS.CPNY_ID = #CPNY_ID:VARCHAR#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="ACTIVITY">
+            <![CDATA[
+                LS.ACTIVITY = #ACTIVITY#
+            ]]>
+        </isNotEmpty>
+        <![CDATA[
+            ORDER BY LS.SCREEN_GRANT_NO
+        ]]>
+    </select>
+    <select id="getLoginUserObj" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.ADMINNO,
+                T.ADMINID,
+                HR.CHINESENAME,
+                HD.DEPTNAME,
+                T.USERNAME,
+                T.ACCOUNT_TYPE,
+                S.CODE_NAME TYPE_NAME,
+                SYS_GET_SCREEN_NAME(T.ADMINID) AS SCREEN_NAME,
+                HD.CPNY_ID,
+                DECODE(#language#, 'en', A.CPNY_EN_NAME, A.CPNY_NAME) CPNY_NAME,
+                T.ACTIVITY STATUS_ID,
+                DECODE(T.ACTIVITY,
+                    '1',
+                    DECODE(#language#, 'en', 'Available', '可用'),
+                    DECODE(#language#, 'en', 'Unavailable', '不可用')) STATUS
+            FROM SY_ADMIN T, HR_EMPLOYEE HR, HR_DEPARTMENT HD,HR_COMPANY A,SY_CODE S
+            WHERE T.ADMINID = HR.EMPID(+)
+                AND T.CPNY_ID = A.CPNY_ID(+)
+                AND HR.DEPTID = HD.DEPTID(+)
+                AND HR.CPNY_ID = T.CPNY_ID
+                AND HD.CPNY_ID = T.CPNY_ID
+                AND T.ACCOUNT_TYPE = S.CODE_ID(+)
+                AND T.ACCOUNT_TYPE  =  #LOGIN_TYPE#
+                AND T.ADMINNO  =  #ADMINNO#
+                AND T.CPNY_ID  =  #CPNY_ID#
+        UNION ALL
+            SELECT T.ADMINNO,
+                T.ADMINID,
+                C.CUST_NAME CHINESENAME,
+                '' DEPTNAME,
+                T.USERNAME,
+                T.ACCOUNT_TYPE,
+                S.CODE_NAME TYPE_NAME,
+                SYS_GET_SCREEN_NAME(T.ADMINID) AS SCREEN_NAME,
+                T.CPNY_ID CPNY_ID,
+                DECODE(#language#, 'en', A.CPNY_EN_NAME, A.CPNY_NAME) CPNY_NAME,
+                T.ACTIVITY STATUS_ID,
+                DECODE(T.ACTIVITY,
+                    '1',
+                    DECODE(#language#, 'en', 'Available', '可用'),
+                    DECODE(#language#, 'en', 'Unavailable', '不可用')) STATUS
+            FROM SY_ADMIN T,CUST_BASIC_INFO C, HR_COMPANY A,SY_CODE S
+            WHERE T.ADMINID = C.CUST_ID(+)
+                AND T.CPNY_ID = A.CPNY_ID(+)
+                AND T.ACCOUNT_TYPE = S.CODE_ID(+)
+                AND T.ACCOUNT_TYPE  =  'CU'
+                AND T.ADMINNO  =  #ADMINNO#
+                AND T.CPNY_ID  =  #CPNY_ID#
+        ]]>
+    </select>
+    <sql id="loginEmpCondition">
+        <isNotEmpty prepend="AND" property="KEYWORD">
+            <![CDATA[
+                (T.ADMINID LIKE '%'||#KEYWORD#||'%'
+                OR UPPER(replace(HR.CHINESENAME,' ','')) LIKE '%'||UPPER(replace(#KEYWORD#,' ',''))||'%'
+                OR UPPER(replace(HR.ENGLISHNAME,' ','')) LIKE '%'||UPPER(replace(#KEYWORD#,' ',''))||'%'
+                OR UPPER(replace(T.USERNAME,' ','')) LIKE '%'||UPPER(replace(#KEYWORD#,' ',''))||'%')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="SCREEN_GRANT_ID">
+            <![CDATA[ 
+                  INSTR(',' || T.SCREEN_GRANT_ID || ',',(SELECT  ',' || #SCREEN_GRANT_ID:VARCHAR# || ',' FROM dual)) > 0
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="CPNY_ID">
+            <![CDATA[
+                  T.CPNY_ID = #CPNY_ID:VARCHAR#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="ACTIVITY">
+            <![CDATA[
+                  T.ACTIVITY = #ACTIVITY#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="ACCOUNT_TYPE">
+            <![CDATA[
+                  T.ACCOUNT_TYPE = #ACCOUNT_TYPE#
+            ]]>
+        </isNotEmpty>
+    </sql>
+    <sql id="loginCustCondition">
+        <isNotEmpty prepend="AND" property="KEYWORD">
+            <![CDATA[
+                (T.ADMINID LIKE '%'||#KEYWORD#||'%'
+                OR UPPER(replace(T.USERNAME,' ','')) LIKE '%'||UPPER(replace(#KEYWORD#,' ',''))||'%'
+                OR UPPER(replace(C.CUST_NAME,' ','')) LIKE '%'||UPPER(replace(#KEYWORD#,' ',''))||'%'
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="SCREEN_GRANT_ID">
+            <![CDATA[ 
+                  INSTR(',' || T.SCREEN_GRANT_ID || ',',(SELECT  ',' || #SCREEN_GRANT_ID:VARCHAR# || ',' FROM dual)) > 0
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="CPNY_ID">
+            <![CDATA[
+                  T.CPNY_ID = #CPNY_ID:VARCHAR#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="ACTIVITY">
+            <![CDATA[
+                  T.ACTIVITY = #ACTIVITY#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="ACCOUNT_TYPE">
+            <![CDATA[
+                  T.ACCOUNT_TYPE = #ACCOUNT_TYPE#
+            ]]>
+        </isNotEmpty>
+    </sql>
+    <select id="getLoginUserInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.ADMINNO,
+                T.ADMINID,
+                HR.CHINESENAME,
+                HD.DEPTNAME,
+                T.USERNAME,
+                T.ACCOUNT_TYPE,
+                S.CODE_NAME TYPE_NAME,
+                SYS_GET_SCREEN_NAME(T.ADMINID) AS SCREEN_NAME,
+                HD.CPNY_ID,
+                DECODE(#language#, 'en', A.CPNY_EN_NAME, A.CPNY_NAME) CPNY_NAME,
+                T.ACTIVITY STATUS_ID,
+                DECODE(T.ACTIVITY,
+                    '1',
+                    DECODE(#language#, 'en', 'Available', '可用'),
+                    DECODE(#language#, 'en', 'Unavailable', '不可用')) STATUS
+            FROM SY_ADMIN T, HR_EMPLOYEE HR, HR_DEPARTMENT HD,HR_COMPANY A,SY_CODE S
+            WHERE T.ADMINID = HR.EMPID(+)
+                AND T.CPNY_ID = A.CPNY_ID(+)
+                AND HR.DEPTID = HD.DEPTID(+)
+                AND HR.CPNY_ID = T.CPNY_ID
+                AND HD.CPNY_ID = T.CPNY_ID
+                AND T.ACCOUNT_TYPE = S.CODE_ID(+)
+                AND T.ACCOUNT_TYPE='EM'
+            ]]>
+            <include refid="loginEmpCondition" />
+            <![CDATA[
+            UNION ALL
+            SELECT T.ADMINNO,
+                T.ADMINID,
+                C.CUST_NAME CHINESENAME,
+                '' DEPTNAME,
+                T.USERNAME,
+                T.ACCOUNT_TYPE,
+                S.CODE_NAME TYPE_NAME,
+                SYS_GET_SCREEN_NAME(T.ADMINID) AS SCREEN_NAME,
+                T.CPNY_ID CPNY_ID,
+                DECODE(#language#, 'en', A.CPNY_EN_NAME, A.CPNY_NAME) CPNY_NAME,
+                T.ACTIVITY STATUS_ID,
+                DECODE(T.ACTIVITY,
+                    '1',
+                    DECODE(#language#, 'en', 'Available', '可用'),
+                    DECODE(#language#, 'en', 'Unavailable', '不可用')) STATUS
+            FROM SY_ADMIN T,CUST_BASIC_INFO C, HR_COMPANY A,SY_CODE S
+            WHERE T.ADMINID = C.CUST_ID(+)
+                AND T.CPNY_ID = A.CPNY_ID(+)
+                AND T.ACCOUNT_TYPE = S.CODE_ID(+)
+                AND T.ACCOUNT_TYPE='CU'
+            ]]>
+            <include refid="loginCustCondition" />
+            ORDER BY ADMINID
+    </select>
+    <select id="getLoginUserInfoCnt" parameterClass="linkMap" resultClass="int">
+        SELECT COUNT(1)
+          FROM  (
+            SELECT T.ADMINNO
+            FROM SY_ADMIN T, HR_EMPLOYEE HR, HR_DEPARTMENT HD,HR_COMPANY A,SY_CODE S
+            WHERE T.ADMINID = HR.EMPID(+)
+                AND T.CPNY_ID = A.CPNY_ID(+)
+                AND HR.DEPTID = HD.DEPTID(+)
+                AND HR.CPNY_ID = T.CPNY_ID
+                AND HD.CPNY_ID = T.CPNY_ID
+                AND T.ACCOUNT_TYPE = S.CODE_ID(+)
+            <include refid="loginEmpCondition" />
+            UNION ALL
+            SELECT T.ADMINNO
+            FROM SY_ADMIN T,CUST_BASIC_INFO C, HR_COMPANY A,SY_CODE S
+            WHERE T.ADMINID = C.CUST_ID(+)
+                AND T.CPNY_ID = A.CPNY_ID(+)
+                AND T.ACCOUNT_TYPE = S.CODE_ID(+)
+                AND T.ACCOUNT_TYPE='CU'
+            <include refid="loginCustCondition" />
+            )
+    </select>
+    <select id="getLoginUserDeptInfo" parameterClass="linkMap" resultClass="linkMap"> 
+        <![CDATA[
+            SELECT HD.DEPTID, 
+                DECODE(#language#, 'en', HD.DEPT_EN_NAME, HD.DEPTNAME) DEPTNAME,
+                HD.PARENT_DEPT_ID, 
+                (CASE
+                    WHEN SD.ADMIN_DEPTID IS NOT NULL THEN
+                        'true'
+                    ELSE
+                        'false'
+                    END) AS ISCHECKED, 
+                RN
+            FROM (SELECT T.*, ROWNUM RN
+                FROM HR_DEPARTMENT T
+                    START WITH T.PARENT_DEPT_ID IN (SELECT CPNY_ID FROM HR_COMPANY)
+                    CONNECT BY PRIOR T.DEPTID = T.PARENT_DEPT_ID
+                    ORDER SIBLINGS BY T.ORDERNO, T.DEPT_LEVEL DESC, T.DEPTID) HD,
+                    SY_ADMIN_DEPTID SD
+            WHERE HD.DEPTID = SD.ADMIN_DEPTID(+)
+        ]]>
+        <isNotEmpty prepend="AND" property="ADMINNO">
+            <![CDATA[
+                SD.ADMIN_NO(+) = #ADMINNO:NUMERIC#
+            ]]>
+        </isNotEmpty>
+        <![CDATA[
+            ORDER BY RN
+        ]]>
+    </select>
+    <insert id="addLoginUserInfo" parameterClass="linkMap">
+        <![CDATA[
+            INSERT INTO SY_ADMIN(
+                ADMINNO,
+                ADMINID,
+                USERNAME,
+                PASSWORD,
+                SCREEN_GRANT_ID,
+                CREATE_DATE,
+                CREATED_BY,
+                ACTIVITY,
+                SET_APP,
+                CPNY_ID,
+                ACCOUNT_TYPE
+            )VALUES(
+                SY_ADMIN_NO.NEXTVAL,
+                #ADMINID#,
+                #USERNAME#,
+                #PASSWORD#,
+                '',
+                SYSDATE,
+                #CREATED_BY#,
+                1,
+                'no',
+                #CPNY_ID#,
+                #LOGIN_TYPE#
+            )
+        ]]>
+    </insert>
+    <delete id="deleteLoginUserDeptInfo" parameterClass="linkMap">
+        <![CDATA[
+            DELETE SY_ADMIN_DEPTID WHERE ADMIN_NO = #ADMINNO:NUMERIC#
+        ]]>
+    </delete>
+    <delete id="deleteLoginUserInfo" parameterClass="linkMap">
+        <![CDATA[
+            DELETE FROM SY_ADMIN WHERE ADMINNO = #ADMINNO:NUMERIC#
+        ]]>
+    </delete>
+    <update id="updateLoginUserInfo" parameterClass="linkMap">
+        <![CDATA[
+            UPDATE SY_ADMIN SET
+                SCREEN_GRANT_ID = #SCREEN_GRANT_ID:VARCHAR#,
+                UPDATE_DATE = SYSDATE,
+                UPDATED_BY = #UPDATED_BY:VARCHAR#,
+                ACTIVITY = #ACTIVITY#
+            WHERE ADMINNO = #ADMINNO:NUMERIC#
+            AND   CPNY_ID = #CPNY_ID#
+        ]]>
+    </update>
+    <insert id="insertLoginUserDeptList" parameterClass="linkMap">
+        <![CDATA[
+            INSERT INTO SY_ADMIN_DEPTID(
+                    ADMIN_NO,
+                    ADMIN_DEPTID
+                )
+            VALUES(
+                    #ADMIN_NO:NUMERIC#,
+                    #ADMIN_DEPTID:VARCHAR#
+                )
+        ]]>
+    </insert>
+    <select id="getRolesSelectList" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.SCREEN_GRANT_ID ID,  
+                   T.SCREEN_GRANT_NAME NAME, 
+                   T.SCREEN_GRANT_EN_NAME EN_NAME
+              FROM SY_LOGIN_SCREEN T
+             WHERE T.ACTIVITY = 1
+                   AND T.SCREEN_GRANT_ID <> '1'
+                   AND T.SCREEN_GRANT_ID <> '558'
+            ]]>
+        <isNotEmpty prepend="AND" property="CPNY_ID">
+            <![CDATA[
+                T.CPNY_ID = #CPNY_ID:VARCHAR#
+            ]]>
+        </isNotEmpty>
+    </select>
+    <select id="checkAdminID" parameterClass="linkMap" resultClass="int" remapResults="true">
+        <![CDATA[
+            SELECT COUNT(0)
+            FROM SY_ADMIN T
+            WHERE T.ADMINID = #ADMINID#
+        ]]>
+    </select>
+    <select id="checkUserName" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(0)
+            FROM SY_ADMIN T
+            WHERE T.USERNAME = #USERNAME#
+        ]]>
+    </select>
+</sqlMap>

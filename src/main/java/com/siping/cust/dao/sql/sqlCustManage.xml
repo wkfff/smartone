@@ -1,0 +1,388 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap
+    PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+    "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="cust.custManage">
+    <select id="checkCustomerID" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(0) FROM CUST_BASIC_INFO T WHERE T.CUST_ID = #CUST_ID#
+        ]]>
+    </select>
+    <insert id="addCustomer" parameterClass="linkMap">
+        <selectKey resultClass="int" keyProperty="CUST_NO"> 
+            SELECT Auto_increment AS CUST_NO
+				FROM information_schema.`TABLES`
+				WHERE Table_Schema='smartone_v1'
+				AND table_name = 'CUST_BASIC_INFO'
+        </selectKey>
+        
+        <![CDATA[
+                INSERT INTO CUST_BASIC_INFO(
+                    CUST_NO,
+                    CUST_ID,
+                    CUST_NAME,
+                    CUST_TYPE_CODE,
+                    CUST_SALES_MODE_CODE,
+                    CUST_STATUS_CODE,
+                    OWNER_ID,
+                    TELEPHONE,
+                    PROVINCE,
+                    CITY,
+                    AREA,
+                    ADDRESS,
+                    OFFICE_PROVINCE,
+                    OFFICE_CITY,
+                    OFFICE_AREA,
+                    OFFICE_ADDRESS,
+                    CUST_LEVEL_CODE,
+                    BANK,
+                    BANK_ACCOUNT,
+                    TAXPAYER_IDCODE,
+                    CREDIT_AMOUNT,
+                    CREATED_BY,
+                    CREATED_DATE,
+                    ACTIVITY,
+                    CPNY_ID,
+                    ORDER_NO,
+                    TAOBAO_ID
+                    )
+                VALUES(
+                    #CUST_NO#,
+                    concat('CUST',#CUST_NO#),
+                    #customer.customerName#,
+                    #customer.customerType.codeNo#,
+                    #customer.custSalesMode.codeNo#,
+                    #customer.customerStatus.codeNo#,
+                    #ownerId#,
+                    #customer.telePhone#,
+                    #customer.registerAddress.province.codeNo#,
+                    #customer.registerAddress.city.codeNo#,
+                    #customer.registerAddress.area.codeNo#,
+                    #customer.registerAddress.address#,
+                    #customer.officeAddress.province.codeNo#,
+                    #customer.officeAddress.city.codeNo#,
+                    #customer.officeAddress.area.codeNo#,
+                    #customer.officeAddress.address#,
+                    #customer.customerLevel.codeNo#,
+                    #customer.bankName#,
+                    #customer.bankCode#,
+                    #customer.taxPayerCode#,
+                    #customer.credit.amount#,
+                    #admin.adminID#,
+                    NOW(),
+                    1,
+                    #admin.cpnyId#,
+                    #CUST_NO#,
+                    #customer.taobaoId#)
+        ]]>
+    </insert>
+    <update id="updateCustomer" parameterClass="linkMap">
+        <![CDATA[
+            UPDATE  CUST_BASIC_INFO
+            SET     CUST_NAME=#customer.customerName#,
+                    OWNER_ID=#customer.owner.empId#,
+                    CUST_TYPE_CODE=#customer.customerType.codeNo#,
+                    CUST_STATUS_CODE=#customer.customerStatus.codeNo#,
+                    CUST_LEVEL_CODE=#customer.customerLevel.codeNo#,
+                    CUST_SALES_MODE_CODE=#customer.custSalesMode.codeNo#,
+                    PROVINCE=#customer.registerAddress.province.codeNo#,
+                    CITY=#customer.registerAddress.city.codeNo#,
+                    AREA=#customer.registerAddress.area.codeNo#,
+                    ADDRESS=#customer.registerAddress.address#,
+                    OFFICE_PROVINCE=#customer.officeAddress.province.codeNo#,
+                    OFFICE_CITY=#customer.officeAddress.city.codeNo#,
+                    OFFICE_AREA=#customer.officeAddress.area.codeNo#,
+                    OFFICE_ADDRESS=#customer.officeAddress.address#,
+                    BANK=#customer.bankName#,
+                    BANK_ACCOUNT=#customer.bankCode#,
+                    TAXPAYER_IDCODE=#customer.taxPayerCode#,
+                    CREDIT_AMOUNT=#customer.credit.amount#,
+                    TELEPHONE=#customer.telePhone#,
+                    UPDATED_BY=#admin.adminID#,
+                    UPDATED_DATE=NOW()
+            WHERE CUST_ID = #customer.customerId#
+            AND   CPNY_ID = #admin.cpnyId#
+        ]]>
+    </update>
+    <update id="changeCustomerEMPID" parameterClass="linkMap">
+    <![CDATA[
+        UPDATE CUST_BASIC_INFO SET OWNER_ID=#NEW_OWNER_ID#,
+                UPDATED_BY=#UPDATED_BY#,UPDATED_DATE=NOW()
+        WHERE CUST_ID = #CUST_ID#;
+    ]]>
+    </update>
+    <update id="removeCustomer" parameterClass="linkMap">
+    <![CDATA[
+        UPDATE CUST_BASIC_INFO
+        SET UPDATED_BY=#admin.adminID#,
+            UPDATED_DATE=NOW(),
+            ACTIVITY=0,
+            REMOVE_REMARK=#removeRemark#
+        WHERE CUST_ID = #customerId#
+    ]]>
+    </update>
+    <select id="isExsitCustomer" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(*) FROM CUST_BASIC_INFO WHERE CUST_NAME=#CUST_NAME# OR CUST_EN_NAME=#CUST_EN_NAME#
+        ]]>
+    </select>
+    <select id="checkCustID" resultClass="int" parameterClass="linkMap">
+        <![CDATA[
+            SELECT COUNT(0) FROM CUST_BASIC_INFO
+            WHERE  CUST_ID = #ADMINID#
+                AND   CPNY_ID = #CPNY_ID#
+        ]]>
+    </select>
+    <resultMap class="customer" id="customerName">
+        <result property="customerName" column="CHINESENAME" />
+    </resultMap>
+    <select id="getCustomerName" resultMap="customerName" parameterClass="linkMap">
+        <![CDATA[
+            SELECT HR.CHINESENAME  CHINESENAME
+            FROM SY_ADMIN SY,
+                 HR_EMPLOYEE HR
+            WHERE SY.ADMINID=HR.EMPID 
+                AND SY.ADMINID=#ADMINID#
+        ]]>
+    </select>
+
+    <!-- <select id="queryCustColumnTitles" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT DISTINCT T.COLUMN_NAME COLUMN_NAME, T.DATA_TYPE DATA_TYPE, 
+                T.DATA_LENGTH DATA_LENGTH, C.COMMENTS COMMENTS 
+            FROM USER_TAB_COLUMNS T, USER_COL_COMMENTS C
+            WHERE (C.TABLE_NAME = 'CUST_BASIC_INFO'
+                  OR C.TABLE_NAME = 'CUST_CONTACTS')
+                AND T.TABLE_NAME = C.TABLE_NAME 
+                AND T.COLUMN_NAME = C.COLUMN_NAME
+        ]]> -->
+        <select id="queryCustColumnTitles" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+           SELECT DISTINCT T.COLUMN_NAME COLUMN_NAME, T.DATA_TYPE DATA_TYPE, 
+           T.CHARACTER_MAXIMUM_LENGTH DATA_LENGTH, T.COLUMN_COMMENT COMMENTS 
+          from information_schema.COLUMNS T where T.TABLE_NAME = 'CUST_BASIC_INFO'
+            OR T.TABLE_NAME = 'CUST_CONTACTS'
+        ]]>
+        
+        <isNotEmpty prepend="AND" property="LIKE">
+            <![CDATA[
+                T.COMMENTS like #LIKE#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="UNLIKE">
+            <![CDATA[
+                T.COMMENTS not like #UNLIKE#
+            ]]>
+        </isNotEmpty>
+    </select>
+
+    <select id="queryCustCellOptions" parameterClass="linkMap" resultClass="string">
+        <![CDATA[
+            SELECT $COLUMN_NAME$ CODE_NAME FROM $TABLE_NAME$
+            WHERE ACTIVITY = 1
+        ]]>
+        <isNotEmpty prepend="AND" property="PARENT_CODE">
+            <![CDATA[
+                PARENT_CODE = #PARENT_CODE#
+            ]]>
+        </isNotEmpty>
+    </select>
+
+    <update id="createTempCustInfo" parameterClass="linkMap">
+        <![CDATA[
+            DECLARE
+            V_NUM NUMBER;
+            BEGIN
+                SELECT COUNT(0) INTO V_NUM FROM DUAL WHERE EXISTS
+                (SELECT 1 FROM USER_TABLES WHERE TABLE_NAME = 'TEMP_CUSTOMER_INFO');
+                IF V_NUM>0 THEN
+                    EXECUTE IMMEDIATE 'DROP TABLE TEMP_CUSTOMER_INFO';
+                END IF;
+                EXECUTE IMMEDIATE 'CREATE TABLE TEMP_CUSTOMER_INFO(FLAG VARCHAR2(20), $TITLES$)';
+                SELECT COUNT(0) INTO V_NUM FROM DUAL WHERE EXISTS(SELECT 1 FROM USER_TABLES WHERE TABLE_NAME = 'TEMP_CUSTOMER_TITLES');
+                IF V_NUM>0 THEN
+                    EXECUTE IMMEDIATE 'DROP TABLE TEMP_CUSTOMER_TITLES';
+                END IF;
+                EXECUTE IMMEDIATE 'CREATE TABLE TEMP_CUSTOMER_TITLES(TITLE_CODE VARCHAR2(40), TITLE_NAME VARCHAR2(40), 
+                    DATATYPE VARCHAR2(40), PARENT_CODE VARCHAR2(40), TABLE_NAME VARCHAR2(40), COLUMN_CODE VARCHAR2(40),
+                    COLUMN_NAME VARCHAR2(40), ORDER_NO NUMBER(3))' ;
+            END;
+        ]]>
+    </update>
+
+    <insert id="updateTempCustTitles" parameterClass="linkMap">
+        <![CDATA[
+            INSERT INTO TEMP_CUSTOMER_TITLES 
+            (
+            TITLE_CODE,
+            TITLE_NAME,
+            DATATYPE,
+            PARENT_CODE,
+            TABLE_NAME,
+            COLUMN_CODE,
+            COLUMN_NAME,
+            ORDER_NO
+            )
+            VALUES( #TITLE_CODE# ,
+                    #TITLE_NAME# ,
+                    #DATA_TYPE#,
+                    #PARENT_CODE#,
+                    #TABLE_NAME#,
+                    #COLUMN_CODE#,
+                    #COLUMN_NAME#,
+                    #ORDERNO#
+                    )
+        ]]>
+    </insert>
+
+    <update id="updateTempCustInfo" parameterClass="linkMap">
+        <![CDATA[
+            DECLARE
+            V_NUM NUMBER;
+            BEGIN
+                SELECT COUNT(0) INTO V_NUM FROM CUST_BASIC_INFO WHERE CUST_ID= #CUST_ID:VARCHAR# ;
+                IF V_NUM=1 THEN
+                    EXECUTE IMMEDIATE 'INSERT INTO TEMP_CUSTOMER_INFO(FLAG, $TITLESSTR$ ) VALUES(''编号已存在'', $VALUESSTR$ )' ;
+                ELSE 
+                    EXECUTE IMMEDIATE 'INSERT INTO TEMP_CUSTOMER_INFO(FLAG, $TITLESSTR$ ) VALUES(''新增'', $VALUESSTR$ )' ;
+                END IF;
+            END;
+        ]]>
+    </update>
+
+    <select id="getCustColumnList" resultClass="linkMap">
+        <![CDATA[
+            SELECT TITLE_NAME TITLE_NAME, TITLE_CODE TITLE_CODE  FROM TEMP_CUSTOMER_TITLES
+            ORDER BY ORDER_NO
+        ]]>
+    </select>
+
+    <select id="getCustTmpInfoList" resultClass="linkMap">
+        <![CDATA[
+        SELECT T.FLAG,
+            T.CUST_ID,
+            T.CUST_NAME,
+            T.CUST_SALES_MODE_CODE,
+            T.CONTACTS_MOBILE1,
+            T.CONTACTS_NAME,
+            T.CUST_TYPE_CODE,
+            T.TELEPHONE,
+            T.CONTACTS_ADDRESS,
+            T.CONTACTS_EMAIL
+        FROM TEMP_CUSTOMER_INFO T
+        ]]>
+    </select>
+
+    <update id="modifyCustTmpTable">
+        <![CDATA[
+            DECLARE 
+                CURSOR TITLECURSOR IS SELECT TITLE_CODE, TABLE_NAME, PARENT_CODE, COLUMN_CODE, COLUMN_NAME FROM TEMP_CUSTOMER_TITLES;
+                TYPE CUR_TYPE IS REF CURSOR;
+                CUR CUR_TYPE;
+                STR VARCHAR2(500);
+                SUB_STR VARCHAR2(200);
+                QUERYSTR VARCHAR2(500);
+                QUERYREC VARCHAR2(100);
+                QUERYEMPID VARCHAR2(20);
+            BEGIN
+                FOR TITLEOBJECT IN TITLECURSOR LOOP
+                    IF NOT TITLEOBJECT.TABLE_NAME = '-1' THEN
+                        QUERYSTR := CONCAT('SELECT CUST_ID, ',TITLEOBJECT.TITLE_CODE,' FROM TEMP_CUSTOMER_INFO ');
+                        SUB_STR := ('SELECT ',TITLEOBJECT.COLUMN_CODE,' FROM ',TITLEOBJECT.TABLE_NAME,' WHERE ');
+                        IF NOT TITLEOBJECT.PARENT_CODE = '-1' THEN
+                            SUB_STR :=CONCAT( SUB_STR,'PARENT_CODE = ''',TITLEOBJECT.PARENT_CODE,''' AND ');
+                        END IF;
+                        OPEN CUR FOR QUERYSTR;
+                        LOOP
+                            FETCH CUR INTO QUERYEMPID, QUERYREC;
+                            EXIT WHEN CUR%NOTFOUND;
+                            STR := 'UPDATE TEMP_CUSTOMER_INFO SET '||TITLEOBJECT.TITLE_CODE||' = ('||SUB_STR||TITLEOBJECT.COLUMN_NAME||' = '''||
+                            QUERYREC||''' ) WHERE CUST_ID = '''||QUERYEMPID||'''';
+                            EXECUTE IMMEDIATE STR;
+                        END LOOP;
+                    END IF;
+                END LOOP;
+            END;
+        ]]>
+    </update>
+
+    <select id="getCustInsertList" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+        SELECT T.FLAG,
+            T.CUST_ID,
+            T.CUST_NAME,
+            T.CUST_SALES_MODE_CODE,
+            T.CONTACTS_MOBILE1,
+            T.CONTACTS_NAME,
+            T.CUST_TYPE_CODE,
+            T.TELEPHONE,
+            T.CONTACTS_ADDRESS,
+            T.CONTACTS_EMAIL,
+            #ADMIN_ID# CREATED_BY 
+        FROM TEMP_CUSTOMER_INFO T
+        WHERE T.FLAG = '新增'
+        ]]>
+    </select>
+
+    <insert id="insertCustomer" parameterClass="linkMap"> 
+       <selectKey resultClass="int" keyProperty="CUST_NO"> 
+            SELECT Auto_increment AS CUST_NO
+				FROM information_schema.`TABLES`
+				WHERE Table_Schema='smartone_v1'
+				AND table_name = 'cust_basic_info'
+        </selectKey>
+        <![CDATA[
+      
+            INSERT INTO CUST_BASIC_INFO(
+                    CUST_NO,
+                    CUST_ID,
+                    CUST_NAME,
+                    CUST_TYPE_CODE,
+                    CUST_SALES_MODE_CODE,
+                    CUST_STATUS_CODE,
+                    TELEPHONE,
+                    OFFICE_ADDRESS,
+                    CREATED_BY,
+                    CREATED_DATE,
+                    ACTIVITY,
+                    CPNY_ID,
+                    ORDER_NO,
+                    OWNER_ID
+                    )
+                VALUES(
+                    #CUST_NO#,
+                    concat('CUST',#CUST_NO#),
+                    #CUST_NAME#,
+                    #CUST_TYPE_CODE#,
+                    #CUST_SALES_MODE_CODE#,
+                    'CustomerStatus001',
+                    #TELEPHONE#,
+                    #CONTACTS_ADDRESS#,
+                    #CREATED_BY#,
+                    NOW(),
+                    1,
+                    #CPNY_ID#,
+                    #CUST_NO#
+                    #CREATED_BY#);
+            INSERT INTO CUST_CONTACTS(
+                    
+                    CONTACTS_NAME,
+                    CONTACTS_TYPE,
+                    CONTACTS_MOBILE1,
+                    CONTACTS_EMAIL,
+                    CONTACTS_ADDRESS,
+                    CUST_ID,
+                    CPNY_ID
+                )VALUES(
+                    
+                    #CONTACTS_NAME#,
+                    '关键联系人',
+                    #CONTACTS_MOBILE1#,
+                    #CONTACTS_EMAIL#,
+                    #CONTACTS_ADDRESS#,
+                    #CUST_ID#,
+                    #CPNY_ID#
+                );
+        ]]>
+    </insert>
+</sqlMap>

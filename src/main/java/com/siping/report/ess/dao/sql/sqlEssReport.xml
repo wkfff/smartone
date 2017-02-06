@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+    PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+    "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="report.ess">
+    <select id="getWhDataInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT EAW.WH_NO NO,
+                   EAW.EMPID,
+                   DECODE(#language#, 'en', HRE.ENGLISHNAME, HRE.CHINESENAME) CHINESENAME,
+                   HRE.DEPTID,
+                   DECODE(#language#, 'en', HRD.DEPT_EN_NAME, HRD.DEPTNAME) DEPTNAME,
+                   EAW.PRO_NO PRO_ID,
+                   DECODE(#language#, 'en', EP.PRO_EN_NAME, EP.PRO_NAME) PRO_NAME,
+                   EP.TYPE_CODE,
+                   DECODE(#language#, 'en', A.CODE_EN_NAME, A.CODE_NAME) TYPE_NAME,
+                   TO_CHAR(EAW.START_DATE, 'YYYY-MM-DD') START_DATE,
+                   TO_CHAR(EAW.END_DATE, 'YYYY-MM-DD') END_DATE,
+                   to_char(EAW.START_DATE,'day') WEEKDAY,
+                   EAW.WORK_CONTENT,
+                   EAW.REMARK,
+                   EAW.WORK_HOUR,
+                   EAW.ACTIVITY,
+                   EAW.CANCEL_REMARK
+              FROM ESS_APPLY_WH EAW, ESS_PROJECT EP, HR_EMPLOYEE HRE, HR_DEPARTMENT HRD,SY_CODE A
+             WHERE EAW.EMPID = HRE.EMPID
+               AND HRE.DEPTID = HRD.DEPTID(+)
+               AND EAW.PRO_NO = EP.PRO_NO(+)
+               AND EP.TYPE_CODE = A.CODE_ID(+)
+        ]]>
+        <isNotEmpty prepend="AND" property="EMPID">
+            <![CDATA[
+               EAW.EMPID = #EMPID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+                (   
+                    HRE.CHINESENAME         LIKE '%'||TRIM(#keyWord#)||'%'
+                    OR HRE.EMPID            LIKE '%'||TRIM(#keyWord#)||'%'
+                    OR HRD.DEPTNAME         LIKE '%'||TRIM(#keyWord#)||'%' 
+                    OR upper(HRD.DEPT_EN_NAME) LIKE '%'||TRIM(upper(#keyWord#))||'%'
+                    OR upper(HRE.CHINESE_PINYIN) LIKE '%'||TRIM(upper(#keyWord#))||'%'
+                    OR upper(HRE.ENGLISHNAME) LIKE '%'||TRIM(upper(#keyWord#))||'%'
+                )
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="AND" property="E_DATE">
+            <![CDATA[
+               EAW.START_DATE <= SYSDATE + 30
+            ]]>
+        </isEmpty>
+        <isEmpty prepend="AND" property="S_DATE">
+            <![CDATA[
+               EAW.START_DATE >= SYSDATE - 30
+            ]]>
+        </isEmpty>
+        <isNotEmpty prepend="AND" property="E_DATE">
+            <![CDATA[
+               EAW.START_DATE <= TO_DATE(#E_DATE#,'YYYY-MM-DD')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="S_DATE">
+            <![CDATA[
+               EAW.START_DATE >= TO_DATE(#S_DATE#,'YYYY-MM-DD')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="ACTIVITY">
+            <![CDATA[
+               EAW.ACTIVITY = #ACTIVITY#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="PRO_NO">
+            <![CDATA[
+               EAW.PRO_NO = #PRO_NO#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="TYPE_CODE">
+            <![CDATA[
+               EP.TYPE_CODE = #TYPE_CODE#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                  ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                  ORDER BY EAW.EMPID,EAW.START_DATE
+            ]]>
+        </isEmpty>
+    </select>
+</sqlMap>

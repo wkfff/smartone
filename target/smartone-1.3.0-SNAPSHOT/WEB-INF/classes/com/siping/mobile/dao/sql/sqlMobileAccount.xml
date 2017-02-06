@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap  PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="mobile.account">
+    <select id="getAccountType" parameterClass="linkMap"  resultClass="linkMap">
+        <![CDATA[
+            SELECT ACCOUNT_TYPE
+            FROM   SY_ADMIN
+            WHERE  ADMINID = #ADMINID#
+        ]]> 
+    </select>
+    <update id="updatePassword" parameterClass="linkMap">
+        <![CDATA[
+            UPDATE SY_ADMIN 
+            SET    PASSWORD = #UPDATE_PASSWORD#
+            WHERE  ADMINID = #ADMINID#
+            AND    CPNY_ID = #CPNY_ID#
+        ]]> 
+    </update>
+    <select id="getCustomer" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+          SELECT  CBI.CUST_ID                                            CUST_ID,
+                  CBI.CUST_NO                                            CUST_NO,
+                  SA.USERNAME                                            USERNAME,
+                  SA.PASSWORD                                            PASSWORD,
+                  CBI.EMAIL                                              EMAIL,
+                  DECODE(#language#,'en',CUST_EN_NAME,CUST_NAME)         CUST_NAME,
+                  CBI.PROVINCE                                           REG_PRO_CODE,
+                  CBI.CITY                                               REG_CITY_CODE,
+                  CBI.AREA                                               REG_AREA_CODE,
+                  DECODE(#language#,'en',PR.CODE_EN_NAME,PR.CODE_NAME)   REG_PRO_NAME,
+                  DECODE(#language#,'en',CI.CODE_EN_NAME,CI.CODE_NAME)   REG_CITY_NAME,
+                  DECODE(#language#,'en',AR.CODE_EN_NAME,AR.CODE_NAME)   REG_AREA_NAME,
+                  DECODE(#language#,'en',PR.CODE_EN_NAME,PR.CODE_NAME)||
+                  DECODE(#language#,'en',CI.CODE_EN_NAME,CI.CODE_NAME)||
+                  DECODE(#language#,'en',AR.CODE_EN_NAME,AR.CODE_NAME)||
+                  CBI.ADDRESS                                            REG_ADDRESS,
+                  CBI.ADDRESS                                            REG_DETAIL_ADDR,
+                  CBI.OFFICE_PROVINCE                                    OFF_PRO_CODE,
+                  CBI.OFFICE_CITY                                        OFF_CITY_CODE,
+                  CBI.OFFICE_AREA                                        OFF_AREA_CODE,
+                  DECODE(#language#,'en',OPR.CODE_EN_NAME,OPR.CODE_NAME) OFF_PRO_NAME,
+                  DECODE(#language#,'en',OCI.CODE_EN_NAME,OCI.CODE_NAME) OFF_CITY_NAME,
+                  DECODE(#language#,'en',OAR.CODE_EN_NAME,OAR.CODE_NAME) OFF_AREA_NAME,
+                  DECODE(#language#,'en',OPR.CODE_EN_NAME,OPR.CODE_NAME)||
+                  DECODE(#language#,'en',OCI.CODE_EN_NAME,OCI.CODE_NAME)||
+                  DECODE(#language#,'en',OAR.CODE_EN_NAME,OAR.CODE_NAME)||
+                  CBI.OFFICE_ADDRESS                                     OFF_ADDRESS,
+                  CBI.OFFICE_ADDRESS                                     OFF_DETAIL_ADDR,
+                  CBI.TELEPHONE                                          TELEPHONE,
+                  CBI.BANK                                               BANK,
+                  CBI.BANK_ACCOUNT                                       BANK_ACOUNT,
+                  CBI.TAXPAYER_IDCODE                                    TEXPAYER_IDCODE
+              FROM  CUST_BASIC_INFO    CBI,
+                  SY_CODE              PR,
+                  SY_CODE              CI,
+                  SY_CODE              AR,
+                  SY_ADMIN             SA,
+                  SY_CODE              OPR,
+                  SY_CODE              OCI,
+                  SY_CODE              OAR
+              WHERE   CBI.CUST_ID = #CUST_ID#
+              AND     CBI.ACTIVITY = 1
+              AND     CBI.CPNY_ID = #CPNY_ID#
+              AND     CBI.CUST_ID = SA.ADMINID(+)
+              AND     CBI.PROVINCE = PR.CODE_ID(+)
+              AND     CBI.CITY = CI.CODE_ID(+)
+              AND     CBI.AREA = AR.CODE_ID(+)
+              AND     CBI.OFFICE_PROVINCE = OPR.CODE_ID(+)
+              AND     CBI.OFFICE_CITY = OCI.CODE_ID(+)
+              AND     CBI.OFFICE_AREA = OAR.CODE_ID(+)
+        ]]>
+    </select>
+    <select id="getReciverList" parameterClass="linkMap"  resultClass="linkMap">
+        <![CDATA[
+            SELECT  CR.RECEIVER_ID RECERIVER_ID,
+                    DECODE(#language#,'en',CR.RECEIVER_EN_NAME,CR.RECEIVER_NAME) RECEIVER_NAME,
+                    CR.RECEIVER_TELEPHONE RECEIVER_TELEPHONE,
+                    CR.RECEIVER_MOBILE1 RECEIVER_MOBILE,
+                    CR.RECEIVER_EMAIL RECEIVER_EMAIL,
+                    DECODE(#language#,'en',PR.CODE_EN_NAME,PR.CODE_NAME)||
+                    DECODE(#language#,'en',CI.CODE_EN_NAME,CI.CODE_NAME)||
+                    DECODE(#language#,'en',AR.CODE_EN_NAME,AR.CODE_NAME)||
+                    CR.RECEIVER_ADDRESS                                     RECEIVER_ADDRESS
+            FROM    CUST_RECEIVER CR,
+                    SY_CODE PR,
+                    SY_CODE CI,
+                    SY_CODE AR
+            WHERE   CR.CUST_ID = #CUST_ID#
+            AND     CR.CPNY_ID = #CPNY_ID#
+            AND     CR.RECEIVER_PROVINCE = PR.CODE_ID(+)
+            AND     CR.RECEIVER_CITY = CI.CODE_ID(+)
+            AND     CR.RECEIVER_AREA = AR.CODE_ID(+)
+        ]]>
+    </select>
+    <select id="getReciverCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT  COUNT(*)
+            FROM    CUST_RECEIVER CR,
+                    SY_CODE PR,
+                    SY_CODE CI,
+                    SY_CODE AR
+            WHERE   CR.CUST_ID = #CUST_ID#
+            AND     CR.CPNY_ID = #CPNY_ID#
+            AND     CR.RECEIVER_PROVINCE = PR.CODE_ID(+)
+            AND     CR.RECEIVER_CITY = CI.CODE_ID(+)
+            AND     CR.RECEIVER_AREA = AR.CODE_ID(+)
+        ]]>
+    </select>
+    <select id="getSelectList" parameterClass="linkMap"  resultClass="linkMap">
+        <![CDATA[
+            SELECT CODE_ID,
+                   DECODE(#language#,'en',CODE_EN_NAME,CODE_NAME) CODE_NAME
+            FROM   SY_CODE
+            WHERE  PARENT_CODE = #PARENT_CODE#
+        ]]> 
+    </select>
+    <update id="updateCustInfo" parameterClass="linkMap">
+        <![CDATA[
+            UPDATE CUST_BASIC_INFO 
+            SET    CUST_NAME = #CUST_NAME#,
+                   TELEPHONE = #TELEPHONE#,
+                   EMAIL = #EMAIL#,
+                   PROVINCE = #PROVINCE#,
+                   CITY = #CITY#,
+                   AREA = #AREA#,
+                   ADDRESS = #ADDRESS#,
+                   OFFICE_PROVINCE = #OFFICE_PROVINCE#,
+                   OFFICE_CITY = #OFFICE_CITY#,
+                   OFFICE_AREA = #OFFICE_AREA#,
+                   OFFICE_ADDRESS = #OFFICE_ADDRESS#,
+                   BANK = #BANK#,
+                   BANK_ACCOUNT = #BANK_ACCOUNT#,
+                   TAXPAYER_IDCODE = #TAXPAYER_IDCODE#,
+                   UPDATED_DATE = SYSDATE,
+                   UPDATED_BY = #CUST_ID#
+            WHERE  CUST_ID = #CUST_ID#
+            AND    CPNY_ID = #CPNY_ID#
+        ]]> 
+    </update>
+    <insert id="insertReceiver"  parameterClass="linkMap">
+        <![CDATA[
+            INSERT INTO CUST_RECEIVER(
+                RECEIVER_ID,
+                RECEIVER_NAME,
+                RECEIVER_TELEPHONE,
+                RECEIVER_MOBILE1,
+                RECEIVER_EMAIL,
+                RECEIVER_PROVINCE,
+                RECEIVER_CITY,
+                RECEIVER_AREA,
+                RECEIVER_ADDRESS,
+                CUST_ID,
+                CPNY_ID
+            )
+            VALUES(
+                CUST_RECEIVER_SEQ.NEXTVAL,
+                #RECEIVER_NAME#,
+                #RECEIVER_TELEPHONE#,
+                #RECEIVER_MOBILE1#,
+                #RECEIVER_EMAIL#,
+                #RECEIVER_PROVINCE#,
+                #RECEIVER_CITY#,
+                #RECEIVER_AREA#,
+                #RECEIVER_ADDRESS#,
+                #CUST_ID#,
+                #CPNY_ID#
+            )
+        ]]>
+    </insert>
+    <select id="getReceiver" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+          SELECT    CR.RECEIVER_ID                                         ID,
+                    CR.RECEIVER_NAME                                       NAME,
+                    CR.RECEIVER_MOBILE1                                    MOBILE,
+                    CR.RECEIVER_TELEPHONE                                  TELEPHONE,
+                    CR.RECEIVER_EMAIL                                      EMAIL,
+                    CR.RECEIVER_PROVINCE                                   PRO_CODE,
+                    CR.RECEIVER_CITY                                       CITY_CODE,
+                    CR.RECEIVER_AREA                                       AREA_CODE,
+                    CR.RECEIVER_ADDRESS                                    ADDRESS,
+                    DECODE(#language#,'en',PR.CODE_EN_NAME,PR.CODE_NAME)   PRO_NAME,
+                    DECODE(#language#,'en',CI.CODE_EN_NAME,CI.CODE_NAME)   CITY_NAME,
+                    DECODE(#language#,'en',AR.CODE_EN_NAME,AR.CODE_NAME)   AREA_NAME
+              FROM  CUST_RECEIVER        CR,
+                    SY_CODE              PR,
+                    SY_CODE              CI,
+                    SY_CODE              AR
+              WHERE   CR.RECEIVER_ID = #RECEIVER_ID#
+              AND     CR.CPNY_ID = #CPNY_ID#
+              AND     CR.RECEIVER_PROVINCE = PR.CODE_ID(+)
+              AND     CR.RECEIVER_CITY = CI.CODE_ID(+)
+              AND     CR.RECEIVER_AREA = AR.CODE_ID(+)
+        ]]>
+    </select>
+    <update id="updateReceiver" parameterClass="linkMap">
+        <![CDATA[
+            UPDATE CUST_RECEIVER
+            SET   RECEIVER_NAME=#RECEIVER_NAME#,
+                  RECEIVER_TELEPHONE=#RECEIVER_TELEPHONE#,
+                  RECEIVER_MOBILE1=#RECEIVER_MOBILE1#,
+                  RECEIVER_EMAIL=#RECEIVER_EMAIL#,
+                  RECEIVER_PROVINCE=#RECEIVER_PROVINCE#,
+                  RECEIVER_CITY=#RECEIVER_CITY#,
+                  RECEIVER_AREA=#RECEIVER_AREA#,
+                  RECEIVER_ADDRESS=#RECEIVER_ADDRESS#
+            WHERE RECEIVER_ID=#RECEIVER_ID#
+            AND   CPNY_ID = #CPNY_ID#
+        ]]>
+    </update>
+    <delete id="deleteReceiver" parameterClass="linkMap">
+        <![CDATA[
+            DELETE FROM CUST_RECEIVER
+            WHERE RECEIVER_ID=#RECEIVER_ID#
+            AND CPNY_ID =#CPNY_ID#
+        ]]>
+    </delete>
+</sqlMap>

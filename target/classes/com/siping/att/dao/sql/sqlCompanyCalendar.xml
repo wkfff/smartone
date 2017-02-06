@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="att.companyCalendar">
+
+	<select id="getCompanyCalendarInfo" parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[
+			SELECT date_format(DDATE,'%Y-%m-%d') DDATE,
+			       IYEAR,
+			       IMONTH,
+			       IDAY,
+			       IWEEK,
+			       WORKDAYFLAG,
+			       C.TYPEID,
+			       IF(#language#='en', ACT.TYPE_EN_NAME, ACT.TYPE_NAME) TYPE_NAME, 
+			       OVERTYPEID,
+			       TYPEID_DEFAULT,
+			       C.SHIFT_NO, 
+			       IF(#language#='en', AR_SHIFT.SHIFT_EN_NAME, AR_SHIFT.SHIFT_NAME) SHIFT_NAME, 
+			       DDATE_STR
+			 FROM AR_CALENDER C, AR_CALENDER_TYPE ACT, AR_SHIFT010 AR_SHIFT
+			 WHERE C.TYPEID = ACT.TYPE_ID
+			   AND C.SHIFT_NO = AR_SHIFT.SHIFT_NO
+			   AND C.DDATE BETWEEN AR_GET_STARTDATE(#AR_MONTH:VARCHAR#) AND AR_GET_ENDDATE(#AR_MONTH:VARCHAR#) 
+			   
+			  		 
+		]]>	
+		<![CDATA[
+			ORDER BY IYEAR, IMONTH, IDAY
+		]]>
+		 
+	</select>
+		<!-- FROM AR_CALENDER C, AR_CALENDER_TYPE ACT, AR_SHIFT010 AR_SHIFT
+			 WHERE C.TYPEID = ACT.TYPE_ID
+			   AND C.SHIFT_NO = AR_SHIFT.SHIFT_NO
+			   AND C.DDATE BETWEEN AR_GET_STARTDATE(#AR_MONTH:VARCHAR#) AND AR_GET_ENDDATE(#AR_MONTH:VARCHAR#) -->
+	<procedure id="addCompanyCalendarInfo" parameterClass="linkMap">
+		{call add_date_to_ca(str_to_date(#FROM_DATE:VARCHAR#,'%Y-%m-%d'), str_to_date(#TO_DATE:VARCHAR#,'%Y-%m-%d'), #WORK_SHIFT:VARCHAR#, #REST_SHIFT:VARCHAR#)}
+	</procedure>
+	
+	<update id="updateCompanyCalendarInfo" parameterClass="linkMap" >
+		<![CDATA[
+			UPDATE AR_CALENDER SET 
+				WORKDAYFLAG = #WORKDAYFLAG:NUMERIC#,
+				TYPEID = #TYPEID:NUMERIC#,
+				SHIFT_NO = #SHIFT_NO:VARCHAR#
+			WHERE DDATE = str_to_date(#DDATE_STR:VARCHAR#,'%Y-%m-%d')
+		]]>
+	</update>
+	
+</sqlMap>

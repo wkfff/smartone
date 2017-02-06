@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap
+    PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+    "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="pa.progress">
+    <select id="getPaProgressInfo" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT T.MONTH_STR,
+                   T.MONTHLY_LOCK_FLAG,
+                   T.DAILY_LOCK_FLAG,
+                   T.PA_LOCK_FLAG,
+                   T.PA_OPEN_FLAG,
+                   T.INS_LOCK_FLAG,
+                   T.BONUS_LOCK_FLAG,
+                   TO_CHAR(T.CREATE_DATE,'YYYY-MM-DD') AS CREATE_DATE,
+                   TO_CHAR(T.UPDATE_DATE,'YYYY-MM-DD') AS UPDATE_DATE,
+                   T.CREATED_BY,
+                   T.UPDATED_BY,
+                   T.REMARK
+            FROM PA_PROGRESS T
+            WHERE 1 = 1
+        ]]>
+        <isNotEmpty prepend="AND" property="PA_MONTH">
+            <![CDATA[
+                  T.MONTH_STR = #PA_MONTH:VARCHAR#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="ATT_MONTH">
+            <![CDATA[
+                  T.MONTH_STR = #ATT_MONTH:VARCHAR#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY T.MONTH_STR
+            ]]>
+        </isEmpty>
+    </select>
+    <update id="updatePaProgressInfo" parameterClass="linkMap">
+        <![CDATA[
+            UPDATE PA_PROGRESS SET
+                UPDATED_BY = #UPDATED_BY:VARCHAR#,
+                REMARK = #REMARK#
+        ]]>
+        <isNotEmpty prepend="" property="PA_LOCK_FLAG">
+            <![CDATA[
+                  ,PA_LOCK_FLAG = #PA_LOCK_FLAG#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="" property="MONTHLY_LOCK_FLAG">
+            <![CDATA[
+                  ,MONTHLY_LOCK_FLAG = #MONTHLY_LOCK_FLAG#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="" property="DAILY_LOCK_FLAG">
+            <![CDATA[
+                  ,DAILY_LOCK_FLAG = #DAILY_LOCK_FLAG#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="" property="PA_OPEN_FLAG">
+            <![CDATA[
+                  ,PA_OPEN_FLAG = #PA_OPEN_FLAG#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="" property="INS_LOCK_FLAG">
+            <![CDATA[
+                  ,INS_LOCK_FLAG = #INS_LOCK_FLAG#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="" property="BONUS_LOCK_FLAG">
+            <![CDATA[
+                  ,BONUS_LOCK_FLAG = #BONUS_LOCK_FLAG#
+            ]]>
+        </isNotEmpty>
+        <![CDATA[
+            ,UPDATE_DATE = SYSDATE WHERE MONTH_STR = #MONTH_STR#
+        ]]>
+    </update>
+    <insert id="addPaProgressInfo" parameterClass="linkMap">
+        <![CDATA[
+            insert into PA_PROGRESS (MONTH_STR, MONTHLY_LOCK_FLAG, DAILY_LOCK_FLAG, PA_LOCK_FLAG, PA_OPEN_FLAG, INS_LOCK_FLAG, BONUS_LOCK_FLAG)
+            values (#PA_MONTH#, 0, 0, 0, 0, 0, 0)
+        ]]>
+    </insert>
+</sqlMap>

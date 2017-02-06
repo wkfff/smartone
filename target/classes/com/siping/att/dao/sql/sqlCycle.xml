@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="att.cycle">
+
+	<select id="getCycleInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT T.STAT_NO,
+			       T.DESCRIPTION,
+			       TO_CHAR(T.VALID_DATE_FROM, 'YYYY-MM-DD') AS VALID_DATE_FROM,
+			       TO_CHAR(T.VALID_DATE_TO, 'YYYY-MM-DD') AS VALID_DATE_TO,
+			       T.START_DATE,
+			       T.END_DATE,
+			       T.CPNY_ID,
+			       DECODE(#language#, 'en', A.CPNY_EN_NAME, A.CPNY_NAME) CPNY_NAME,
+			       T.CYCLE_TYPE_CODE,
+			       DECODE(#language#, 'en', B.CODE_EN_NAME, B.CODE_NAME)CYCLE_TYPE_NAME,
+			       T.ACTIVITY 
+			  FROM AR_STATISTIC_DATE T, HR_COMPANY A,SY_CODE B
+			  WHERE T.CPNY_ID = A.CPNY_ID(+)
+			    AND T.CYCLE_TYPE_CODE = B.CODE_ID(+)
+			 
+		]]>	 
+			
+		<isNotEmpty prepend="AND" property="STAT_NO">
+			<![CDATA[
+		 		  T.STAT_NO = #STAT_NO:NUMERIC#
+		    ]]>
+		</isNotEmpty> 
+		
+		
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		  ORDER BY $sortname$ $sortorder$
+		    ]]>
+		</isNotEmpty>
+		
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY T.STAT_NO
+			]]>
+		</isEmpty>
+		 
+	</select>
+	
+	<select id="getCycleInfoCnt" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+			SELECT COUNT(*)
+			  FROM AR_STATISTIC_DATE T, HR_COMPANY A,SY_CODE B
+			  WHERE T.CPNY_ID = A.CPNY_ID(+)
+			    AND T.CYCLE_TYPE_CODE = B.CODE_ID(+)
+		]]>	   
+			
+		<isNotEmpty prepend="AND" property="STAT_NO">
+			<![CDATA[
+		 		  T.STAT_NO = #STAT_NO:NUMERIC#
+		    ]]>
+		</isNotEmpty> 
+	</select>
+	
+	<insert id="addCycleInfo" parameterClass="linkMap" >
+		<![CDATA[
+			INSERT INTO AR_STATISTIC_DATE (
+					STAT_NO,
+					DESCRIPTION,
+					VALID_DATE_FROM,
+					VALID_DATE_TO,
+					START_DATE,
+					END_DATE,
+					CREATE_DATE,
+					CREATED_BY,
+					ACTIVITY,
+					CPNY_ID,
+					CYCLE_TYPE_CODE
+				)
+				VALUES(
+					AR_STATISTIC_DATE_SEQ.NEXTVAL ,
+					#DESCRIPTION:VARCHAR# ,
+					TO_DATE(#VALID_DATE_FROM:VARCHAR#, 'YYYY-MM-DD') ,
+					TO_DATE(#VALID_DATE_TO:VARCHAR#, 'YYYY-MM-DD') ,
+					#START_DATE:NUMERIC# ,
+					#END_DATE:NUMERIC# ,
+					SYSDATE,
+					#CREATED_BY:VARCHAR# ,
+					#ACTIVITY:NUMERIC# ,
+					#CPNY_ID:VARCHAR#,
+					#CYCLE_TYPE_CODE:VARCHAR#
+				)
+		]]>
+	</insert>
+	
+	<update id="updateCycleInfo" parameterClass="linkMap" >
+		<![CDATA[
+			UPDATE AR_STATISTIC_DATE SET
+					
+					DESCRIPTION = #DESCRIPTION:VARCHAR# ,
+					VALID_DATE_FROM = TO_DATE(#VALID_DATE_FROM:VARCHAR#, 'YYYY-MM-DD') ,
+					VALID_DATE_TO = TO_DATE(#VALID_DATE_TO:VARCHAR#, 'YYYY-MM-DD') ,
+					START_DATE = #START_DATE:NUMERIC# ,
+					END_DATE = #END_DATE:NUMERIC# ,
+					UPDATE_DATE = SYSDATE,
+					UPDATED_BY = #UPDATED_BY:VARCHAR# ,
+					ACTIVITY = #ACTIVITY:NUMERIC# ,
+					CPNY_ID = #CPNY_ID:VARCHAR#,
+					CYCLE_TYPE_CODE = #CYCLE_TYPE_CODE:VARCHAR#
+
+			WHERE STAT_NO = #STAT_NO:NUMERIC# 
+		]]>
+	</update>
+	
+	<delete id="deleteCycleInfo" parameterClass="linkMap">
+		<![CDATA[
+			DELETE AR_STATISTIC_DATE WHERE STAT_NO = #STAT_NO:NUMERIC#
+		]]>
+	</delete>
+</sqlMap>

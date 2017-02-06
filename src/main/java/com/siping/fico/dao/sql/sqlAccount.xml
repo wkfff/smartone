@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="fico.account">
+
+	<sql id="InvoiceSearchCondition"> 	     
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+				(	
+						INV.ACCOUNT_NAME          LIKE '%'||TRIM(#keyWord#)||'%'
+						INV.DESCRIPTION          LIKE '%'||TRIM(#keyWord#)||'%'
+				)
+			]]>
+		</isNotEmpty>
+	</sql> 
+	 
+	<select id="getAccountList" parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[
+      SELECT  INV.ACCOUNT_NO,
+              INV.ACCOUNT_NAME,
+              INV.DESCRIPTION,
+              INV.MONEY_AMOUNT,
+              INV.STATUS_ID,
+              DECODE(#language#, 'en', B.CODE_EN_NAME, B.CODE_NAME)  STATUS_NAME
+      FROM  FICO_ACCOUNT    INV,
+            SY_CODE             B
+      WHERE INV.STATUS_ID = B.CODE_ID(+)  
+        AND INV.CPNY_ID = #CPNY_ID#
+		]]>
+		<include refid="InvoiceSearchCondition" />	
+		<![CDATA[
+		ORDER BY ACCOUNT_NO
+		]]>	
+	</select>
+	
+    <insert id="addAccount" parameterClass="linkMap">
+    	<![CDATA[
+    		INSERT INTO FICO_ACCOUNT(ACCOUNT_NO,
+              		  ACCOUNT_NAME,
+              		  DESCRIPTION,
+              		  STATUS_ID,
+              		  MONEY_AMOUNT,
+		              CREATE_DATE,
+		              CREATED_BY,
+		              ACTIVITY,
+		              CPNY_ID) VALUES(FICO_ACCOUNT_SEQ.NEXTVAL,
+		              #ACCOUNT_NAME#,
+		              #DESCRIPTION#,
+		              #STATUS_ID#,
+		              #MONEY_AMOUNT#,
+		              SYSDATE,
+		              #CREATED_BY#,
+		              1,
+		              #CPNY_ID#)
+    	]]>
+    </insert>
+    
+    <update id="updateAccount" parameterClass="linkMap">
+    	<![CDATA[
+    		UPDATE FICO_ACCOUNT SET ACCOUNT_NAME = #ACCOUNT_NAME#,
+		              DESCRIPTION = #DESCRIPTION#,
+		              STATUS_ID = #STATUS_ID#,
+		              MONEY_AMOUNT = #MONEY_AMOUNT#,
+		              UPDATE_DATE = SYSDATE,
+		              UPDATED_BY = #UPDATED_BY#,
+		              ACTIVITY = #ACTIVITY#
+    		WHERE ACCOUNT_NO = #ACCOUNT_NO#
+    		AND CPNY_ID = #CPNY_ID#
+    	]]>   	
+    </update>    
+    
+</sqlMap>

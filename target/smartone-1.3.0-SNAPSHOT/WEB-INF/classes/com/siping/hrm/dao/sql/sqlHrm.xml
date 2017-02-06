@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+    PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+    "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="hrm">
+    <select id="getDeptById" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT HD.* FROM HR_DEPARTMENT HD
+                WHERE HD.DEPTID = #deptid#
+        ]]>
+    </select>
+    <sql id="getDeptTreeCondition">
+        <isNotEmpty prepend="AND" property="root">
+            <![CDATA[
+            EXISTS (
+            SELECT HRD.DEPTID FROM HR_DEPARTMENT HRD WHERE HRD.DEPTID = B.DEPTID
+            START WITH HRD.DEPTID = #root#
+            CONNECT BY PRIOR HRD.DEPTID = HRD.PARENT_DEPT_ID
+            )
+            ]]>
+        </isNotEmpty>
+    </sql>
+    <!--
+    <select id="getDeptTreeForHr" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT deptID,
+                CASE WHEN parentDeptID NOT IN(SELECT G.ADMIN_DEPTID 
+                                                FROM SY_ADMIN_DEPTID G, SY_ADMIN H 
+                                              WHERE G.ADMIN_NO = H.ADMINNO 
+                                                AND H.ADMINID = #adminID#) 
+                THEN '0' ELSE parentDeptID END AS parentDeptID,
+                 (CASE WHEN DEPTLEVEL >2 THEN 'false' else 'true' end) as ISEXPAND,
+                deptName,deptLevel 
+          FROM (
+                SELECT  A.DEPTID    deptID, 
+                        A.parent_dept_id parentDeptID,
+                        IF(#language#='en', A.DEPT_EN_NAME, A.DEPTNAME) deptName, 
+                        A.DEPT_LEVEL deptLevel
+              FROM HR_DEPT_TREE_V A,HR_DEPARTMENT B
+              WHERE A.deptid = B.DEPTID 
+                AND (B.DATE_ENDED IS NULL OR B.DATE_ENDED>now())
+                AND A.deptID IN (SELECT E.ADMIN_DEPTID FROM SY_ADMIN_DEPTID E, SY_ADMIN F WHERE
+                  E.ADMIN_NO = F.ADMINNO AND E.ADMIN_DEPTID = A.DEPTID 
+                  AND F.ADMINID = #adminID#)
+         ]]>
+        <include refid="getDeptTreeCondition" />
+         <![CDATA[
+            )
+         ]]>
+    </select> 
+     -->
+     <!-- aibi更改 -->
+    <select id="getDeptTreeForHr" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT aa.deptID,
+                CASE WHEN aa.parentDeptID NOT IN(SELECT G.ADMIN_DEPTID 
+                                                FROM SY_ADMIN_DEPTID G, SY_ADMIN H 
+                                              WHERE G.ADMIN_NO = H.ADMINNO 
+                                                AND H.ADMINID = #adminID#) 
+                THEN '0' ELSE aa.parentDeptID END AS parentDeptID,
+                 (CASE WHEN aa.DEPTLEVEL >2 THEN 'false' else 'true' end) as ISEXPAND,
+                aa.deptName,aa.deptLevel 
+          FROM (
+                SELECT  A.DEPTID    deptID, 
+                        A.parent_dept_id parentDeptID,
+                        IF(#language#='en', A.DEPT_EN_NAME, A.DEPTNAME) deptName, 
+                        A.DEPT_LEVEL deptLevel
+              FROM HR_DEPT_TREE_V A,HR_DEPARTMENT B
+              WHERE A.deptid = B.DEPTID 
+                AND (B.DATE_ENDED IS NULL OR B.DATE_ENDED>now())
+                AND A.deptID IN (SELECT E.ADMIN_DEPTID FROM SY_ADMIN_DEPTID E, SY_ADMIN F WHERE
+                  E.ADMIN_NO = F.ADMINNO AND E.ADMIN_DEPTID = A.DEPTID 
+                  AND F.ADMINID = #adminID#)
+         ]]>
+<!--         <include refid="getDeptTreeCondition" /> -->
+         <![CDATA[
+            )aa
+         ]]>
+    </select>
+    <select id="getDeptTreeForAr" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT deptID,
+                CASE WHEN parentDeptID NOT IN(SELECT D.SUPERVISED_DEPTID 
+                                                FROM AR_SUPERVISOR_INFO D 
+                                               WHERE D.AR_SUPERVISOR_ID = #adminID#) 
+                THEN '0' ELSE parentDeptID END AS parentDeptID,
+                (CASE WHEN DEPTLEVEL >2
+                  THEN 'false' ELSE 'true' END) AS ISEXPAND,
+                deptName,deptLevel FROM (
+                SELECT  A.DEPTID    deptID,
+                        A.parent_dept_id parentDeptID,
+                        IF(#language#='en', A.DEPT_EN_NAME, A.DEPTNAME) deptName,
+                        A.DEPT_LEVEL deptLevel
+                FROM HR_DEPT_TREE_V A,HR_DEPARTMENT B
+                WHERE A.deptid = B.DEPTID 
+                 AND (B.DATE_ENDED IS NULL OR B.DATE_ENDED>SYSDATE)
+                 AND A.deptID IN (SELECT C.SUPERVISED_DEPTID FROM AR_SUPERVISOR_INFO C
+                                  WHERE C.SUPERVISED_DEPTID = A.DEPTID
+                                    AND C.AR_SUPERVISOR_ID = #adminID#)
+         ]]>
+        <include refid="getDeptTreeCondition" />
+         <![CDATA[
+            ) as cc2
+         ]]>
+    </select>
+    <select id="getDeptTreeForAll" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT deptID, parentDeptID,
+                 IF(DEPTLEVEL >2,'false','true') ISEXPAND,
+                deptName,
+                deptLevel 
+           FROM (SELECT  A.DEPTID    deptID, 
+                        A.parent_dept_id parentDeptID,
+                        IF(#language#='en', A.DEPT_EN_NAME, A.DEPTNAME) deptName, 
+                        A.DEPT_LEVEL deptLevel
+              FROM HR_DEPT_TREE_V A,HR_DEPARTMENT B
+              WHERE A.deptid = B.DEPTID 
+                AND B.DATE_ENDED IS NULL OR B.DATE_ENDED>now()
+                
+                ) as b
+         ]]>
+    </select>
+    <select id="getAllDept" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[    
+            SELECT A.DEPTID DEPTID,
+                   IF(#language#='en', A.DEPT_EN_NAME, A.DEPTNAME) DEPTNAME,
+                   A.DEPT_LEVEL DEPTLEVEL
+              FROM HR_DEPT_TREE_V A, HR_DEPARTMENT B
+             WHERE A.DEPTID = B.DEPTID
+               AND B.DATE_ENDED IS NULL OR B.DATE_ENDED > now()
+          ]]>
+        <isEqual prepend="AND" property="limit" compareValue="hr">
+            <![CDATA[
+                   A.DEPTID IN (SELECT E.ADMIN_DEPTID
+                                  FROM SY_ADMIN_DEPTID E, SY_ADMIN F
+                                 WHERE E.ADMIN_NO = F.ADMINNO
+                                   AND E.ADMIN_DEPTID = A.DEPTID
+                                   AND F.ADMINID = #adminID#)   
+            ]]>
+        </isEqual>
+        <isEqual prepend="AND" property="limit" compareValue="ar">
+            <![CDATA[    
+                 A.DEPTID IN (SELECT C.SUPERVISED_DEPTID 
+                                    FROM AR_SUPERVISOR_INFO C 
+                                  WHERE C.SUPERVISED_DEPTID = A.DEPTID 
+                                    AND C.AR_SUPERVISOR_ID = #adminID#)
+            ]]>
+        </isEqual>
+        <isEqual prepend="AND" property="limit" compareValue="cr">
+            <![CDATA[    
+                 A.DEPTID IN (SELECT C.SUPERVISED_DEPTID 
+                                    FROM SALES_SUPERVISOR_INFO C 
+                                  WHERE C.SUPERVISED_DEPTID = A.DEPTID 
+                                    AND C.SUPERVISOR_ID = #adminID#)
+            ]]>
+        </isEqual>
+        <isEqual prepend="" property="limit" compareValue="all">
+            <![CDATA[
+                  
+            ]]>
+        </isEqual>
+            <![CDATA[
+                ORDER BY B.ORDERNO
+            ]]>
+    </select>
+</sqlMap>

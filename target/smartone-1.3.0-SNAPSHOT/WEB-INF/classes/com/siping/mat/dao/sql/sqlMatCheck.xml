@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+    PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+    "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="mat.matCheck">
+    <select id="checkMaterialID" parameterClass="linkMap" resultClass="int">
+    <![CDATA[
+    SELECT COUNT(0) FROM MAT_INFO T WHERE T.MAT_ID = #MAT_ID#  
+    ]]>
+    </select>
+    <select id="checkMaterialName" parameterClass="linkMap" resultClass="int">
+    <![CDATA[
+    SELECT COUNT(0) FROM MAT_INFO T WHERE T.MAT_NAME = #MAT_NAME# 
+    ]]>
+    </select>
+    <select id="checkStorageID" parameterClass="linkMap" resultClass="int">
+    <![CDATA[
+    SELECT COUNT(0) FROM MAT_STORAGE_INFO T WHERE T.MAT_STORAGE_ID = #MAT_STORAGE_ID#  
+    ]]>
+    </select>
+    <select id="checkStorageName" parameterClass="linkMap" resultClass="int">
+    <![CDATA[
+    SELECT COUNT(0) FROM MAT_STORAGE_INFO T WHERE T.STORAGE_NAME = #STORAGE_NAME# 
+    ]]>
+    </select>
+</sqlMap>

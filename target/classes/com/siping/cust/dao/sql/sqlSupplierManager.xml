@@ -1,0 +1,364 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap  PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="prostorage.Supplier">
+    <sql id="ProSupplierModelCondition">
+        <isNotEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+                    (SUP.SUPPLIER_NAME LIKE CONCAT('%',TRIM(#keyWord#),'%')
+                    OR SUP.SUPPLIER_ID LIKE CONCAT('%',TRIM(#keyWord#),'%'))
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                 ORDER BY   $sortname$  $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+        <![CDATA[
+            ORDER BY SUP.SUPPLIER_NO,SUP.CREATE_DATE DESC
+        ]]>
+        </isEmpty>
+    </sql>
+    <select id="addNewShowCreate" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT CHINESENAME FROM HR_EMPLOYEE 
+                WHERE 
+                   EMPID=#CREATED_BY#
+        ]]>
+    </select>
+    <insert id="addNewSupplier" parameterClass="linkMap">
+        <selectKey resultClass="int" keyProperty="SUPPLIER_NO"> 
+            SELECT Auto_increment AS SUPPLIER_NO
+				FROM information_schema.`TABLES`
+				WHERE Table_Schema='smartone_v1'
+				AND table_name = 'PROSTOR_SUPPLIER'
+        </selectKey>
+        <![CDATA[
+            INSERT INTO PROSTOR_SUPPLIER(
+                    SUPPLIER_NO,
+                    SUPPLIER_ID,
+                    SUPPLIER_NAME,
+                    CREATE_DATE,
+                    CREATED_BY,
+                    UPDATE_DATE,
+                    UPDATED_BY,
+                    CPNY_ID,
+                    SUPPLIER_ADDRESS,
+                    SUPPLIER_TYPE,
+                    SUPPLIER_CONTACTS,
+                    SUPPLIER_FAX,
+                    SUPPLIER_EMAIL,
+                    DESCRIPTION,
+                    SUPPLIER_PHONE1,
+                    SUPPLIER_PHONE2)
+                VALUES(
+                    #SUPPLIER_NO#,
+                    concat('SUP',#SUPPLIER_NO#),
+                    #SUPPLIER_NAME#,
+                    NOW(),
+                    #CREATED_BY#,
+                    NOW(),
+                    #UPDATE_BY#,
+                    #CPNY_ID#,
+                    #SUPPLIER_ADDRESS#,
+                    #CUST_TYPE_CODE#,
+                    #SUPPLIER_CONTACTS#,
+                    #SUPPLIER_FAX#,
+                    #SUPPLIER_EMAIL#,
+                    #SUPPLIER_DESCRIPTION#,
+                    #SUPPLIER_PHONE1#,
+                    #SUPPLIER_PHONE2#)
+        ]]>
+    </insert>
+    <select id="getSupplierModelList" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT 
+                SUP.SUPPLIER_NO,
+                SUP.SUPPLIER_ID,
+                SUP.SUPPLIER_NAME,
+                SUP.CREATED_BY,
+                IFNULL(SUP.SUPPLIER_ADDRESS,'') SUPPLIER_ADDRESS,
+                A.CODE_NAME SUPPLIER_TYPE,
+                SUP.ACTIVITY,
+                IFNULL(SUP.SUPPLIER_CONTACTS, '') SUPPLIER_CONTACTS,
+                IFNULL(SUP.SUPPLIER_FAX,'') SUPPLIER_FAX,
+                IFNULL(SUP.SUPPLIER_EMAIL,'') SUPPLIER_EMAIL,
+                IFNULL(SUP.DESCRIPTION,'') SUPPLIER_DESCRIPTION,
+                IFNULL(SUP.SUPPLIER_PHONE1,'') SUPPLIER_PHONE1,
+                IFNULL(SUP.SUPPLIER_PHONE2,'') SUPPLIER_PHONE2
+            FROM
+                PROSTOR_SUPPLIER  SUP LEFT JOIN SY_CODE A ON(SUP.SUPPLIER_TYPE = A.CODE_ID)
+            WHERE SUP.ACTIVITY=1
+        ]]>
+        <include refid="ProSupplierModelCondition" />
+    </select>
+    <select id="getSupplierModelListCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT 
+                COUNT(SUP.SUPPLIER_NO)
+            FROM
+                PROSTOR_SUPPLIER SUP
+                WHERE SUP.ACTIVITY=1
+        ]]>
+        <include refid="ProSupplierModelCondition" />
+    </select>
+    <delete id="deleteSupplierModel" parameterClass="linkMap"> 
+        <![CDATA[
+            UPDATE PROSTOR_SUPPLIER
+            SET ACTIVITY=0,
+                UPDATED_BY=#UPDATE_BY#,
+                UPDATE_DATE=NOW()
+            WHERE SUPPLIER_NO=#SUPPLIER_NO#
+                    AND CPNY_ID=#CPNY_ID#
+        ]]>
+    </delete>
+    <update id="updateSupplierModel" parameterClass="linkMap">
+        <![CDATA[
+            UPDATE PROSTOR_SUPPLIER
+                SET
+                    SUPPLIER_NAME=#SUPPLIER_NAME#,
+                    UPDATED_BY=#CREATED_BY#,
+                    UPDATE_DATE=NOW(),
+                    SUPPLIER_ADDRESS=#SUPPLIER_ADDRESS#,
+                    SUPPLIER_TYPE=#CUST_TYPE_CODE#,
+                    SUPPLIER_CONTACTS=#SUPPLIER_CONTACTS#,
+                    SUPPLIER_FAX=#SUPPLIER_FAX#,
+                    SUPPLIER_EMAIL=#SUPPLIER_EMAIL#,
+                    DESCRIPTION=#SUPPLIER_DESCRIPTION#,
+                    SUPPLIER_PHONE1=#SUPPLIER_PHONE1#,
+                    SUPPLIER_PHONE2=#SUPPLIER_PHONE2#
+                WHERE
+                    SUPPLIER_NO=#SUPPLIER_NO#
+      ]]>
+    </update>
+    <!-- 这个update是针对于供应商自己修改的 -->
+    <update id="updateSupplierBySupplier" parameterClass="linkMap">
+        <![CDATA[
+            UPDATE PROSTOR_SUPPLIER
+             SET 
+                SUPPLIER_CONTACTS=#SUPPLIER_CONTACTS#,
+                SUPPLIER_PHONE1=#SUPPLIER_PHONE1#,
+                SUPPLIER_PHONE2=#SUPPLIER_PHONE2#,
+                SUPPLIER_EMAIL=#SUPPLIER_EMAIL#,
+                SUPPLIER_FAX=#SUPPLIER_FAX#,
+                SUPPLIER_ADDRESS=#SUPPLIER_ADDRESS#,
+                UPDATED_BY=#UPDATED_BY#,
+                UPDATE_DATE=NOW()
+             WHERE
+                SUPPLIER_ID=#SUPPLIER_ID#
+        ]]>
+    </update>
+    <!-- 此查询时用于在进入供应商后台的基本信息 -->
+    <select id="selectSupplierDetatil" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT
+             SUP.SUPPLIER_NAME,
+             SUP.ACTIVITY,
+             SUP.SUPPLIER_CONTACTS,
+             SY.USERNAME,
+             SUP.SUPPLIER_ADDRESS,
+             SUP.SUPPLIER_FAX,
+             SUP.SUPPLIER_EMAIL,
+             SUP.SUPPLIER_PHONE1,
+             SUP.SUPPLIER_PHONE2 ,
+             (SELECT COUNT(*) FROM PROSTOR_SUPPLIER_PRODUCT PRO WHERE PRO.SUPPLIER_NO=SUP.SUPPLIER_NO AND PRO.ACTIVITY=1)
+                AS COUNTGOODS FROM PROSTOR_SUPPLIER SUP,SY_ADMIN SY
+                WHERE
+                SUP.SUPPLIER_ID=#SUPPLIER_ID#
+                AND
+                SY.CPNY_ID=#SUPPLIER_ID#
+                 AND 
+                SY.ADMINID=#ADMINID#
+                
+        ]]>
+    </select>
+    <select id="getSupplierProductCountBySUPPLIER_NO" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(*) FROM PROSTOR_SUPPLIER_PRODUCT 
+                WHERE
+                  SUPPLIER_NO=#SUPPLIER_NO#
+        ]]>
+    </select>
+
+    <select id="querySuppliersColumnTitles" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT DISTINCT T.COLUMN_NAME COLUMN_NAME, T.DATA_TYPE DATA_TYPE, 
+                T.DATA_LENGTH DATA_LENGTH, C.COMMENTS COMMENTS 
+            FROM USER_TAB_COLUMNS T, USER_COL_COMMENTS C
+            WHERE C.TABLE_NAME = 'PROSTOR_SUPPLIER'
+                AND T.TABLE_NAME = C.TABLE_NAME
+                AND T.COLUMN_NAME = C.COLUMN_NAME
+        ]]>
+        <isNotEmpty prepend="AND" property="LIKE">
+            <![CDATA[
+                C.COMMENTS like #LIKE#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="UNLIKE">
+            <![CDATA[
+                C.COMMENTS not like #UNLIKE#
+            ]]>
+        </isNotEmpty>
+    </select>
+
+    <select id="querySuppliersCellOptions" parameterClass="linkMap" resultClass="string">
+        <![CDATA[
+            SELECT $COLUMN_NAME$ CODE_NAME FROM $TABLE_NAME$
+            WHERE ACTIVITY = 1
+        ]]>
+        <isNotEmpty prepend="AND" property="PARENT_CODE">
+            <![CDATA[
+                PARENT_CODE = #PARENT_CODE#
+            ]]>
+        </isNotEmpty>
+    </select>
+
+    <update id="createTempSupplierInfo" parameterClass="linkMap">
+        <![CDATA[
+            DECLARE
+            V_NUM NUMBER;
+            BEGIN
+                SELECT COUNT(0) INTO V_NUM FROM DUAL WHERE EXISTS(SELECT 1 FROM USER_TABLES WHERE TABLE_NAME = 'TEMP_SUPPLIER_INFO');
+                IF V_NUM>0 THEN
+                    EXECUTE IMMEDIATE 'DROP TABLE TEMP_SUPPLIER_INFO';
+                END IF;
+                EXECUTE IMMEDIATE 'CREATE TABLE TEMP_SUPPLIER_INFO(FLAG VARCHAR2(20), $TITLES$)';
+                SELECT COUNT(0) INTO V_NUM FROM DUAL WHERE EXISTS(SELECT 1 FROM USER_TABLES WHERE TABLE_NAME = 'TEMP_SUPPLIER_TITLES');
+                IF V_NUM>0 THEN
+                    EXECUTE IMMEDIATE 'DROP TABLE TEMP_SUPPLIER_TITLES';
+                END IF;
+                EXECUTE IMMEDIATE 'CREATE TABLE TEMP_SUPPLIER_TITLES(TITLE_CODE VARCHAR2(40), TITLE_NAME VARCHAR2(40), 
+                    DATATYPE VARCHAR2(40), PARENT_CODE VARCHAR2(40), TABLE_NAME VARCHAR2(40), COLUMN_CODE VARCHAR2(40),
+                    COLUMN_NAME VARCHAR2(40), ORDER_NO NUMBER(3))' ;
+            END;
+        ]]>
+    </update>
+
+    <insert id="updateTempSupplierTitles" parameterClass="linkMap">
+        <![CDATA[
+            INSERT INTO TEMP_SUPPLIER_TITLES (TITLE_CODE,TITLE_NAME,DATATYPE,PARENT_CODE,TABLE_NAME,COLUMN_CODE,COLUMN_NAME,ORDER_NO)
+            VALUES( #TITLE_CODE# , #TITLE_NAME# , #DATA_TYPE#, #PARENT_CODE#, #TABLE_NAME#, #COLUMN_CODE#, #COLUMN_NAME#,#ORDERNO#)
+        ]]>
+    </insert>
+
+    <update id="updateTempSupplierInfo" parameterClass="linkMap">
+        <![CDATA[
+            DECLARE
+            V_NUM NUMBER;
+            BEGIN
+                SELECT COUNT(0) INTO V_NUM FROM PROSTOR_SUPPLIER WHERE SUPPLIER_ID= #SUPPLIER_ID:VARCHAR# ;
+                IF V_NUM=1 THEN
+                    EXECUTE IMMEDIATE 'INSERT INTO TEMP_SUPPLIER_INFO(FLAG, $TITLESSTR$ ) VALUES(''编号已存在'', $VALUESSTR$ )' ;
+                ELSE 
+                    EXECUTE IMMEDIATE 'INSERT INTO TEMP_SUPPLIER_INFO(FLAG, $TITLESSTR$ ) VALUES(''新增'', $VALUESSTR$ )' ;
+                END IF;
+            END;
+        ]]>
+    </update>
+
+    <select id="getSupplierColumnList" resultClass="linkMap">
+        <![CDATA[
+            SELECT TITLE_NAME TITLE_NAME, TITLE_CODE TITLE_CODE FROM TEMP_SUPPLIER_TITLES ORDER BY ORDER_NO
+        ]]>
+    </select>
+
+    <select id="getSupplierTmpList" resultClass="linkMap">
+        <![CDATA[
+            SELECT T.FLAG,
+                T.SUPPLIER_ID,
+                T.SUPPLIER_NAME,
+                T.SUPPLIER_PHONE2,
+                T.SUPPLIER_PHONE1,
+                T.SUPPLIER_CONTACTS,
+                T.SUPPLIER_TYPE,
+                T.SUPPLIER_ADDRESS,
+                T.DESCRIPTION,
+                T.SUPPLIER_EMAIL
+            FROM TEMP_SUPPLIER_INFO T
+        ]]>
+    </select>
+
+    <update id="modifySupplierTmpTable">
+        <![CDATA[
+            DECLARE 
+                CURSOR TITLECURSOR IS SELECT TITLE_CODE, TABLE_NAME, PARENT_CODE, COLUMN_CODE, COLUMN_NAME FROM TEMP_SUPPLIER_TITLES;
+                TYPE CUR_TYPE IS REF CURSOR;
+                CUR CUR_TYPE;
+                STR VARCHAR2(500);
+                SUB_STR VARCHAR2(200);
+                QUERYSTR VARCHAR2(500);
+                QUERYREC VARCHAR2(100);
+                QUERYEMPID VARCHAR2(20);
+            BEGIN
+                FOR TITLEOBJECT IN TITLECURSOR LOOP
+                    IF NOT TITLEOBJECT.TABLE_NAME = '-1' THEN
+                        QUERYSTR := 'SELECT SUPPLIER_ID, '||TITLEOBJECT.TITLE_CODE||' FROM TEMP_SUPPLIER_INFO ';
+                        SUB_STR := 'SELECT '||TITLEOBJECT.COLUMN_CODE||' FROM '||TITLEOBJECT.TABLE_NAME||' WHERE ';
+                        IF NOT TITLEOBJECT.PARENT_CODE = '-1' THEN
+                            SUB_STR := SUB_STR||'PARENT_CODE = '''||TITLEOBJECT.PARENT_CODE||''' AND ';
+                        END IF;
+                        OPEN CUR FOR QUERYSTR;
+                        LOOP
+                            FETCH CUR INTO QUERYEMPID, QUERYREC;
+                            EXIT WHEN CUR%NOTFOUND;
+                            STR := 'UPDATE TEMP_SUPPLIER_INFO SET '||TITLEOBJECT.TITLE_CODE||' = ('||SUB_STR||TITLEOBJECT.COLUMN_NAME||' = '''||
+                            QUERYREC||''' ) WHERE SUPPLIER_ID = '''||QUERYEMPID||'''';
+                            EXECUTE IMMEDIATE STR;
+                        END LOOP;
+                    END IF;
+                END LOOP;
+            END;
+        ]]>
+    </update>
+
+    <select id="getSupplierInsertList" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+        SELECT T.FLAG,
+               T.SUPPLIER_ID,
+               T.SUPPLIER_NAME,
+               T.SUPPLIER_PHONE2,
+               T.SUPPLIER_PHONE1,
+               T.SUPPLIER_CONTACTS,
+               T.SUPPLIER_TYPE,
+               T.SUPPLIER_ADDRESS,
+               T.DESCRIPTION,
+               T.SUPPLIER_EMAIL,
+               #ADMIN_ID# CREATED_BY
+        FROM TEMP_SUPPLIER_INFO T
+        WHERE T.FLAG = '新增'
+        ]]>
+    </select>
+
+    <insert id="insertSuppliers" parameterClass="linkMap"> 
+        <![CDATA[
+            INSERT INTO PROSTOR_SUPPLIER(
+                    
+                    SUPPLIER_ID,
+                    SUPPLIER_NAME,
+                    CREATE_DATE,
+                    CREATED_BY,
+                    CPNY_ID,
+                    SUPPLIER_ADDRESS,
+                    SUPPLIER_TYPE,
+                    SUPPLIER_CONTACTS,
+                    SUPPLIER_EMAIL,
+                    DESCRIPTION,
+                    SUPPLIER_PHONE1,
+                    SUPPLIER_PHONE2)
+                VALUES(
+                    
+                    #SUPPLIER_ID#,
+                    #SUPPLIER_NAME#,
+                    NOW(),
+                    #CREATED_BY#,
+                    #CPNY_ID#,
+                    #SUPPLIER_ADDRESS#,
+                    #SUPPLIER_TYPE#,
+                    #SUPPLIER_CONTACTS#,
+                    #SUPPLIER_EMAIL#,
+                    #SUPPLIER_DESCRIPTION#,
+                    #SUPPLIER_PHONE1#,
+                    #SUPPLIER_PHONE2#)
+        ]]>
+    </insert>
+</sqlMap>

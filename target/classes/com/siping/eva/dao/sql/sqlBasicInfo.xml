@@ -1,0 +1,623 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="eva.infoBasic">
+ 
+	<sql id="EvaPeriodInfoCondition">
+		<isNotEmpty prepend="" property="EV_YEAR">
+			<isNotEmpty prepend="" property="EV_MONTH">
+				<isNotEmpty prepend="AND" property="EV_PERIOD_ID">
+					<![CDATA[
+						EVAP.EV_PERIOD_ID=#EV_PERIOD_ID#
+					]]>
+				</isNotEmpty>
+			</isNotEmpty>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="EV_YEAR">
+			<![CDATA[
+				EVAP.EV_YEAR=#EV_YEAR#
+			]]>
+		</isNotEmpty>
+		 
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+				(	
+					EVAP.EV_PERIOD_NAME 		LIKE '%'||TRIM(#keyWord#)||'%'
+					OR EVAP.EV_PERIOD_ID 			LIKE '%'||TRIM(#keyWord#)||'%' 
+					OR upper(EVAP.EV_PERIOD_EN_NAME) LIKE '%'||TRIM(upper(#keyWord#))||'%'
+				)
+			]]>
+		</isNotEmpty>   
+		   
+		<isNotEmpty prepend="AND" property="ACTIVITY">
+			<![CDATA[
+				EVAP.ACTIVITY=#ACTIVITY#
+			]]>
+		</isNotEmpty>  
+		   
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+				EVAP.CPNY_ID=#CPNY_ID#
+			]]>
+		</isNotEmpty> 
+	</sql>  
+	<!-- 评价期间 -->
+	<insert id="addEvaPeriodInfo" parameterClass='linkMap'> 
+	<![CDATA[
+		INSERT INTO EVA_PERIOD 
+		    (	EV_PERIOD_NO, 
+			    EV_YEAR, 
+			    EV_PERIOD_ID, 
+			    EV_PERIOD_NAME,
+			    EV_PERIOD_EN_NAME, 
+			    EV_START_DATE,  
+			    EV_END_DATE,
+			    EV_PARENT_PERIOD_ID,
+			    EV_DESCRIPTION,
+			    EV_REMARK,
+			    CREATE_DATE, 
+			    CREATED_BY, 
+			    ACTIVITY,
+			    CPNY_ID)
+		VALUES (EVA_PERIOD_SEQ.NEXTVAL, 
+			    #EV_YEAR#, 
+			    #EV_PERIOD_ID#, 
+			    #EV_PERIOD_NAME#, 
+			    #EV_PERIOD_EN_NAME#, 
+			    TO_DATE(#EV_START_DATE#, 'YYYY-MM-DD'), 
+			    TO_DATE(#EV_END_DATE#, 'YYYY-MM-DD'), 
+			    #EV_PARENT_PERIOD_ID#, 
+			    #EV_DESCRIPTION#, 
+			    #EV_REMARK#, 
+			    SYSDATE, 
+			    #CREATED_BY#, 
+			    1,
+			    #CPNY_ID#)
+		]]> 
+	</insert>
+	 <update id="updateEvaPeriodInfo" parameterClass="linkMap" >
+		<![CDATA[
+			UPDATE EVA_PERIOD EVAP
+				SET 
+					EVAP.EV_YEAR = #EV_YEAR# ,
+					EVAP.EV_PERIOD_NAME = #EV_PERIOD_NAME# , 
+					EVAP.EV_PERIOD_EN_NAME = #EV_PERIOD_EN_NAME# ,
+					EVAP.EV_START_DATE = TO_DATE(#EV_START_DATE#, 'YYYY-MM-DD'), 
+					EVAP.EV_END_DATE = TO_DATE(#EV_END_DATE#, 'YYYY-MM-DD'), 
+					EVAP.EV_PARENT_PERIOD_ID = #EV_PARENT_PERIOD_ID#,
+					EVAP.EV_DESCRIPTION = #EV_DESCRIPTION#,
+					EVAP.EV_REMARK = #EV_REMARK#, 
+					EVAP.UPDATE_DATE = SYSDATE ,
+					EVAP.UPDATED_BY = #UPDATED_BY:VARCHAR# 
+				WHERE EVAP.EV_PERIOD_ID = #EV_PERIOD_ID:VARCHAR#
+		]]>
+	</update> 
+	
+	<delete id="deleteEvaPeriodInfo" parameterClass="linkMap" >
+		<![CDATA[
+			DELETE EVA_PERIOD EVAP WHERE EVAP.EV_PERIOD_NO = #EV_PERIOD_NO#
+		]]>
+	</delete> 
+	<!-- 返回年假 -->
+	<select id="getEvaPeriodInfo" parameterClass="linkMap"
+		resultClass="linkMap">
+		<![CDATA[	
+			SELECT EVAP.EV_PERIOD_NO,
+			       EVAP.EV_YEAR,
+			       EVAP.EV_PERIOD_ID,
+			       EVAP.EV_PERIOD_NAME,
+			       EVAP.EV_PERIOD_EN_NAME,
+			       TO_CHAR(EVAP.EV_START_DATE, 'YYYY-MM-DD') EV_START_DATE,
+			       TO_CHAR(EVAP.EV_END_DATE, 'YYYY-MM-DD') EV_END_DATE,
+			       EVAP.EV_PARENT_PERIOD_ID,
+			       EVAP.EV_DESCRIPTION,
+			       EVAP.EV_REMARK,
+			       EVAP.CREATE_DATE,
+			       EVAP.CREATED_BY,
+			       EVAP.UPDATE_DATE,
+			       EVAP.UPDATED_BY,
+			       EVAP.TIME_STAMP,
+			       EVAP.ACTIVITY,
+			       EVAP.ORDERNO,
+			       EVAP.CPNY_ID
+			  FROM EVA_PERIOD EVAP
+			 WHERE EVAP.ACTIVITY = 1
+		]]>
+		<include refid="EvaPeriodInfoCondition" />
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		  ORDER BY $sortname$ $sortorder$
+		    ]]>
+		</isNotEmpty>
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+	 		 	ORDER BY EVAP.EV_PERIOD_ID
+			 ]]>
+		</isEmpty> 
+	</select>
+	 <select id="getEvaPeriodInfoCnt" parameterClass="linkMap"
+		resultClass="int">
+		<![CDATA[	
+		    SELECT COUNT(*)
+			  FROM EVA_PERIOD EVAP
+			 WHERE EVAP.ACTIVITY = 1
+		]]>
+		<include refid="EvaPeriodInfoCondition" />
+	</select>
+	
+	<sql id="EvaPeriodTypeInfoCondition">
+		<isNotEmpty prepend="AND" property="EV_PERIOD_ID">
+			<![CDATA[
+				EVAPT.EV_PERIOD_ID=#EV_PERIOD_ID#
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="EV_YEAR">
+			<![CDATA[
+				EVAP.EV_YEAR=#EV_YEAR#
+			]]>
+		</isNotEmpty>
+		 
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+				(	
+					EVAP.EV_PERIOD_NAME 		     LIKE '%'||TRIM(#keyWord#)||'%'
+					OR EVAP.EV_PERIOD_ID 			 LIKE '%'||TRIM(#keyWord#)||'%' 
+					OR A.CODE_NAME 			         LIKE '%'||TRIM(#keyWord#)||'%' 
+					OR upper(A.CODE_EN_NAME)         LIKE '%'||TRIM(upper(#keyWord#))||'%'
+					OR upper(EVAP.EV_PERIOD_EN_NAME) LIKE '%'||TRIM(upper(#keyWord#))||'%'
+				)
+			]]>
+		</isNotEmpty>   
+		   
+		<isNotEmpty prepend="AND" property="ACTIVITY">
+			<![CDATA[
+				EVAPT.ACTIVITY=#ACTIVITY#
+			]]>
+		</isNotEmpty>  
+		   
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+				EVAP.CPNY_ID=#CPNY_ID#
+			]]>
+		</isNotEmpty> 
+	</sql>  
+	<!-- 评价类型 -->
+	<insert id="addEvaPeriodTypeInfo" parameterClass='linkMap'> 
+	<![CDATA[
+		INSERT INTO EVA_PERIOD_TYPE 
+		    (	EV_TYPE_NO,
+		        EV_PERIOD_ID, 
+			    EV_TYPE_ID, 
+			    DESCRIPTION,
+			    REMARK,
+			    CREATE_DATE, 
+			    CREATED_BY, 
+			    ACTIVITY)
+		VALUES (EVA_PERIOD_TYPE_SEQ.NEXTVAL,
+		        #EV_PERIOD_ID#, 
+			    #EV_TYPE_ID#,  
+			    #DESCRIPTION#, 
+			    #REMARK#, 
+			    SYSDATE, 
+			    #CREATED_BY#, 
+			    1)
+		]]> 
+	</insert>
+	 <update id="updateEvaPeriodTypeInfo" parameterClass="linkMap" >
+		<![CDATA[
+			UPDATE EVA_PERIOD_TYPE EVAPT
+				SET  
+					EVAPT.EV_TYPE_ID = #EV_TYPE_ID#,
+					EVAPT.DESCRIPTION = #DESCRIPTION#,
+					EVAPT.REMARK = #REMARK#, 
+					EVAPT.UPDATE_DATE = SYSDATE ,
+					EVAPT.UPDATED_BY = #UPDATED_BY# 
+				WHERE EVAPT.EV_TYPE_NO = #EV_TYPE_NO#
+		]]>  
+	</update> 
+	
+	<delete id="deleteEvaPeriodTypeInfo" parameterClass="linkMap" >
+		<![CDATA[
+			DELETE EVA_PERIOD_TYPE EVAPT WHERE 1 = 1
+		]]> 
+	    <isEmpty prepend="AND" property="EV_TYPE_NO">
+	        <![CDATA[
+	        		1 = 2
+	        	]]>
+	    </isEmpty> 
+	    <isNotEmpty prepend="AND" property="EV_TYPE_NO">
+	        <![CDATA[
+	        		EVAPT.EV_TYPE_NO = #EV_TYPE_NO#
+	        	]]>
+	    </isNotEmpty> 
+	    <isNotEmpty prepend="AND" property="EV_PERIOD_ID">
+	        <![CDATA[
+	        		EVAPT.EV_PERIOD_ID = #EV_PERIOD_ID#
+	        	]]>
+	    </isNotEmpty> 
+	    <isNotEmpty prepend="AND" property="EV_TYPE_ID">
+	        <![CDATA[
+	        		EVAPT.EV_TYPE_ID = #EV_TYPE_ID#
+	        	]]>
+	    </isNotEmpty> 
+	</delete> 
+	<!-- 返回年假 -->
+	<select id="getEvaPeriodTypeInfo" parameterClass="linkMap"
+		resultClass="linkMap">
+		<![CDATA[	
+			SELECT EVAPT.EV_TYPE_NO,
+			       EVAPT.EV_PERIOD_ID,
+			       EVAP.EV_YEAR,
+		           DECODE(#language#, 'en', EVAP.EV_PERIOD_EN_NAME, EVAP.EV_PERIOD_NAME) EV_PERIOD_NAME,  
+			       EVAPT.EV_TYPE_ID,
+		           DECODE(#language#, 'en', A.CODE_EN_NAME, A.CODE_NAME) EV_TYPE_NAME,  
+			       EVAPT.DESCRIPTION,
+			       EVAPT.REMARK
+			  FROM EVA_PERIOD_TYPE EVAPT, EVA_PERIOD EVAP,SY_CODE A
+			 WHERE EVAPT.EV_PERIOD_ID = EVAP.EV_PERIOD_ID
+			   AND EVAPT.EV_TYPE_ID = A.CODE_ID(+)
+			   AND EVAPT.ACTIVITY = 1
+		]]>
+		<include refid="EvaPeriodTypeInfoCondition" />
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		  ORDER BY $sortname$ $sortorder$
+		    ]]>
+		</isNotEmpty>
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+	 		 	ORDER BY EVAPT.EV_PERIOD_ID
+			 ]]>
+		</isEmpty> 
+	</select>
+	 <select id="getEvaPeriodTypeInfoCnt" parameterClass="linkMap"
+		resultClass="int">
+		<![CDATA[	
+		    SELECT COUNT(*)
+			  FROM EVA_PERIOD_TYPE EVAPT, EVA_PERIOD EVAP,SY_CODE A
+			 WHERE EVAPT.EV_PERIOD_ID = EVAP.EV_PERIOD_ID
+			   AND EVAPT.EV_TYPE_ID = A.CODE_ID(+)
+			   AND EVAPT.ACTIVITY = 1
+		]]>
+		<include refid="EvaPeriodTypeInfoCondition" />
+	</select>
+	
+	<sql id="EvaPeriodTypeItemInfoCondition">
+		<isNotEmpty prepend="AND" property="EV_PERIOD_ID">
+			<![CDATA[
+				EVATI.EV_PERIOD_ID=#EV_PERIOD_ID#
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="EV_TYPE_ID">
+			<![CDATA[
+				EVATI.EV_TYPE_ID=#EV_TYPE_ID#
+			]]>
+		</isNotEmpty> 
+		   
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+				EVATI.CPNY_ID=#CPNY_ID#
+			]]>
+		</isNotEmpty> 
+	</sql>  
+	<!-- 评价类型 -->
+	<insert id="addEvaPeriodTypeItemInfo" parameterClass='linkMap'> 
+	<![CDATA[
+		INSERT INTO EVA_TYPE_ITEM 
+		    (	EV_PERIOD_ID, 
+			    EV_TYPE_ID, 
+			    EV_ITEM_ID,
+			    EV_ITEM_ORDER,
+			    EV_PERCENTAGE,
+			    DESCRIPTION,
+			    REMARK,
+			    CREATE_DATE, 
+			    CREATED_BY, 
+			    ACTIVITY,
+			    CPNY_ID)
+		VALUES (#EV_PERIOD_ID#, 
+			    #EV_TYPE_ID#,  
+			    #EV_ITEM_ID#,   
+			    #EV_ITEM_ORDER#,  
+			    #EV_PERCENTAGE#,
+			    #DESCRIPTION#, 
+			    #REMARK#, 
+			    SYSDATE, 
+			    #CREATED_BY#, 
+			    1,
+			    #CPNY_ID#)
+		]]> 
+	</insert>
+	 <update id="updateEvaPeriodTypeItemInfo" parameterClass="linkMap" >
+		<![CDATA[
+			UPDATE EVA_TYPE_ITEM EVATI
+				SET EVATI.DESCRIPTION = #DESCRIPTION#,
+					EVATI.REMARK = #REMARK#, 
+					EVATI.EV_ITEM_ORDER = #EV_ITEM_ORDER#, 
+					EVATI.EV_PERCENTAGE = #EV_PERCENTAGE#, 
+					EVATI.UPDATE_DATE = SYSDATE ,
+					EVATI.UPDATED_BY = #UPDATED_BY# 
+				WHERE EVATI.EV_PERIOD_ID = #EV_PERIOD_ID#
+				  AND EVATI.EV_TYPE_ID = #EV_TYPE_ID#
+				  AND EVATI.EV_ITEM_ID = #EV_ITEM_ID#
+		]]>  
+	</update> 
+	
+	<delete id="deleteEvaPeriodTypeItemInfo" parameterClass="linkMap" >
+		<![CDATA[
+			DELETE EVA_TYPE_ITEM EVATI WHERE 1 = 1
+		]]> 
+	    <isEmpty prepend="AND" property="EV_PERIOD_ID">
+	        <![CDATA[
+	        		1 = 2
+	        	]]>
+	    </isEmpty> 
+	    <isEmpty prepend="AND" property="EV_TYPE_ID">
+	        <![CDATA[
+	        		1 = 2
+	        	]]>
+	    </isEmpty>  
+	    <isNotEmpty prepend="AND" property="EV_PERIOD_ID">
+	        <![CDATA[
+	        		EVATI.EV_PERIOD_ID = #EV_PERIOD_ID#
+	        	]]>
+	    </isNotEmpty> 
+	    <isNotEmpty prepend="AND" property="EV_TYPE_ID">
+	        <![CDATA[
+	        		EVATI.EV_TYPE_ID = #EV_TYPE_ID#
+	        	]]>
+	    </isNotEmpty> 
+	    <isNotEmpty prepend="AND" property="EV_ITEM_ID">
+	        <![CDATA[
+	        		EVATI.EV_ITEM_ID = #EV_ITEM_ID#
+	        	]]>
+	    </isNotEmpty>
+	</delete> 
+	<!-- 返回年假 -->
+	<select id="getEvaPeriodTypeItemInfo" parameterClass="linkMap"
+		resultClass="linkMap">
+		<![CDATA[	
+		SELECT EVAPT.EV_PERIOD_ID,
+		       EVAP.EV_YEAR,
+		       DECODE(#language#, 'en', EVAP.EV_PERIOD_EN_NAME, EVAP.EV_PERIOD_NAME) EV_PERIOD_NAME,
+		       EVAPT.EV_TYPE_ID,
+		       DECODE(#language#, 'en', A.CODE_EN_NAME, A.CODE_NAME) EV_TYPE_NAME,
+		       EVATI.EV_ITEM_ID,
+		       DECODE(#language#, 'en', B.CODE_EN_NAME, B.CODE_NAME) EV_ITEM_NAME,
+		       EVATI.EV_PERCENTAGE,
+		       EVATI.DESCRIPTION,
+		       EVATI.REMARK
+		  FROM EVA_TYPE_ITEM EVATI, EVA_PERIOD_TYPE EVAPT, EVA_PERIOD EVAP, SY_CODE A, SY_CODE B
+		 WHERE EVATI.EV_PERIOD_ID = EVAP.EV_PERIOD_ID
+		   AND EVATI.EV_TYPE_ID = EVAPT.EV_TYPE_ID
+		   AND EVAPT.EV_PERIOD_ID = EVAP.EV_PERIOD_ID
+		   AND EVAPT.EV_TYPE_ID = A.CODE_ID(+)
+		   AND EVATI.EV_ITEM_ID = B.CODE_ID(+)
+		   AND EVAPT.ACTIVITY = 1
+		   AND EVATI.ACTIVITY = 1
+           AND EVAP.ACTIVITY =1
+		]]>
+		<include refid="EvaPeriodTypeItemInfoCondition" />
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		  ORDER BY $sortname$ $sortorder$
+		    ]]>
+		</isNotEmpty>
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+	 		 	ORDER BY EVATI.EV_ITEM_ORDER
+			 ]]>
+		</isEmpty> 
+	</select>
+	 <select id="getEvaPeriodTypeItemInfoCnt" parameterClass="linkMap"
+		resultClass="int">
+		<![CDATA[	
+		    SELECT COUNT(*)
+			  FROM EVA_TYPE_ITEM EVATI, EVA_PERIOD_TYPE EVAPT, EVA_PERIOD EVAP, SY_CODE A, SY_CODE B
+			 WHERE EVATI.EV_PERIOD_ID = EVAP.EV_PERIOD_ID
+			   AND EVATI.EV_TYPE_ID = EVAPT.EV_TYPE_ID
+			   AND EVAPT.EV_PERIOD_ID = EVAP.EV_PERIOD_ID
+			   AND EVAPT.EV_TYPE_ID = A.CODE_ID(+)
+			   AND EVATI.EV_ITEM_ID = B.CODE_ID(+)
+			   AND EVAPT.ACTIVITY = 1
+			   AND EVATI.ACTIVITY = 1
+               AND EVAP.ACTIVITY =1
+		]]>
+		<include refid="EvaPeriodTypeItemInfoCondition" />
+	</select>
+	
+	<sql id="EvaTypeProcessInfoCondition">
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+				(	
+					EVAP.EV_PERIOD_NAME 		     LIKE '%'||TRIM(#keyWord#)||'%'
+					OR EVAP.EV_PERIOD_ID 			 LIKE '%'||TRIM(#keyWord#)||'%' 
+					OR A.CODE_NAME 			         LIKE '%'||TRIM(#keyWord#)||'%' 
+					OR B.CODE_NAME 			         LIKE '%'||TRIM(#keyWord#)||'%' 
+					OR upper(EVAP.EV_PERIOD_EN_NAME) LIKE '%'||TRIM(upper(#keyWord#))||'%'
+					OR upper(A.CODE_EN_NAME)         LIKE '%'||TRIM(upper(#keyWord#))||'%'
+					OR upper(B.CODE_EN_NAME)         LIKE '%'||TRIM(upper(#keyWord#))||'%'
+				)
+			]]>
+		</isNotEmpty>   
+		<isNotEmpty prepend="AND" property="EV_PROCESS_ID">
+			<![CDATA[
+				EVATP.EV_PROCESS_ID=#EV_PROCESS_ID#
+			]]>
+		</isNotEmpty> 
+		   
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+				EVATP.CPNY_ID=#CPNY_ID#
+			]]>
+		</isNotEmpty> 
+	</sql>  
+	<!-- 评价类型 -->
+	<insert id="addEvaTypeProcessInfo" parameterClass='linkMap'> 
+	<![CDATA[
+		INSERT INTO EVA_TYPE_PROCESS 
+		    (	EV_PERIOD_ID, 
+			    EV_TYPE_ID, 
+			    EV_PROCESS_ID,
+			    EV_PROCESS_ORDER,
+			    EV_PROCESS_SDATE,
+			    EV_PROCESS_EDATE,
+			    EV_PERCENTAGE,
+			    EV_OPERATE_ID,
+			    DESCRIPTION,
+			    REMARK,
+			    CREATE_DATE, 
+			    CREATED_BY, 
+			    ACTIVITY,
+			    CPNY_ID)
+		VALUES (#EV_PERIOD_ID#, 
+			    #EV_TYPE_ID#,  
+			    #EV_PROCESS_ID#,   
+			    #EV_PROCESS_ORDER#,  
+			    TO_DATE(#EV_PROCESS_SDATE#,'YYYY-MM-DD'), 
+			    TO_DATE(#EV_PROCESS_EDATE#,'YYYY-MM-DD'), 
+			    #EV_PERCENTAGE#,
+				#EV_OPERATE_ID#,
+			    #DESCRIPTION#, 
+			    #REMARK#, 
+			    SYSDATE, 
+			    #CREATED_BY#, 
+			    1,
+			    #CPNY_ID#)
+		]]> 
+	</insert>
+	 <update id="updateEvaTypeProcessInfo" parameterClass="linkMap" >
+		<![CDATA[
+			UPDATE EVA_TYPE_PROCESS EVATP
+				SET EVATP.DESCRIPTION = #DESCRIPTION#,
+					EVATP.REMARK = #REMARK#, 
+					EVATP.EV_PROCESS_ORDER = #EV_PROCESS_ORDER#, 
+					EVATP.EV_PROCESS_SDATE = TO_DATE(#EV_PROCESS_SDATE#,'YYYY-MM-DD'), 
+					EVATP.EV_PROCESS_EDATE = TO_DATE(#EV_PROCESS_EDATE#,'YYYY-MM-DD'), 
+					EVATP.EV_PERCENTAGE = #EV_PERCENTAGE#,
+					EVATP.EV_OPERATE_ID = #EV_OPERATE_ID#,
+					EVATP.UPDATE_DATE = SYSDATE ,
+					EVATP.UPDATED_BY = #UPDATED_BY# 
+				WHERE EVATP.EV_PERIOD_ID = #EV_PERIOD_ID#
+				  AND EVATP.EV_TYPE_ID = #EV_TYPE_ID#
+				  AND EVATP.EV_PROCESS_ID = #EV_PROCESS_ID#
+		]]>  
+	</update> 
+	 
+	<update id="updateEvaTypeProcessOrderInfo" parameterClass="linkMap" >
+		<![CDATA[
+				 UPDATE EVA_TYPE_PROCESS EVATP SET
+						EVATP.EV_PROCESS_ORDER = #EV_PROCESS_ORDER#,
+						EVATP.UPDATE_DATE = SYSDATE,
+						EVATP.UPDATED_BY = #UPDATED_BY#
+				WHERE EVATP.EV_PERIOD_ID = #EV_PERIOD_ID#
+				  AND EVATP.EV_TYPE_ID = #EV_TYPE_ID#
+				  AND EVATP.EV_PROCESS_ID = #EV_PROCESS_ID#
+		]]>
+	</update>
+	<delete id="deleteEvaTypeProcessInfo" parameterClass="linkMap" >
+		<![CDATA[
+			DELETE EVA_TYPE_PROCESS EVATP WHERE 1 = 1
+		]]> 
+	    <isEmpty prepend="AND" property="EV_PERIOD_ID">
+	        <![CDATA[
+	        		1 = 2
+	        	]]>
+	    </isEmpty> 
+	    <isEmpty prepend="AND" property="EV_TYPE_ID">
+	        <![CDATA[
+	        		1 = 2
+	        	]]>
+	    </isEmpty>  
+	    <isEmpty prepend="AND" property="EV_PROCESS_ID">
+	        <![CDATA[
+	        		1 = 2
+	        	]]>
+	    </isEmpty> 
+	    <isNotEmpty prepend="AND" property="EV_PERIOD_ID">
+	        <![CDATA[
+	        		EVATP.EV_PERIOD_ID = #EV_PERIOD_ID#
+	        	]]>
+	    </isNotEmpty> 
+	    <isNotEmpty prepend="AND" property="EV_TYPE_ID">
+	        <![CDATA[
+	        		EVATP.EV_TYPE_ID = #EV_TYPE_ID#
+	        	]]>
+	    </isNotEmpty> 
+	    <isNotEmpty prepend="AND" property="EV_PROCESS_ID">
+	        <![CDATA[
+	        		EVATP.EV_PROCESS_ID = #EV_PROCESS_ID#
+	        	]]>
+	    </isNotEmpty>
+	</delete> 
+	<!-- 返回年假 -->
+	<select id="getEvaTypeProcessInfo" parameterClass="linkMap"
+		resultClass="linkMap">
+		<![CDATA[	
+		SELECT EVATP.EV_PERIOD_ID,
+		       EVAP.EV_YEAR,
+		       DECODE('zh', 'en', EVAP.EV_PERIOD_EN_NAME, EVAP.EV_PERIOD_NAME) EV_PERIOD_NAME,
+		       EVATP.EV_TYPE_ID,
+		       DECODE('zh', 'en', A.CODE_EN_NAME, A.CODE_NAME) EV_TYPE_NAME,
+		       EVATP.EV_PROCESS_ID,
+		       DECODE('zh', 'en', B.CODE_EN_NAME, B.CODE_NAME) EV_PROCESS_NAME,
+		       EVATP.EV_OPERATE_ID,
+		       DECODE('zh', 'en', C.CODE_EN_NAME, C.CODE_NAME) EV_OPERATE_NAME,
+		       EVATP.EV_PROCESS_ORDER,
+		       (SELECT COUNT(T.EV_PROCESS_ORDER) 
+		          FROM EVA_TYPE_PROCESS T 
+		         WHERE T.EV_PERIOD_ID=#EV_PERIOD_ID#
+		           AND T.EV_TYPE_ID=#EV_TYPE_ID#) MAX_INDEX,
+		       TO_CHAR(EVATP.EV_PROCESS_SDATE,'YYYY-MM-DD') EV_PROCESS_SDATE,
+		       TO_CHAR(EVATP.EV_PROCESS_EDATE,'YYYY-MM-DD') EV_PROCESS_EDATE,
+		       EVATP.EV_PERCENTAGE,
+		       EVATP.DESCRIPTION,
+		       EVATP.REMARK
+		  FROM EVA_TYPE_PROCESS EVATP, 
+		       EVA_PERIOD       EVAP,
+		       SY_CODE          A,
+		       SY_CODE          B,
+		       SY_CODE          C
+		 WHERE EVATP.EV_PERIOD_ID = EVAP.EV_PERIOD_ID 
+		   AND EVATP.EV_TYPE_ID = A.CODE_ID(+)
+		   AND EVATP.EV_PROCESS_ID = B.CODE_ID(+) 
+		   AND EVATP.EV_OPERATE_ID = C.CODE_ID(+) 
+		   AND EVATP.ACTIVITY = 1
+		   AND EVAP.ACTIVITY =1
+		   AND EVATP.EV_PERIOD_ID=#EV_PERIOD_ID#
+		   AND EVATP.EV_TYPE_ID=#EV_TYPE_ID# 
+		]]>
+		<include refid="EvaTypeProcessInfoCondition" />
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		  ORDER BY $sortname$ $sortorder$
+		    ]]>
+		</isNotEmpty>
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+	 		 	ORDER BY EVATP.EV_PERIOD_ID,EVATP.EV_TYPE_ID, EVATP.EV_PROCESS_ORDER
+			 ]]>
+		</isEmpty> 
+	</select>
+	 <select id="getEvaTypeProcessInfoCnt" parameterClass="linkMap"
+		resultClass="int">
+		<![CDATA[	
+		SELECT COUNT(*)
+		  FROM EVA_TYPE_PROCESS EVATP, 
+		       EVA_PERIOD       EVAP,
+		       SY_CODE          A,
+		       SY_CODE          B,
+		       SY_CODE          C
+		 WHERE EVATP.EV_PERIOD_ID = EVAP.EV_PERIOD_ID 
+		   AND EVATP.EV_TYPE_ID = A.CODE_ID(+)
+		   AND EVATP.EV_PROCESS_ID = B.CODE_ID(+) 
+		   AND EVATP.EV_OPERATE_ID = C.CODE_ID(+) 
+		   AND EVATP.ACTIVITY = 1
+		   AND EVAP.ACTIVITY =1
+		   AND EVATP.EV_PERIOD_ID=#EV_PERIOD_ID#
+		   AND EVATP.EV_TYPE_ID=#EV_TYPE_ID# 
+		]]>
+		<include refid="EvaTypeProcessInfoCondition" />
+	</select>
+</sqlMap>

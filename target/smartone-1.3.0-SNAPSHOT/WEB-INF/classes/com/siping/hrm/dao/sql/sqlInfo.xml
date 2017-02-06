@@ -1,0 +1,817 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+    PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+    "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="hrm.searchinfo">
+    <select id="queryCellOptions" parameterClass="linkMap" resultClass="string">
+        <![CDATA[
+            SELECT $COLUMN_NAME$ CODE_NAME FROM $TABLE_NAME$
+            WHERE ACTIVITY = 1
+        ]]>
+        <isNotEmpty prepend="AND" property="PARENT_CODE">
+            <![CDATA[
+                PARENT_CODE = #PARENT_CODE#
+            ]]>
+        </isNotEmpty>
+    </select>
+    <select id="queryColumnTitles" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT DISTINCT T.COLUMN_NAME COLUMN_NAME, T.DATA_TYPE DATA_TYPE, 
+                T.DATA_LENGTH DATA_LENGTH, C.COMMENTS COMMENTS 
+            FROM USER_TAB_COLUMNS T, USER_COL_COMMENTS C
+            WHERE (C.TABLE_NAME = 'HR_PERSONAL_INFO' 
+                    OR C.TABLE_NAME = 'HR_EMPLOYEE')
+                AND T.TABLE_NAME = C.TABLE_NAME AND T.COLUMN_NAME = C.COLUMN_NAME
+        ]]>
+        <isNotEmpty prepend="AND" property="LIKE">
+            <![CDATA[
+                c.COMMENTS like #LIKE#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="UNLIKE">
+            <![CDATA[
+                c.COMMENTS not like #UNLIKE#
+            ]]>
+        </isNotEmpty>
+    </select>
+    <select id="getInfoTypeList" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[ 
+            SELECT TYPE_ID ID,
+                TYPE_NAME NAME,
+                TYPE_EN_NAME EN_NAME,
+                TYPE_ID, 
+                DECODE(#language#, 'en', TYPE_EN_NAME, TYPE_NAME) TYPE_NAME
+            FROM INFO_TYPE IT
+            WHERE ACTIVITY = 1
+                AND CPNY_ID = #CPNY_ID#
+        ]]>
+    </select>
+    <update id="createTmpPersonalInfo" parameterClass="linkMap">
+        <![CDATA[
+            DECLARE
+            V_NUM NUMBER;
+            BEGIN
+                SELECT COUNT(0) INTO V_NUM FROM DUAL WHERE EXISTS(SELECT 1 FROM USER_TABLES WHERE TABLE_NAME = 'TMP_PERSONAL_INFO');
+                IF V_NUM>0 THEN
+                    EXECUTE IMMEDIATE 'DROP TABLE TMP_PERSONAL_INFO' ;
+                END IF;
+                EXECUTE IMMEDIATE 'CREATE TABLE TMP_PERSONAL_INFO(FLAG VARCHAR2(20), $TITLES$)' ; 
+            
+                SELECT COUNT(0) INTO V_NUM FROM DUAL WHERE EXISTS(SELECT 1 FROM USER_TABLES WHERE TABLE_NAME = 'TMP_PERSONAL_TITLES');
+                IF V_NUM>0 THEN
+                    EXECUTE IMMEDIATE 'DROP TABLE TMP_PERSONAL_TITLES' ;
+                END IF;
+                EXECUTE IMMEDIATE 'CREATE TABLE TMP_PERSONAL_TITLES(TITLE_CODE VARCHAR2(40), TITLE_NAME VARCHAR2(40), DATATYPE VARCHAR2(40), PARENT_CODE VARCHAR2(40), TABLE_NAME VARCHAR2(40), COLUMN_CODE VARCHAR2(40), COLUMN_NAME VARCHAR2(40), ORDER_NO NUMBER(3))' ;
+            END;
+        ]]>
+    </update>
+    <insert id="updateTmpPersonalTitles" parameterClass="linkMap">
+        <![CDATA[
+            INSERT INTO TMP_PERSONAL_TITLES (TITLE_CODE,TITLE_NAME,DATATYPE,PARENT_CODE,TABLE_NAME,COLUMN_CODE,COLUMN_NAME,ORDER_NO)
+            VALUES( #TITLE_CODE# , #TITLE_NAME# , #DATA_TYPE#, #PARENT_CODE#, #TABLE_NAME#, #COLUMN_CODE#, #COLUMN_NAME#,#ORDERNO#)
+        ]]>
+    </insert>
+    <update id="updateTmpPersonalInfo" parameterClass="linkMap">
+        <![CDATA[
+            DECLARE
+            V_NUM NUMBER;
+            BEGIN
+                SELECT COUNT(0) INTO V_NUM FROM HR_PERSONAL_INFO WHERE EMPID= #EMPID:VARCHAR# ;
+                IF V_NUM=1 THEN
+                    EXECUTE IMMEDIATE 'INSERT INTO TMP_PERSONAL_INFO(FLAG, $TITLESSTR$ ) VALUES(''已存在'', $VALUESSTR$ )' ;
+                ELSE 
+                    EXECUTE IMMEDIATE 'INSERT INTO TMP_PERSONAL_INFO(FLAG, $TITLESSTR$ ) VALUES(''新增'', $VALUESSTR$ )' ;
+                END IF;
+            END;
+        ]]>
+    </update>
+    <select id="getColumnList" resultClass="linkMap">
+        <![CDATA[
+            SELECT TITLE_NAME TITLE_NAME, TITLE_CODE TITLE_CODE  FROM TMP_PERSONAL_TITLES ORDER BY ORDER_NO
+        ]]>
+    </select>
+    <select id="getTmpInfoList" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+        SELECT * FROM $TABLENAME$
+        ]]>
+    </select>
+    <update id="modifyTmpTable">
+        <![CDATA[
+            DECLARE 
+                CURSOR TITLECURSOR IS SELECT TITLE_CODE, TABLE_NAME, PARENT_CODE, COLUMN_CODE, COLUMN_NAME FROM TMP_PERSONAL_TITLES ;
+                TYPE CUR_TYPE IS REF CURSOR;
+                CUR CUR_TYPE;
+                STR VARCHAR2(500);
+                SUB_STR VARCHAR2(200);
+                QUERYSTR VARCHAR2(500);
+                QUERYREC VARCHAR2(100);
+                QUERYEMPID VARCHAR2(20);
+            BEGIN
+                FOR TITLEOBJECT IN TITLECURSOR LOOP
+                    IF NOT TITLEOBJECT.TABLE_NAME = '-1' THEN
+                        QUERYSTR := 'SELECT EMPID, '||TITLEOBJECT.TITLE_CODE||' FROM TMP_PERSONAL_INFO ';
+                        SUB_STR := 'SELECT '||TITLEOBJECT.COLUMN_CODE||' FROM '||TITLEOBJECT.TABLE_NAME||' WHERE ';
+                        IF NOT TITLEOBJECT.PARENT_CODE = '-1' THEN
+                            SUB_STR := SUB_STR||'PARENT_CODE = '''||TITLEOBJECT.PARENT_CODE||''' AND ';
+                        END IF;
+                        OPEN CUR FOR QUERYSTR;
+                        LOOP
+                            FETCH CUR INTO QUERYEMPID, QUERYREC;
+                            EXIT WHEN CUR%NOTFOUND;     
+                            STR := 'UPDATE TMP_PERSONAL_INFO SET '||TITLEOBJECT.TITLE_CODE||' = ('||SUB_STR||TITLEOBJECT.COLUMN_NAME||' = '''||
+                            QUERYREC||''' ) WHERE EMPID = '''||QUERYEMPID||'''';
+                            EXECUTE IMMEDIATE STR;
+                        END LOOP;
+                    END IF;
+                END LOOP;
+            END;
+        ]]>
+    </update>
+    <select id="getUpdateList" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT T.FLAG,
+            T.EMPID,
+            T.CHINESENAME,
+            T.EMP_TYPE_CODE,
+            T.C_EMAIL,
+            T.IDCARD_NO,
+            T.POST_ID,
+            TO_CHAR(T.JOIN_DATE,'yyyy-mm-dd') JOIN_DATE,
+            T.DEPTID,
+            T.STATUS_CODE,
+            TO_CHAR(T.END_PROBATION_DATE,'yyyy-mm-dd') END_PROBATION_DATE,
+            T.P_EMAIL,
+            #ADMIN_ID# UPDATED_BY
+        FROM TMP_PERSONAL_INFO T
+        WHERE FLAG = '修改'
+        ]]>
+    </select>
+    <select id="getEmpInsertList" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+        SELECT T.FLAG,
+            T.EMPID,
+            T.CHINESENAME,
+            T.EMP_TYPE_CODE,
+            T.C_EMAIL,
+            T.IDCARD_NO,
+            T.POST_ID,
+            TO_CHAR(T.JOIN_DATE,'yyyy-mm-dd') JOIN_DATE,
+            T.DEPTID,
+            T.STATUS_CODE,
+            TO_CHAR(T.END_PROBATION_DATE,'yyyy-mm-dd') END_PROBATION_DATE,
+            T.P_EMAIL,
+            #ADMIN_ID# CREATED_BY 
+        FROM TMP_PERSONAL_INFO T 
+        WHERE T.FLAG = '新增'
+        ]]>
+    </select>
+    <!-- comment : 员工录入 -->
+    <insert id="insertHire" parameterClass="linkMap"> 
+        <![CDATA[
+            DECLARE
+                VAR_EMPID VARCHAR2(20):=#EMPID:VARCHAR#;
+            BEGIN
+                INSERT INTO HR_EMPLOYEE
+                  (EMPID,
+                   DEPTID,
+                   CHINESENAME,
+                   CHINESE_PINYIN,
+                   ENGLISHNAME,
+                   POSITION_ID,
+                   DUTY_CODE,
+                   POST_ID,
+                   POST_GRADE_ID,
+                   POST_COEF,
+                   POST_COLUMN_CODE,
+                   POST_GRADE_LEVEL_CODE,
+                   POST_GROUP_ID,
+                   STATUS_CODE,
+                   JOIN_DATE, 
+                   HIRE_DATE,
+                   END_PROBATION_DATE,
+                   JOIN_TYPE_CODE,
+                   EMP_TYPE_CODE,
+                   COSTCENTER,
+                   CREATE_DATE,
+                   CREATED_BY, 
+                   ACTIVITY,
+                   ORDERNO,
+                   CPNY_ID)
+                VALUES
+                  (#EMPID:VARCHAR#,
+                   #DEPTID#,
+                   #CHINESENAME#,
+                   #CHINESE_PINYIN#,
+                   #ENGLISHNAME#,
+                   #POSITION_ID#,
+                   #DUTY_CODE#,
+                   #POST_ID#,
+                   #POST_GRADE_ID#,
+                   #POST_COEF#,
+                   #POST_COLUMN_CODE#,
+                   #POST_GRADE_LEVEL_CODE#,
+                   #POST_GROUP_ID#,
+                   #STATUS_CODE#, 
+                   TO_DATE(#JOIN_DATE#,'yyyy-mm-dd'),
+                   TO_DATE(#HIRE_DATE#,'yyyy-mm-dd'),
+                   TO_DATE(#END_PROBATION_DATE#,'yyyy-mm-dd'),
+                   #JOIN_TYPE_CODE#,
+                   #EMP_TYPE_CODE#,
+                   #COSTCENTER#,
+                   SYSDATE,
+                   #CREATED_BY#,
+                   1,
+                   #ORDERNO#,
+                   #CPNY_ID#);
+                INSERT INTO HR_PERSONAL_INFO(
+                    EMPID,
+                    DEGREE_CODE,
+                    EDU_HIS_CODE,
+                    MAJOR_CODE,
+                    GENDER_CODE,
+                    BIRTHDAY,
+                    RELIGION_CODE,
+                    NATION_CODE,
+                    NATIONALITY_CODE,
+                    BORNPLACE_CODE,
+                    POLITY_CODE,
+                    MEMBERSHIP,
+                    MARITAL_STATUS_CODE,
+                    WEDDING_DATE,
+                    IDCARD_TYPE_CODE,
+                    IDCARD_NO,
+                    IDCARD_PROVINCE,
+                    IDCARD_CITY,
+                    IDCARD_AREA,
+                    IDCARD_ADDRESS,
+                    HOME_PROVINCE,
+                    HOME_CITY,
+                    HOME_AREA,
+                    HOME_ADDRESS,
+                    IDCARD_POSTALCODE,
+                    HOME_POSTALCODE,
+                    P_EMAIL,
+                    C_EMAIL,
+                    OFFICE_PHONE,
+                    HOME_PHONE,
+                    CELLPHONE,
+                    FAX,
+                    FILE_RELATION_CODE,
+                    FILE_RELATION_ADDRESS,
+                    WORKAGE,
+                    PHOTOPATH,
+                    ORDERNO,
+                    CREATE_DATE,
+                    CREATED_BY, 
+                    ACTIVITY,
+                    CPNY_ID)
+                VALUES(
+                    #EMPID:VARCHAR#,
+                    #DEGREE_CODE#,
+                    #EDU_HIS_CODE#,
+                    #MAJOR_CODE#,
+                    #GENDER_CODE#, 
+                    TO_DATE(#BIRTHDAY#,'yyyy-mm-dd'),
+                    #RELIGION_CODE#,
+                    #NATION_CODE#,
+                    #NATIONALITY_CODE#,
+                    #BORNPLACE_CODE#,
+                    #POLITY_CODE#,
+                    #MEMBERSHIP#,
+                    #MARITAL_STATUS_CODE#, 
+                    TO_DATE(#WEDDING_DATE#,'yyyy-mm-dd'),
+                    #IDCARD_TYPE_CODE#,
+                    #IDCARD_NO#,
+                    #IDCARD_PROVINCE#,
+                    #IDCARD_CITY#,
+                    #IDCARD_AREA#,
+                    #IDCARD_ADDRESS#,
+                    #HOME_PROVINCE#,
+                    #HOME_CITY#,
+                    #HOME_AREA#,
+                    #HOME_ADDRESS#,
+                    #IDCARD_POSTALCODE#,
+                    #HOME_POSTALCODE#,
+                    #P_EMAIL#,
+                    #C_EMAIL#,
+                    #OFFICE_PHONE#,
+                    #HOME_PHONE#,
+                    #CELLPHONE#,
+                    #FAX#,
+                    #FILE_RELATION_CODE#,
+                    #FILE_RELATION_ADDRESS#,
+                    #WORKAGE#,
+                    #PHOTOPATH#,
+                    #ORDERNO#,
+                    SYSDATE,
+                    #CREATED_BY#, 
+                    1,
+                    #CPNY_ID#);
+                INSERT INTO HR_EMP_INFO(
+                    EMPID,SSN,HAFN,SHIFT_CODE,SUPPLIER_CODE,CREATE_DATE,CREATED_BY,ORDERNO,ACTIVITY
+                )VALUES(
+                    #EMPID:VARCHAR#,#SSN#,#HAFN#,#SHIFT_CODE#,#SUPPLIER_CODE#,SYSDATE,#CREATED_BY#,#ORDERNO#,1
+                );
+                INSERT INTO  HR_EXPERIENCE_INSIDE(
+                    EXP_INSIDE_NO,
+                    TRANS_NO,
+                    TRANS_CODE,
+                    EMPID,
+                    DEPTID, 
+                    POSITION_ID,
+                    DUTY_CODE,
+                    POST_ID,
+                    POST_GRADE_ID,
+                    POST_COEF,
+                    POST_COLUMN_CODE,
+                    POST_GRADE_LEVEL_CODE,
+                    POST_GROUP_ID,
+                    STATUS_CODE,
+                    START_DATE, 
+                    END_PROBATION_DATE,
+                    JOIN_TYPE_CODE,
+                    EMP_TYPE_CODE, 
+                    REMARK,
+                    CREATE_DATE,
+                    CREATED_BY, 
+                    AFFIRM_FLAG,
+                    ACTIVITY,
+                    CPNY_ID)
+                VALUES(
+                    HR_EXPERIENCE_INSIDE_SEQ.NEXTVAL,
+                    #TRANS_NO#,
+                    'TransCode_100',
+                    #EMPID:VARCHAR#,
+                    #DEPTID#, 
+                    #POSITION_ID#,
+                    #DUTY_CODE#,
+                    #POST_ID#,
+                    #POST_GRADE_ID#,
+                    #POST_COEF#,
+                    #POST_COLUMN_CODE#,
+                    #POST_GRADE_LEVEL_CODE#,
+                    #POST_GROUP_ID#,
+                    #STATUS_CODE#,
+                    TO_DATE(#JOIN_DATE#,'yyyy-mm-dd'),
+                    TO_DATE(#END_PROBATION_DATE#,'yyyy-mm-dd'),
+                    #JOIN_TYPE_CODE#,
+                    #EMP_TYPE_CODE#,
+                    #REMARK#, 
+                    SYSDATE,
+                    #CREATED_BY#,
+                    1,
+                    1,
+                    #CPNY_ID#);
+            END;
+        ]]>
+    </insert>
+    <!-- 更新员工信息 -->
+    <update id="updateHire" parameterClass="linkMap">
+    <![CDATA[
+    DECLARE
+      VAR_EMPID VARCHAR2(20):=#EMPID:VARCHAR#;
+    BEGIN
+    UPDATE HR_PERSONAL_INFO SET UPDATE_DATE = SYSDATE, UPDATED_BY = #UPDATED_BY#    
+    ]]>
+        <isNotEmpty property="DEGREE_CODE"> ,DEGREE_CODE = #DEGREE_CODE#
+        </isNotEmpty>
+        <isNotEmpty property="EDU_HIS_CODE"> ,EDU_HIS_CODE = #EDU_HIS_CODE#
+        </isNotEmpty>
+        <isNotEmpty property="MAJOR_CODE"> ,MAJOR_CODE = #MAJOR_CODE#
+        </isNotEmpty>
+        <isNotEmpty property="BIRTHDAY"> ,BIRTHDAY = #BIRTHDAY#
+        </isNotEmpty>
+        <isNotEmpty property="GENDER_CODE"> ,GENDER_CODE = #GENDER_CODE#
+        </isNotEmpty>
+        <isNotEmpty property="RELIGION_CODE"> ,RELIGION_CODE = #RELIGION_CODE#
+        </isNotEmpty>
+        <isNotEmpty property="NATION_CODE"> ,NATION_CODE = #NATION_CODE#
+        </isNotEmpty>
+        <isNotEmpty property="NATIONALITY_CODE"> ,NATIONALITY_CODE = #NATIONALITY_CODE#
+        </isNotEmpty>
+        <isNotEmpty property="BORNPLACE_CODE"> ,BORNPLACE_CODE = #BORNPLACE_CODE#
+        </isNotEmpty>
+        <isNotEmpty property="POLITY_CODE"> ,POLITY_CODE = #POLITY_CODE#
+        </isNotEmpty>
+        <isNotEmpty property="MEMBERSHIP"> ,MEMBERSHIP = #MEMBERSHIP#
+        </isNotEmpty>
+        <isNotEmpty property="MARITAL_STATUS_CODE"> ,MARITAL_STATUS_CODE = #MARITAL_STATUS_CODE#
+        </isNotEmpty>
+        <isNotEmpty property="WEDDING_DATE"> ,WEDDING_DATE = #WEDDING_DATE#
+        </isNotEmpty>
+        <isNotEmpty property="IDCARD_TYPE_CODE"> ,IDCARD_TYPE_CODE = #IDCARD_TYPE_CODE#
+        </isNotEmpty>
+        <isNotEmpty property="IDCARD_NO"> ,IDCARD_NO = #IDCARD_NO#
+        </isNotEmpty>
+        <isNotEmpty property="IDCARD_PROVINCE"> ,IDCARD_PROVINCE = #IDCARD_PROVINCE#
+        </isNotEmpty>
+        <isNotEmpty property="IDCARD_CITY"> ,IDCARD_CITY = #IDCARD_CITY#
+        </isNotEmpty>
+        <isNotEmpty property="IDCARD_AREA"> ,IDCARD_AREA = #IDCARD_AREA#
+        </isNotEmpty>
+        <isNotEmpty property="IDCARD_ADDRESS"> ,IDCARD_ADDRESS = #IDCARD_ADDRESS#
+        </isNotEmpty>
+        <isNotEmpty property="HOME_PROVINCE"> ,HOME_PROVINCE = #HOME_PROVINCE#
+        </isNotEmpty>
+        <isNotEmpty property="HOME_CITY"> ,HOME_CITY = #HOME_CITY#
+        </isNotEmpty>
+        <isNotEmpty property="HOME_AREA"> ,HOME_AREA = #HOME_AREA#
+        </isNotEmpty>
+        <isNotEmpty property="HOME_ADDRESS"> ,HOME_ADDRESS = #HOME_ADDRESS#
+        </isNotEmpty>
+        <isNotEmpty property="IDCARD_POSTALCODE"> ,IDCARD_POSTALCODE = #IDCARD_POSTALCODE#
+        </isNotEmpty>
+        <isNotEmpty property="HOME_POSTALCODE"> ,HOME_POSTALCODE = #HOME_POSTALCODE#
+        </isNotEmpty>
+        <isNotEmpty property="P_EMAIL"> ,P_EMAIL = #P_EMAIL#
+        </isNotEmpty>
+        <isNotEmpty property="C_EMAIL"> ,C_EMAIL = #C_EMAIL#
+        </isNotEmpty>
+        <isNotEmpty property="OFFICE_PHONE"> ,OFFICE_PHONE = #OFFICE_PHONE#
+        </isNotEmpty>
+        <isNotEmpty property="HOME_PHONE"> ,HOME_PHONE = #HOME_PHONE#
+        </isNotEmpty>
+        <isNotEmpty property="CELLPHONE"> ,CELLPHONE = #CELLPHONE#
+        </isNotEmpty>
+        <isNotEmpty property="FAX"> ,FAX = #FAX#
+        </isNotEmpty>
+        <isNotEmpty property="FILE_RELATION_CODE"> ,FILE_RELATION_CODE = #FILE_RELATION_CODE#
+        </isNotEmpty>
+        <isNotEmpty property="FILE_RELATION_ADDRESS"> ,FILE_RELATION_ADDRESS = #FILE_RELATION_ADDRESS#
+        </isNotEmpty>
+        <isNotEmpty property="WORKAGE"> ,WORKAGE = #WORKAGE#
+        </isNotEmpty>
+        <isNotEmpty property="PHOTOPATH"> ,PHOTOPATH = #PHOTOPATH#
+        </isNotEmpty>
+        <isNotEmpty property="ORDERNO"> ,ORDERNO = #ORDERNO#
+        </isNotEmpty>
+        WHERE EMPID = VAR_EMPID ; UPDATE SY_ADMIN SET UPDATE_DATE = SYSDATE, UPDATED_BY = #UPDATED_BY#
+        <isNotEmpty property="C_EMAIL"> ,USERNAME = (SELECT SUBSTR(#C_EMAIL#, 0, INSTR(#C_EMAIL#, '@', 1, 1) - 1) USERNAME FROM DUAL)
+        </isNotEmpty>
+        WHERE ADMINID = #EMPID:VARCHAR#; UPDATE HR_EMPLOYEE SET UPDATE_DATE = SYSDATE, UPDATED_BY = #UPDATED_BY#
+        <isNotEmpty property="DEPTID"> ,DEPTID = #DEPTID#
+        </isNotEmpty>
+        <isNotEmpty property="POSITION_ID"> ,POSITION_ID = #POSITION_ID#
+        </isNotEmpty>
+        <isNotEmpty property="POST_ID"> ,POST_ID = #POST_ID#
+        </isNotEmpty>
+        <isNotEmpty property="POST_GRADE_ID"> ,POST_GRADE_ID = #POST_GRADE_ID#
+        </isNotEmpty>
+        <isNotEmpty property="POST_GROUP_ID"> ,POST_GROUP_ID = #POST_GROUP_ID#
+        </isNotEmpty>
+        <isNotEmpty property="ENGLISHNAME"> ,ENGLISHNAME = #ENGLISHNAME#
+        </isNotEmpty>
+        <isNotEmpty property="CHINESE_PINYIN"> ,CHINESE_PINYIN = #CHINESE_PINYIN#
+        </isNotEmpty>
+        <isNotEmpty property="CHINESENAME"> ,CHINESENAME = #CHINESENAME#
+        </isNotEmpty>
+        <isNotEmpty property="STATUS_CODE"> ,STATUS_CODE = #STATUS_CODE#
+        </isNotEmpty>
+        <isNotEmpty property="EMP_TYPE_CODE"> ,EMP_TYPE_CODE = #EMP_TYPE_CODE#
+        </isNotEmpty>
+        <isNotEmpty property="JOIN_DATE"> ,JOIN_DATE = #JOIN_DATE#
+        </isNotEmpty>
+        <isNotEmpty property="HIRE_DATE"> ,HIRE_DATE = #HIRE_DATE#
+        </isNotEmpty>
+        <isNotEmpty property="END_PROBATION_DATE"> ,END_PROBATION_DATE = #END_PROBATION_DATE#
+        </isNotEmpty>
+        WHERE EMPID = VAR_EMPID ; UPDATE HR_EMP_INFO SET UPDATE_DATE = SYSDATE, UPDATED_BY = #UPDATED_BY#
+        <isNotEmpty property="SSN"> ,SSN = #SSN#
+        </isNotEmpty>
+        <isNotEmpty property="HAFN"> ,HAFN = #HAFN#
+        </isNotEmpty>
+        <isNotEmpty property="SHIFT_CODE"> ,SHIFT_CODE = #SHIFT_CODE#
+        </isNotEmpty>
+        <isNotEmpty property="SUPPLIER_CODE"> ,SUPPLIER_CODE = #SUPPLIER_CODE#
+        </isNotEmpty>
+        WHERE EMPID = VAR_EMPID ; UPDATE HR_EXPERIENCE_INSIDE SET UPDATE_DATE = SYSDATE, UPDATED_BY = #UPDATED_BY#
+        <isNotEmpty property="DEPTID"> ,DEPTID = #DEPTID#
+        </isNotEmpty>
+        <isNotEmpty property="POSITION_ID"> ,POSITION_ID = #POSITION_ID#
+        </isNotEmpty>
+        <isNotEmpty property="DUTY_CODE"> ,DUTY_CODE = #DUTY_CODE#
+        </isNotEmpty>
+        <isNotEmpty property="POST_ID"> ,POST_ID = #POST_ID#
+        </isNotEmpty>
+        <isNotEmpty property="POST_GRADE_ID"> ,POST_GRADE_ID = #POST_GRADE_ID#
+        </isNotEmpty>
+        <isNotEmpty property="POST_COLUMN_CODE"> ,POST_COLUMN_CODE = #POST_COLUMN_CODE#
+        </isNotEmpty>
+        <isNotEmpty property="POST_GROUP_ID"> ,POST_GROUP_ID = #POST_GROUP_ID#
+        </isNotEmpty>
+        <isNotEmpty property="STATUS_CODE"> ,STATUS_CODE = #STATUS_CODE#
+        </isNotEmpty>
+        <isNotEmpty property="END_PROBATION_DATE"> ,END_PROBATION_DATE = #END_PROBATION_DATE#
+        </isNotEmpty>
+        <isNotEmpty property="JOIN_TYPE_CODE"> ,JOIN_TYPE_CODE = #JOIN_TYPE_CODE#
+        </isNotEmpty>
+        <isNotEmpty property="EMP_TYPE_CODE"> ,EMP_TYPE_CODE = #EMP_TYPE_CODE#
+        </isNotEmpty>
+        <isNotEmpty property="POST_COEF"> ,POST_COEF = #POST_COEF#
+        </isNotEmpty>
+        <isNotEmpty property="POST_GRADE_LEVEL_CODE"> ,POST_GRADE_LEVEL_CODE = #POST_GRADE_LEVEL_CODE#
+        </isNotEmpty>
+        <isNotEmpty property="TRANS_NO"> ,TRANS_NO = #TRANS_NO#
+        </isNotEmpty>
+        <isNotEmpty property="TRANS_CODE"> ,TRANS_CODE = #TRANS_CODE#
+        </isNotEmpty>
+        WHERE EMPID = VAR_EMPID ; <![CDATA[
+    END;
+    ]]>
+    </update>
+    <select id="getInfoTableList" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[ 
+                SELECT TABLE_ID, 
+                       DECODE(#language#, 'en', TABLE_EN_NAME, TABLE_NAME) TABLE_NAME,
+                       TABLE_ID ID,
+                       TYPE_ID PID,
+                       DECODE(#language#, 'en', TABLE_EN_NAME, TABLE_NAME) NAME
+                 FROM INFO_TABLE IT
+                WHERE ACTIVITY = 1
+                  AND CPNY_ID = #CPNY_ID#
+        ]]>
+        <isNotEmpty prepend="AND" property="TYPE_ID">
+            <![CDATA[
+                TYPE_ID = #TYPE_ID#
+            ]]>
+        </isNotEmpty>
+    </select>
+    <select id="getInfoFieldList" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[ 
+                SELECT FIELD_ID, 
+                    DECODE(#language#, 'en', FIELD_EN_NAME, FIELD_NAME) FIELD_NAME
+                FROM INFO_FIELD IT
+                WHERE ACTIVITY = 1
+                    AND CPNY_ID = #CPNY_ID#
+        ]]>
+        <isNotEmpty prepend="AND" property="TABLE_ID">
+            <![CDATA[
+                TABLE_ID = #TABLE_ID#
+            ]]>
+        </isNotEmpty>
+    </select>
+    <select id="getFieldTableInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT DISTINCT IFT.TABLE_ID
+            FROM INFO_FIELD_TEMP IFT, INFO_TABLE IT
+            WHERE IFT.TABLE_ID = IT.TABLE_ID
+                AND IT.ACTIVITY = 1
+        ]]>
+        <isNotEmpty prepend="AND" property="TABLE_ID">
+            <![CDATA[
+                IT.TABLE_ID = #TABLE_ID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="CPNY_ID">
+            <![CDATA[
+                IT.CPNY_ID = #CPNY_ID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="CREATED_BY">
+            <![CDATA[
+                IFT.CREATED_BY = #CREATED_BY#
+            ]]>
+        </isNotEmpty>
+    </select>
+    <select id="getFieldInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+        SELECT IFT.FIELD_NO,
+               IFT.FIELD_ID,
+               DECODE(#language#, 'en', NVL(IFT.FIELD_EN_NAME,IFT.FIELD_NAME), IFT.FIELD_NAME) FIELD_NAME,
+               IFT.TABLE_ID,
+               DECODE(#language#, 'en', IT.TABLE_EN_NAME, IT.TABLE_NAME) TABLE_NAME
+                
+          FROM INFO_FIELD_TEMP     IFT,
+               INFO_TABLE          IT 
+         WHERE IFT.TABLE_ID = IT.TABLE_ID
+           AND IT.ACTIVITY = 1
+        ]]>
+        <isNotEmpty prepend="AND" property="TABLE_ID">
+            <![CDATA[
+                  IT.TABLE_ID = #TABLE_ID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="CPNY_ID">
+            <![CDATA[
+                  IT.CPNY_ID = #CPNY_ID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="CREATED_BY">
+            <![CDATA[
+                  IFT.CREATED_BY = #CREATED_BY#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                  ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                  ORDER BY IFT.TABLE_ID,IFT.ORDERNO
+            ]]>
+        </isEmpty>
+    </select>
+    <select id="getFieldInfoCnt" parameterClass="linkMap" resultClass="int" remapResults="true">
+        <![CDATA[ 
+            SELECT COUNT(*)
+              FROM INFO_FIELD_TEMP     IFT,
+                   INFO_TABLE          IT 
+             WHERE IFT.TABLE_ID = IT.TABLE_ID
+               AND IT.ACTIVITY = 1
+        ]]>
+        <isNotEmpty prepend="AND" property="TABLE_ID">
+            <![CDATA[
+                  IT.TABLE_ID = #TABLE_ID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="CPNY_ID">
+            <![CDATA[
+                  IT.CPNY_ID = #CPNY_ID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="CREATED_BY">
+            <![CDATA[
+                  IFT.CREATED_BY = #CREATED_BY#
+            ]]>
+        </isNotEmpty>
+    </select>
+    <insert id="addFieldInfo" parameterClass="linkMap"> 
+        <![CDATA[
+            INSERT INTO  INFO_FIELD_TEMP(
+                  FIELD_NO,
+                  FIELD_ID,
+                  TABLE_ID,
+                  FIELD_NAME,
+                  FIELD_EN_NAME,
+                  CODE,
+                  CREATE_DATE,
+                  CREATED_BY, 
+                  ORDERNO,
+                  ACTIVITY,
+                  CPNY_ID
+              )
+              SELECT
+                  FIELD_NO,
+                  FIELD_ID,
+                  TABLE_ID,
+                  FIELD_NAME,
+                  FIELD_EN_NAME,
+                  CODE,
+                  SYSDATE,
+                  #CREATED_BY#,
+                  ORDERNO,
+                  ACTIVITY,
+                  CPNY_ID
+             FROM INFO_FIELD
+            WHERE TABLE_ID = #TABLE_ID#
+              AND ACTIVITY = 1
+              AND CPNY_ID = #CPNY_ID# 
+              AND FIELD_ID NOT IN (SELECT FIELD_ID
+                                FROM INFO_FIELD_TEMP     IFT,
+                                     INFO_TABLE            IT 
+                               WHERE IFT.TABLE_ID = IT.TABLE_ID
+                                 AND IT.TABLE_ID = #TABLE_ID#
+                                 AND IT.CPNY_ID = #CPNY_ID# )
+        ]]>
+    </insert>
+    <delete id="deleteFieldInfo" parameterClass="linkMap">
+        <![CDATA[ 
+            DELETE 
+              FROM INFO_FIELD_TEMP IFT
+             WHERE 1 = 1
+        ]]>
+        <isNotEmpty prepend="AND" property="FIELD_ID">
+            <![CDATA[
+                  IFT.FIELD_ID = #FIELD_ID#
+                  AND IFT.TABLE_ID = #TABLE_ID#
+                  AND IFT.CREATED_BY = #CREATED_BY#
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="AND" property="FIELD_ID">
+            <isNotEmpty prepend="" property="TABLE_ID">
+            <![CDATA[
+                  IFT.TABLE_ID = #TABLE_ID#
+                  AND IFT.CREATED_BY = #CREATED_BY#
+            ]]>
+            </isNotEmpty>
+        </isEmpty>
+        <isNotEmpty prepend="AND" property="FIELD_NO">
+            <![CDATA[
+                  IFT.FIELD_NO = #FIELD_NO#
+                  AND IFT.FIELD_ID = #FIELD_ID#
+                  AND IFT.TABLE_ID = #TABLE_ID#
+                  AND IFT.CREATED_BY = #CREATED_BY#
+            ]]>
+        </isNotEmpty>
+    </delete>
+    <select id="getDataInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[   
+            $sqlStatement$ 
+         ]]>
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                  ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+    </select>
+    <select id="getDataInfoCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[   
+            $sqlStatement$ 
+        ]]>
+    </select>
+    <insert id="addCertificateInfo" parameterClass="linkMap">
+        <![CDATA[
+            DECLARE
+                VAR_QUALCARDNO VARCHAR2(200) := #QUAL_CARD_NO:VARCHAR#;
+                VAR_CNT Binary_Integer;
+            BEGIN
+                SELECT COUNT(QUAL_CARD_NO) INTO VAR_CNT FROM HR_QUALIFICATION
+                WHERE QUAL_CARD_NO = VAR_QUALCARDNO;
+                IF (VAR_CNT = 0) THEN  
+                    INSERT INTO HR_QUALIFICATION(
+                             QUAL_NO,
+                             EMPID,
+                             QUAL_TYPE_CODE,
+                             DATE_OBTAINED,
+                             QUAL_CARD_NO,
+                             QUAL_LOCATION,
+                             END_QUAL_DATE,
+                             CREATE_DATE,
+                             CREATED_BY,
+                             ACTIVITY,
+                             REMARK,
+                             CPNY_ID,
+                             QUAL_CARD_NAME,
+                             ANNUAL_DATE
+                    )VALUES(
+                             HR_QUALIFICATION_SEQ.NEXTVAL,
+                             #EMPID#,
+                             #QUAL_TYPE_CODE#,
+                             TO_DATE(#DATE_OBTAINED#,'YYYY-MM-DD'),
+                             #QUAL_CARD_NO#,
+                             #QUAL_LOCATION#,
+                             TO_DATE(#END_QUAL_DATE#,'YYYY-MM-DD'),
+                             SYSDATE,
+                             #CREATED_BY#,
+                             1,
+                             #REMARK#,
+                             #CPNY_ID#,
+                             #QUAL_CARD_NAME#,
+                             TO_DATE(#ANNUAL_DATE#,'YYYY-MM-DD')
+                        );
+                END IF;
+            END;
+        ]]>
+    </insert>
+    <insert id="addTrainingInfo" parameterClass="linkMap">
+        <![CDATA[
+            INSERT INTO HR_TRAINING_OUTSIDE(
+               TRAIN_OUT_NO,
+               EMPID,
+               COURSE_NAME,
+               START_DATE,
+               CLASS_HOUR,
+               TEACHER,
+               COURSE_CONTENT,
+               TEACHING_METHODS,
+               EVALUATION_METHODS,
+               MARK,
+               REMARK,
+               CREATE_DATE,
+               CREATED_BY
+          )VALUES(
+                 HR_TRAIN_OUT_SEQ.NEXTVAL,
+                 #EMPID#,
+                 #COURSE_NAME#,
+                 TO_DATE(#START_DATE#,'YYYY-MM-DD'),
+                 #CLASS_HOUR#,
+                 #TEACHER#,
+                 #COURSE_CONTENT#,
+                 #TEACHING_METHODS#,
+                 #EVALUATION_METHODS#,
+                 #MARK#,
+                 #REMARK#,
+                 SYSDATE,
+                 #CREATED_BY#
+            )
+        ]]>
+    </insert>
+    <select id="getEmpTmpInfoList" resultClass="linkMap">
+        <![CDATA[
+        SELECT T.FLAG,
+            T.EMPID,
+            T.CHINESENAME,
+            T.EMP_TYPE_CODE,
+            T.C_EMAIL,
+            T.IDCARD_NO,
+            T.POST_ID,
+            TO_CHAR(T.JOIN_DATE,'yyyy-mm-dd') JOIN_DATE,
+            T.DEPTID,
+            T.STATUS_CODE,
+            TO_CHAR(T.END_PROBATION_DATE,'yyyy-mm-dd') END_PROBATION_DATE,
+            T.P_EMAIL
+        FROM TMP_PERSONAL_INFO T
+        ]]>
+    </select>
+</sqlMap>

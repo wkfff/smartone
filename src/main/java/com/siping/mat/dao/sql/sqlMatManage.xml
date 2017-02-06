@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap
+    PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+    "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="mat.matManage">
+    <insert id="addMaterial" parameterClass="material">
+        <![CDATA[
+            INSERT INTO MAT_INFO(MAT_NO,
+                MAT_ID,
+                MAT_NAME,
+                MAT_UNIT_CODE,
+                WEIGHT_UNIT_CODE,
+                LENGTH_UNIT_CODE,
+                MAT_DESCRIPTION,
+                LENGTH,
+                WIDTH,
+                HEIGHT,
+                NET_WEIGHT,
+                ROUGH_WEIGHT,
+                PHOTOPATH,
+                CPNY_ID,
+                IS_SEPARATED,
+                OLD_NAME,
+                BP_NAME,
+                RUNNING_NO,
+                CREATE_DATE,
+                CREATED_BY,
+                ACTIVITY
+            )
+            VALUES (#no#,
+                #id#,
+                #name#,
+                #unit.id#,
+                #weightUnit.id#,
+                #lengthUnit.id#,
+                #description#,
+                #length#,
+                #width#,
+                #height#,
+                #netWeight#,
+                #roughWeight#,
+                #photoPath#,
+                #metaData.company.companyId#,
+                #separated#,
+                #oldName#,
+                #bpName#,
+                #processRunning.no#,
+                #metaData.createDate#,
+                #metaData.createUser.adminID#,
+                #active#)
+        ]]>
+    </insert>
+
+    <update id="updateMaterialData" parameterClass="material">
+        <![CDATA[
+            UPDATE MAT_INFO SET
+                MAT_NAME=#name#,
+                OLD_NAME=#oldName#,
+                BP_NAME=#bpName#,
+                MAT_UNIT_CODE=#unit.id#,
+                WEIGHT_UNIT_CODE=#weightUnit.id#,
+                LENGTH_UNIT_CODE=#lengthUnit.id#,
+                MAT_DESCRIPTION=#description#,
+                LENGTH=#length#,
+                WIDTH=#width#,
+                HEIGHT=#height#,
+                NET_WEIGHT=#netWeight#,
+                ROUGH_WEIGHT=#roughWeight#,
+                IS_SEPARATED=#separated#,
+                PHOTOPATH=#photoPath#,
+                UPDATED_BY=#metaData.lastUpdateUser.adminID#,
+                UPDATE_DATE=#metaData.lastUpdateDate#
+            WHERE CPNY_ID = #metaData.company.companyId#
+            AND MAT_NO = #no#
+        ]]>
+    </update>
+
+    <update id="removeMaterial" parameterClass="material">
+        <![CDATA[
+            UPDATE MAT_INFO SET
+                UPDATED_BY=#metaData.lastUpdateUser.adminID#,
+                UPDATE_DATE=#metaData.lastUpdateDate#,
+                ACTIVITY=#active#
+            WHERE CPNY_ID = #metaData.company.companyId#
+            AND MAT_NO = #no#
+        ]]>
+    </update>
+
+    <insert id="copyMaterial" parameterClass="linkMap">
+        <selectKey resultClass="long" keyProperty="NEW_MAT_ID">SELECT MAT_INFO_SEQ.NEXTVAL AS NEW_MAT_ID FROM DUAL
+        </selectKey>
+    </insert>
+    
+    
+    <select id="generateMatId" resultClass="string">
+        <![CDATA[
+            SELECT MAT_INFO_SEQ.NEXTVAL AS NEW_MAT_ID FROM DUAL
+        ]]>
+    </select>
+</sqlMap>

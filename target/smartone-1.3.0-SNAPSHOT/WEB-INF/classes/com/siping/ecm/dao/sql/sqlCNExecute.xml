@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="ecm.cnExecute">
+	
+	
+	<update id="approveChangeNo" parameterClass="linkMap">
+	<![CDATA[                  
+		DECLARE
+		BEGIN
+		UPDATE ECM_CHANGE_NO_INFO SET APPROVED_BY=#APPROVED_BY#, APPROVE_DATE=SYSDATE,
+		                   CN_STATUS_ID=#CN_STATUS_ID#
+                WHERE CHANGE_NO = #CHANGE_NO# ;   
+        END;                      
+	]]>	
+	</update>
+
+	
+	<insert id="addObject" parameterClass="linkMap">
+		<![CDATA[
+		INSERT INTO ECM_CHANGE_OBJECT_INFO(CHANGE_NO,OBJECT_CATEGORY,OBJECT_ID,
+		       CREATED_BY,CREATE_DATE,IS_UPDATED,ACTIVITY,CPNY_ID) 
+		VALUES(#CHANGE_NO#,#OBJECT_CATEGORY#,#OBJECT_ID#,
+		       #CREATED_BY#,SYSDATE,0,1,#CPNY_ID#)
+		]]>
+	</insert>
+	
+	<update id="setCNObject2Changed" parameterClass="linkMap">
+		<![CDATA[
+		UPDATE ECM_CHANGE_OBJECT_INFO SET IS_UPDATED = 1 
+		WHERE CHANGE_NO = #CHANGE_NO# AND OBJECT_CATEGORY = #OBJECT_CATEGORY# AND OBJECT_ID = #OBJECT_ID#
+		]]>
+	</update>
+	
+	<update id="overwriteObject" parameterClass="linkMap">
+		<![CDATA[
+		UPDATE ECM_CHANGE_OBJECT_INFO SET OBJECT_ID = #OBJECT_ID#
+		WHERE CHANGE_NO = #CHANGE_NO# AND OBJECT_CATEGORY = #OBJECT_CATEGORY# AND OBJECT_ID = #FORMOR_OBJECT_ID#
+		]]>
+	</update>
+
+</sqlMap>

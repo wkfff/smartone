@@ -1,0 +1,568 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="system.systemParameter">
+
+	<select id="getModuleParameterInfo" parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[
+			SELECT T.PARAMETER_NO,
+			       T.PARAMETER_ID,
+			       T.DESC_ZH,
+			       T.DESC_EN, 
+			       DECODE(T.CONTENT,
+			              'true',
+			              DECODE(#language#, 'en', 'true', '是'),
+			              'false',
+			              DECODE(#language#, 'en', 'false', '否'),
+			              T.CONTENT) CONTENT,
+			       T.REMARKS,
+			       T.DATA_TYPE_CODE,
+			       DECODE(#language#, 'en', C.CODE_EN_NAME, C.CODE_NAME) DATA_TYPE_NAME,
+			       T.MENU_CODE,
+			       DECODE(#language#, 'en', B.MENU_EN_INTRO, B.MENU_INTRO) MENU_INTRO,
+			       T.CPNY_ID,
+			       DECODE(#language#, 'en', A.CPNY_EN_NAME, A.CPNY_NAME) CPNY_NAME,
+			       T.ACTIVITY STATUS_ID,
+			       DECODE(T.ACTIVITY,
+			              '1',
+			              DECODE(#language#, 'en', 'Available', '可用'),
+			              DECODE(#language#, 'en', 'Unavailable', '不可用')) STATUS
+			  FROM SY_PARAMETER T, HR_COMPANY A,SY_MENU B,SY_CODE C
+			 WHERE T.CPNY_ID = A.CPNY_ID(+)		
+			   AND T.MENU_CODE = B.MENU_CODE(+)
+			   AND T.DATA_TYPE_CODE = C.CODE_ID(+)	
+		]]> 
+		<isNotEmpty prepend="AND" property="PARAMETER_NO">
+			<![CDATA[
+		 		  T.PARAMETER_NO = #PARAMETER_NO#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+		 		  (UPPER(replace(T.DESC_ZH,' ','')) LIKE '%' || UPPER(replace(#keyWord:VARCHAR#,' ','')) || '%' 
+		 		  OR UPPER(replace(T.DESC_EN,' ','')) LIKE '%' || UPPER(replace(#keyWord:VARCHAR#,' ','')) || '%' 
+		 		  OR UPPER(replace(T.PARAMETER_ID,' ','')) LIKE '%' || UPPER(replace(#keyWord:VARCHAR#,' ','')) || '%'
+		 		  OR UPPER(replace(T.CONTENT,' ','')) LIKE '%' || UPPER(replace(#keyWord:VARCHAR#,' ','')) || '%')
+		    ]]>
+		</isNotEmpty> 
+		
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+		 		  T.CPNY_ID = #CPNY_ID#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="ACTIVITY">
+			<![CDATA[
+		 		  T.ACTIVITY = #ACTIVITY#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="MENU_CODE">
+			<![CDATA[
+		 		  T.MENU_CODE = #MENU_CODE#
+		    ]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		  ORDER BY $sortname$ $sortorder$
+		    ]]>
+		</isNotEmpty>
+		
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY T.PARAMETER_NO, T.PARAMETER_ID
+			]]>
+		</isEmpty>
+	</select>
+	
+	 <select id="getModuleParameterInfoCnt" parameterClass="linkMap"  resultClass="int">
+		<![CDATA[
+				SELECT COUNT(*)
+				 FROM SY_PARAMETER T, HR_COMPANY A,SY_MENU B,SY_CODE C
+			 WHERE T.CPNY_ID = A.CPNY_ID(+)		
+			   AND T.MENU_CODE = B.MENU_CODE(+)
+			   AND T.DATA_TYPE_CODE = C.CODE_ID(+)	  
+		]]>
+		<isNotEmpty prepend="AND" property="PARAMETER_NO">
+			<![CDATA[
+		 		  T.PARAMETER_NO = #PARAMETER_NO#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+		 		  (UPPER(replace(T.DESC_ZH,' ','')) LIKE '%' || UPPER(replace(#keyWord:VARCHAR#,' ','')) || '%' 
+		 		  OR UPPER(replace(T.DESC_EN,' ','')) LIKE '%' || UPPER(replace(#keyWord:VARCHAR#,' ','')) || '%' 
+		 		  OR UPPER(replace(T.PARAMETER_ID,' ','')) LIKE '%' || UPPER(replace(#keyWord:VARCHAR#,' ','')) || '%'
+		 		  OR UPPER(replace(T.CONTENT,' ','')) LIKE '%' || UPPER(replace(#keyWord:VARCHAR#,' ','')) || '%')
+		    ]]>
+		</isNotEmpty> 
+		
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+		 		  T.CPNY_ID = #CPNY_ID#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="ACTIVITY">
+			<![CDATA[
+		 		  T.ACTIVITY = #ACTIVITY#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="MENU_CODE">
+			<![CDATA[
+		 		  T.MENU_CODE = #MENU_CODE#
+		    ]]>
+		</isNotEmpty>
+	</select>
+	 
+	<insert id="addModuleParameterInfo" parameterClass="linkMap"  >
+		<![CDATA[ 
+			 INSERT INTO SY_PARAMETER
+				(
+				  PARAMETER_NO,
+				  PARAMETER_ID,
+				  DESC_ZH,
+				  DESC_EN, 
+				  CONTENT, 
+			      REMARKS,
+			      DATA_TYPE_CODE,
+			      MENU_CODE,
+				  CREATED_BY ,
+				  CREATE_DATE,
+				  CPNY_ID,
+				  ACTIVITY   
+				)VALUES
+				(
+				  SY_PARAMETER_SEQ.NEXTVAL,
+				  #PARAMETER_ID#,
+				  #DESC_ZH#,
+				  #DESC_EN#,  
+				  DECODE(replace(#CONTENT#,' ',''),
+			              '是',
+			              'true',
+			              '否',
+			              'false',
+			              replace(#CONTENT#,' ','')),
+				  #REMARKS#,
+				  #DATA_TYPE_CODE#,
+				  #MENU_CODE#,
+				  #CREATED_BY#,
+				  SYSDATE,
+				  #CPNY_ID#,
+				  #STATUS_ID#
+				)
+		]]>
+	</insert>
+	
+	<update id="updateModuleParameterInfo" parameterClass="linkMap"  >
+		<![CDATA[
+				UPDATE SY_PARAMETER  SET
+				         PARAMETER_ID = #PARAMETER_ID#,
+				         DESC_ZH = #DESC_ZH#, 
+				         DESC_EN = #DESC_EN#, 
+					  	 CONTENT = DECODE(replace(#CONTENT#,' ',''),
+							              '是',
+							              'true',
+							              '否',
+							              'false',
+							              replace(#CONTENT#,' ','')),
+				         REMARKS = #REMARKS#,
+				  		 DATA_TYPE_CODE = #DATA_TYPE_CODE#,
+				         MENU_CODE = #MENU_CODE#,
+				         UPDATED_BY = #UPDATED_BY#,
+				         CPNY_ID = #CPNY_ID#,
+				         ACTIVITY = #STATUS_ID#,
+				         UPDATE_DATE = SYSDATE
+		         WHERE  PARAMETER_NO=#PARAMETER_NO#
+	
+		]]>
+	</update>
+	  
+	<delete id="deleteModuleParameterInfo" parameterClass="linkMap"   >
+		<![CDATA[ 
+		   DELETE FROM SY_PARAMETER T 
+		      WHERE T.PARAMETER_NO = #PARAMETER_NO# 
+		]]>
+	</delete> 
+	
+	<select id="getLeaveAppParameterInfo" parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[
+			SELECT T.PARAMETER_NO,
+			       T.PARAMETER_ID,
+			       T.LEAVE_TYPE_CODE,
+			       DECODE(#language#, 'en', D.CODE_EN_NAME, D.CODE_NAME) LEAVE_TYPE_NAME,
+			       T.LEAVE_LENGTH_S, 
+			       T.LEAVE_LENGTH_E, 
+			       T.AFFIRM_LEVEL,
+			       T.POST_ID, 
+			       DECODE(#language#, 'en', B.POST_EN_NAME, B.POST_NAME) POST_NAME,
+			       T.DEPTID, 
+			       DECODE(#language#, 'en', C.DEPT_EN_NAME, C.DEPTNAME) DEPTNAME,
+			       T.REMARKS,
+			       T.CPNY_ID,
+			       DECODE(#language#, 'en', A.CPNY_EN_NAME, A.CPNY_NAME) CPNY_NAME,
+			       T.ACTIVITY STATUS_ID,
+			       DECODE(T.ACTIVITY,
+			              '1',
+			              DECODE(#language#, 'en', 'Available', '可用'),
+			              DECODE(#language#, 'en', 'Unavailable', '不可用')) STATUS
+			  FROM ESS_LEAVE_PARAMETER T, HR_COMPANY A,HR_POST B,HR_DEPARTMENT C,SY_CODE D
+			 WHERE T.CPNY_ID = A.CPNY_ID(+)	
+			   AND T.POST_ID = B.POST_ID(+) 
+			   AND T.DEPTID = C.DEPTID(+) 
+			   AND T.LEAVE_TYPE_CODE = D.CODE_ID(+) 
+		]]> 
+		<isNotEmpty prepend="AND" property="PARAMETER_NO">
+			<![CDATA[
+		 		  T.PARAMETER_NO = #PARAMETER_NO#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="LEAVE_TYPE_CODE">
+			<![CDATA[
+		 		  T.LEAVE_TYPE_CODE = #LEAVE_TYPE_CODE#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="POST_ID">
+			<![CDATA[
+		 		  T.POST_ID = #POST_ID#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="DEPTID">
+			<![CDATA[
+		 		  T.DEPTID = #DEPTID#
+		    ]]>
+		</isNotEmpty>
+		  
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+		 		  T.CPNY_ID = #CPNY_ID#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="ACTIVITY">
+			<![CDATA[
+		 		  T.ACTIVITY = #ACTIVITY#
+		    ]]>
+		</isNotEmpty>
+		  
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		  ORDER BY $sortname$ $sortorder$
+		    ]]>
+		</isNotEmpty>
+		
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY T.PARAMETER_NO, T.PARAMETER_ID
+			]]>
+		</isEmpty>
+	</select>
+	
+	 <select id="getLeaveAppParameterInfoCnt" parameterClass="linkMap"  resultClass="int">
+		<![CDATA[
+				SELECT COUNT(*)
+				 FROM ESS_LEAVE_PARAMETER T, HR_COMPANY A,HR_POST B,HR_DEPARTMENT C
+			 WHERE T.CPNY_ID = A.CPNY_ID(+)	
+			   AND T.POST_ID = B.POST_ID(+) 
+			   AND T.DEPTID = C.DEPTID(+) 
+		]]>
+		<isNotEmpty prepend="AND" property="PARAMETER_NO">
+			<![CDATA[
+		 		  T.PARAMETER_NO = #PARAMETER_NO#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="LEAVE_TYPE_CODE">
+			<![CDATA[
+		 		  T.LEAVE_TYPE_CODE = #LEAVE_TYPE_CODE#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="POST_ID">
+			<![CDATA[
+		 		  T.POST_ID = #POST_ID#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="DEPTID">
+			<![CDATA[
+		 		  T.DEPTID = #DEPTID#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="DEPTID">
+			<![CDATA[
+		 		  T.DEPTID = #DEPTID#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+		 		  T.CPNY_ID = #CPNY_ID#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="ACTIVITY">
+			<![CDATA[
+		 		  T.ACTIVITY = #ACTIVITY#
+		    ]]>
+		</isNotEmpty>
+		
+	</select>
+	 
+	<insert id="addLeaveAppParameterInfo" parameterClass="linkMap"  >
+		<![CDATA[ 
+			 INSERT INTO ESS_LEAVE_PARAMETER
+				(
+				  PARAMETER_NO, 
+				  LEAVE_TYPE_CODE,
+				  LEAVE_LENGTH_S, 
+				  LEAVE_LENGTH_E, 
+				  AFFIRM_LEVEL, 
+				  POST_ID, 
+				  DEPTID, 
+			      REMARKS,  
+				  CREATED_BY ,
+				  CREATE_DATE,
+				  CPNY_ID,
+				  ACTIVITY   
+				)VALUES
+				(
+				  ESS_LEAVE_PARAMETER_SEQ.NEXTVAL,
+				  #LEAVE_TYPE_CODE#,
+				  #LEAVE_LENGTH_S#,
+				  #LEAVE_LENGTH_E#,
+				  #AFFIRM_LEVEL#, 
+				  #POST_ID#,
+				  #DEPTID#,  
+				  #REMARKS#, 
+				  #CREATED_BY#,
+				  SYSDATE,
+				  #CPNY_ID#,
+				  #STATUS_ID#
+				)
+		]]>
+	</insert>
+	
+	<update id="updateLeaveAppParameterInfo" parameterClass="linkMap"  >
+		<![CDATA[
+				UPDATE ESS_LEAVE_PARAMETER  SET
+				         LEAVE_TYPE_CODE = #LEAVE_TYPE_CODE#,
+				         LEAVE_LENGTH_S = #LEAVE_LENGTH_S#, 
+				         LEAVE_LENGTH_E = #LEAVE_LENGTH_E#, 
+				         AFFIRM_LEVEL = #AFFIRM_LEVEL#,  
+				         POST_ID = #POST_ID#, 
+				         DEPTID = #DEPTID#,  
+				         REMARKS = #REMARKS#, 
+				         UPDATED_BY = #UPDATED_BY#,
+				         CPNY_ID = #CPNY_ID#,
+				         ACTIVITY = #STATUS_ID#,
+				         UPDATE_DATE = SYSDATE
+		         WHERE  PARAMETER_NO=#PARAMETER_NO# 
+		]]>
+	</update>
+	  
+	<delete id="deleteLeaveAppParameterInfo" parameterClass="linkMap"   >
+		<![CDATA[ 
+		   DELETE FROM ESS_LEAVE_PARAMETER T 
+		      WHERE T.PARAMETER_NO = #PARAMETER_NO# 
+		]]>
+	</delete> 
+	
+	<select id="getOTAppParameterInfo" parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[
+			SELECT T.PARAMETER_NO,
+			       T.PARAMETER_ID,
+			       T.OT_TYPE_CODE,
+			       DECODE(#language#, 'en', D.CODE_EN_NAME, D.CODE_NAME) OT_TYPE_NAME,
+			       T.OT_LENGTH_S, 
+			       T.OT_LENGTH_E, 
+			       T.AFFIRM_LEVEL,
+			       T.POST_ID, 
+			       DECODE(#language#, 'en', B.POST_EN_NAME, B.POST_NAME) POST_NAME,
+			       T.DEPTID, 
+			       DECODE(#language#, 'en', C.DEPT_EN_NAME, C.DEPTNAME) DEPTNAME,
+			       T.REMARKS,
+			       T.CPNY_ID,
+			       DECODE(#language#, 'en', A.CPNY_EN_NAME, A.CPNY_NAME) CPNY_NAME,
+			       T.ACTIVITY STATUS_ID,
+			       DECODE(T.ACTIVITY,
+			              '1',
+			              DECODE(#language#, 'en', 'Available', '可用'),
+			              DECODE(#language#, 'en', 'Unavailable', '不可用')) STATUS
+			  FROM ESS_OT_PARAMETER T, HR_COMPANY A,HR_POST B,HR_DEPARTMENT C,SY_CODE D
+			 WHERE T.CPNY_ID = A.CPNY_ID(+)	
+			   AND T.POST_ID = B.POST_ID(+) 
+			   AND T.DEPTID = C.DEPTID(+) 
+			   AND T.OT_TYPE_CODE = D.CODE_ID(+) 
+		]]> 
+		<isNotEmpty prepend="AND" property="PARAMETER_NO">
+			<![CDATA[
+		 		  T.PARAMETER_NO = #PARAMETER_NO#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="OT_TYPE_CODE">
+			<![CDATA[
+		 		  T.OT_TYPE_CODE = #OT_TYPE_CODE#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="POST_ID">
+			<![CDATA[
+		 		  T.POST_ID = #POST_ID#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="DEPTID">
+			<![CDATA[
+		 		  T.DEPTID = #DEPTID#
+		    ]]>
+		</isNotEmpty>
+		  
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+		 		  T.CPNY_ID = #CPNY_ID#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="ACTIVITY">
+			<![CDATA[
+		 		  T.ACTIVITY = #ACTIVITY#
+		    ]]>
+		</isNotEmpty>
+		  
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		  ORDER BY $sortname$ $sortorder$
+		    ]]>
+		</isNotEmpty>
+		
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY T.PARAMETER_NO, T.PARAMETER_ID
+			]]>
+		</isEmpty>
+	</select>
+	
+	 <select id="getOTAppParameterInfoCnt" parameterClass="linkMap"  resultClass="int">
+		<![CDATA[
+				SELECT COUNT(*)
+				 FROM ESS_OT_PARAMETER T, HR_COMPANY A,HR_POST B,HR_DEPARTMENT C
+			 WHERE T.CPNY_ID = A.CPNY_ID(+)	
+			   AND T.POST_ID = B.POST_ID(+) 
+			   AND T.DEPTID = C.DEPTID(+) 
+		]]>
+		<isNotEmpty prepend="AND" property="PARAMETER_NO">
+			<![CDATA[
+		 		  T.PARAMETER_NO = #PARAMETER_NO#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="OT_TYPE_CODE">
+			<![CDATA[
+		 		  T.OT_TYPE_CODE = #OT_TYPE_CODE#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="POST_ID">
+			<![CDATA[
+		 		  T.POST_ID = #POST_ID#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="DEPTID">
+			<![CDATA[
+		 		  T.DEPTID = #DEPTID#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="DEPTID">
+			<![CDATA[
+		 		  T.DEPTID = #DEPTID#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+		 		  T.CPNY_ID = #CPNY_ID#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="ACTIVITY">
+			<![CDATA[
+		 		  T.ACTIVITY = #ACTIVITY#
+		    ]]>
+		</isNotEmpty>
+		
+	</select>
+	 
+	<insert id="addOTAppParameterInfo" parameterClass="linkMap"  >
+		<![CDATA[ 
+			 INSERT INTO ESS_OT_PARAMETER
+				(
+				  PARAMETER_NO, 
+				  OT_TYPE_CODE,
+				  OT_LENGTH_S, 
+				  OT_LENGTH_E, 
+				  AFFIRM_LEVEL, 
+				  POST_ID, 
+				  DEPTID, 
+			      REMARKS,  
+				  CREATED_BY ,
+				  CREATE_DATE,
+				  CPNY_ID,
+				  ACTIVITY   
+				)VALUES
+				(
+				  ESS_OT_PARAMETER_SEQ.NEXTVAL,
+				  #OT_TYPE_CODE#,
+				  #OT_LENGTH_S#,
+				  #OT_LENGTH_E#,
+				  #AFFIRM_LEVEL#, 
+				  #POST_ID#,
+				  #DEPTID#,  
+				  #REMARKS#, 
+				  #CREATED_BY#,
+				  SYSDATE,
+				  #CPNY_ID#,
+				  #STATUS_ID#
+				)
+		]]>
+	</insert>
+	
+	<update id="updateOTAppParameterInfo" parameterClass="linkMap"  >
+		<![CDATA[
+				UPDATE ESS_OT_PARAMETER  SET
+				         OT_TYPE_CODE = #OT_TYPE_CODE#,
+				         OT_LENGTH_S = #OT_LENGTH_S#, 
+				         OT_LENGTH_E = #OT_LENGTH_E#, 
+				         AFFIRM_LEVEL = #AFFIRM_LEVEL#,  
+				         POST_ID = #POST_ID#, 
+				         DEPTID = #DEPTID#,  
+				         REMARKS = #REMARKS#, 
+				         UPDATED_BY = #UPDATED_BY#,
+				         CPNY_ID = #CPNY_ID#,
+				         ACTIVITY = #STATUS_ID#,
+				         UPDATE_DATE = SYSDATE
+		         WHERE  PARAMETER_NO=#PARAMETER_NO# 
+		]]>
+	</update>
+	  
+	<delete id="deleteOTAppParameterInfo" parameterClass="linkMap"   >
+		<![CDATA[ 
+		   DELETE FROM ESS_OT_PARAMETER T 
+		      WHERE T.PARAMETER_NO = #PARAMETER_NO# 
+		]]>
+	</delete> 
+	 
+</sqlMap>

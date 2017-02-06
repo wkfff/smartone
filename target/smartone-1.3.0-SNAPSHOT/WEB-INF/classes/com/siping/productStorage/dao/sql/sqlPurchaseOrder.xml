@@ -1,0 +1,457 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap  PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="prostor.purchaseOrder">
+     <sql id="purchaseOrderCondition">
+        <isNotEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+                (   
+                    PPO.PURCHASE_ORDER_ID LIKE '%'||TRIM(#keyWord#)||'%'
+                    OR PPO.TRANSPORT_MODE LIKE '%'||TRIM(#keyWord#)||'%'
+                    OR PPO.REMARKS LIKE '%'||TRIM(#keyWord#)||'%'
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="E_DATE" >
+            <![CDATA[
+               PPO.PURCHASE_DATE <= TO_DATE(#E_DATE#,'YYYY-MM-DD')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="S_DATE" >
+            <![CDATA[
+               PPO.PURCHASE_DATE >= TO_DATE(#S_DATE#,'YYYY-MM-DD')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="PAYMENT_MODE" >
+            <![CDATA[
+               PPO.PAYMENT_MODE = #PAYMENT_MODE#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="STATUS" >
+            <![CDATA[
+               PPO.STATUS = #STATUS#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="AFFIRM_FLAG" >
+            <![CDATA[
+               PPO.AFFIRM_FLAG = #AFFIRM_FLAG#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="EMPID" >
+            <![CDATA[
+               PPO.EMPID = #EMPID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="PURCHASE_ORDER_ID" >
+            <![CDATA[
+               PPO.PURCHASE_ORDER_ID = #PURCHASE_ORDER_ID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="PURCHASE_ORDER_NO" >
+            <![CDATA[
+               PPO.PURCHASE_ORDER_NO = #PURCHASE_ORDER_NO#
+            ]]>
+        </isNotEmpty>
+     </sql>
+     <sql id="getPurchaseOrderCondition">
+        <isNotEmpty prepend="AND" property="PURCHASE_ORDER_ID" >
+            <![CDATA[
+               PPO.PURCHASE_ORDER_ID = #PURCHASE_ORDER_ID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="PURCHASE_ORDER_NO" >
+            <![CDATA[
+               PPO.PURCHASE_ORDER_NO = #PURCHASE_ORDER_NO#
+            ]]>
+        </isNotEmpty>
+     </sql>
+     <sql id="getSupplierProductCondition">
+        <isNotEmpty prepend="AND" property="SPECIFICATION" >
+            <![CDATA[
+               UPPER(PSP.SPECIFICATION) LIKE '%'||UPPER(TRIM(#SPECIFICATION#))||'%'
+            ]]>
+        </isNotEmpty>
+     </sql>
+     <sql id="getPurchaseOrderDetailListCondition">
+        <isNotEmpty prepend="AND" property="PURCHASE_ORDER_ID" >
+            <![CDATA[
+                    PPOD.PURCHASE_ORDER_ID = #PURCHASE_ORDER_ID#
+              and   PPO.PURCHASE_ORDER_ID = PPOD.PURCHASE_ORDER_ID(+)
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="PURCHASE_ORDER_NO" >
+            <![CDATA[
+                    PPO.PURCHASE_ORDER_NO = #PURCHASE_ORDER_NO#
+              AND   PPOD.PURCHASE_ORDER_ID = PPO.PURCHASE_ORDER_ID
+            ]]>
+        </isNotEmpty>
+     </sql>
+    <select id="getSupplier" parameterClass="linkMap"  resultClass="linkMap">
+        <![CDATA[
+            SELECT PSP.SUPPLIER_NO SUPPLIER_NO,
+                   PSP.PRODUCT_NAME PRODUCT_NAME,
+                   PSP.SPECIFICATION SPECIFICATION,
+                   PS.SUPPLIER_NAME SUPPLIER_NAME,
+                   PSP.UNIT_PRICE
+            FROM PROSTOR_SUPPLIER_PRODUCT PSP,
+                 PROSTOR_SUPPLIER PS
+            WHERE PSP.PRODUCT_NAME LIKE '%'||TRIM(#PRODUCT_NAME#)||'%'
+            AND   PSP.SUPPLIER_NO = PS.SUPPLIER_NO(+)
+            AND   PSP.ACTIVITY = 1
+            AND   PSP.CPNY_ID = #CPNY_ID#
+            AND   PS.ACTIVITY = 1
+        ]]> 
+    </select>
+    <select id="getSupplierProduct" parameterClass="linkMap"  resultClass="linkMap">
+        <![CDATA[
+            SELECT PSP.PRODUCT_NO PRODUCT_NO,
+                   PSP.PRODUCT_ID PRODUCT_ID,
+                   PSP.PRODUCT_NAME PRODUCT_NAME,
+                   PSP.SPECIFICATION SPECIFICATION,
+                   PSP.UNIT_PRICE UNIT_PRICE
+            FROM PROSTOR_SUPPLIER_PRODUCT PSP
+            WHERE PSP.PRODUCT_NAME LIKE '%'||TRIM(#PRODUCT_NAME#)||'%'
+            AND   PSP.SUPPLIER_NO = #SUPPLIER_NO#
+            AND   PSP.ACTIVITY = 1
+            AND   PSP.CPNY_ID = #CPNY_ID#
+        ]]>
+        <include refid="getSupplierProductCondition" />
+    </select>
+    <select id="getPurchaseSerialNum" parameterClass="linkMap"  resultClass="String">
+        <![CDATA[
+            SELECT FN_SY_PURCHASE_SERIAL_NUM() SERIAL_NUM FROM DUAL
+        ]]> 
+    </select>
+    <insert id="addPurchaseOrder" parameterClass="linkMap">
+        <![CDATA[
+                INSERT INTO PROSTOR_PURCHASE_ORDER
+                    (PURCHASE_ORDER_NO,
+                    PURCHASE_ORDER_ID,
+                    EMPID,
+                    PURCHASE_DATE,
+                    PAYABLE_AMOUNT,
+                    PAYMENT_MODE,
+                    TRANSPORT_MODE,
+                    STATUS,
+                    REMARKS,
+                    CREATE_DATE,
+                    CREATED_BY,
+                    ACTIVITY,
+                    PROCESSID,
+                    CPNY_ID,
+                    CHECKER_ID)
+                VALUES
+                    (PROSTOR_PURCHASE_ORDER_SEQ.NEXTVAL,
+                    #SERIAL_NUM#,
+                    #EMPID#,
+                    TO_DATE(#PURCHASE_DATE#,'yyyy-mm-dd'),
+                    TO_NUMBER(#PAYABLE_AMOUNT#),
+                    #PAYMENT_MODE#,
+                    #TRANSPORT_MODE#,
+                    'PurchaseOrderState0',
+                    #REMARKS#,
+                    SYSDATE,
+                    #CREATED_BY#,
+                    1,
+                    #PROCESSID#,
+                    #CPNY_ID#,
+                    #APPROVERID#)
+        ]]>
+    </insert>
+    <insert id="addPurchaseOrderDetail" parameterClass="linkMap">
+        <![CDATA[
+            DECLARE
+                VAR_PRODUCT_CNT NUMBER(10,2);
+                VAR_PRODUCT_QUANTITY NUMBER(10,2);
+            BEGIN
+                SELECT COUNT(*) INTO  VAR_PRODUCT_CNT 
+                FROM PROSTOR_PURCHASE_ORDER_DETAIL PPOD 
+                WHERE PPOD.PURCHASE_ORDER_ID = #SERIAL_NUM# 
+                AND PPOD.PRODUCT_NO=#PRODUCT_NO# 
+                AND PPOD.SUPPLIER_NO = #SUPPLIER_NO#;
+                
+                IF VAR_PRODUCT_CNT = 0 THEN
+                    INSERT INTO PROSTOR_PURCHASE_ORDER_DETAIL
+                        (PURCHASE_ORDER_DETAIL_NO,
+                        PURCHASE_ORDER_ID,
+                        PRODUCT_NO,
+                        QUANTITY,
+                        UNIT_PRICE,
+                        SUM_MONEY,
+                        SUPPLIER_NO,
+                        EXPECTED_ARRIVAL_DATE,
+                        SUPPLIER_PRODUCT_NO,
+                        REMARKS,
+                        CREATE_DATE,
+                        CREATED_BY,
+                        ACTIVITY,
+                        CPNY_ID,
+                        PRODUCT_ID,
+                        PRODUCT_NAME,
+                        PRODUCT_SPECIFICATION,
+                        PRODUCT_CAS,
+                        PRODUCT_UNIT,
+                        SUPPLIER_NAME,
+                        SUPPLIER_PRODUCT_ID,
+                        SUPPLIER_PRODUCT_NAME,
+                        SUPPLIER_PRODUCT_SPECIFICATION,
+                        SUPPLIER_UNIT_PRICE,
+                        SUM_MONEY_ADD)
+                    VALUES
+                        (PURCHASE_ORDER_DETAIL_SEQ.NEXTVAL,
+                        #SERIAL_NUM#,
+                        #PRODUCT_NO#,
+                        #QUANTITY#,
+                        #UNIT_PRICE#,
+                        #SUM_MONEY#,
+                        #SUPPLIER_NO#,
+                        #EXPECTED_ARRIVAL_DATE#,
+                        #SUPPLIER_PRODUCT_NO#,
+                        #REMARKS#,
+                        SYSDATE,
+                        #CREATED_BY#,
+                        1,
+                        #CPNY_ID#,
+                        #PRODUCT_ID#,
+                        #PRODUCT_NAME#,
+                        #PRODUCT_SPECIFICATION#,
+                        #PRODUCT_CAS#,
+                        #PRODUCT_UNIT#,
+                        #SUPPLIER_NAME#,
+                        #SUPPLIER_PRODUCT_ID#,
+                        #SUPPLIER_PRODUCT_NAME#,
+                        #SUPPLIER_PRODUCT_SPECIFICATION#,
+                        #SUPPLIER_UNIT_PRICE#,
+                        #SUM_MONEY_ADD#);
+                    ELSIF VAR_PRODUCT_CNT = 1 THEN
+                        SELECT PPOD.QUANTITY + #QUANTITY# INTO  VAR_PRODUCT_QUANTITY 
+                        FROM PROSTOR_PURCHASE_ORDER_DETAIL PPOD 
+                        WHERE PPOD.PURCHASE_ORDER_ID = #SERIAL_NUM# 
+                        AND PPOD.PRODUCT_NO=#PRODUCT_NO# 
+                        AND PPOD.SUPPLIER_NO = #SUPPLIER_NO#;
+                    
+                        UPDATE PROSTOR_PURCHASE_ORDER_DETAIL 
+                        SET QUANTITY = VAR_PRODUCT_QUANTITY,
+                            SUM_MONEY = #UNIT_PRICE# * VAR_PRODUCT_QUANTITY,
+                            SUM_MONEY_ADD = #UNIT_PRICE# * VAR_PRODUCT_QUANTITY
+                        WHERE PURCHASE_ORDER_ID = #SERIAL_NUM#
+                        AND PRODUCT_NO = #PRODUCT_NO#;
+                END IF;
+            END;
+        ]]>
+    </insert>
+    <select id="getPurchaseOrderList" parameterClass="linkMap"  resultClass="linkMap">
+        <![CDATA[
+            SELECT PPO.PURCHASE_ORDER_NO ORDER_NO,
+                   PPO.PURCHASE_ORDER_ID ORDER_ID,
+                   DECODE(#language#, 'en', HRE.ENGLISHNAME, HRE.CHINESENAME) as CHINESENAME, 
+                   TO_CHAR(PPO.PURCHASE_DATE,'YYYY-MM-DD') PURCHASE_DATE,
+                   PPO.PAYABLE_AMOUNT PAYABLE_AMOUNT,
+                   DECODE(#language#, 'en', A.CODE_EN_NAME, A.CODE_NAME) as PAYMENT_MODE, 
+                   PPO.TRANSPORT_MODE TRANSPORT_MODE,
+                   PPO.STATUS STATUS,
+                   PPO.AFFIRM_FLAG AFFIRM_FLAG,
+                   PPO.REMARKS,
+                   PPO.CHECKER_ID,
+                   PPO.PROCESSID,
+                   DECODE(#language#, 'en', HRE1.ENGLISHNAME, HRE1.CHINESENAME) as CHECKER
+            FROM PROSTOR_PURCHASE_ORDER PPO,
+                 HR_EMPLOYEE HRE, 
+                 SY_CODE A,
+                 HR_EMPLOYEE HRE1
+            WHERE PPO.EMPID = HRE.EMPID(+)
+            AND   PPO.PAYMENT_MODE = A.CODE_ID(+)
+            AND   PPO.CHECKER_ID = HRE1.EMPID(+)
+            AND   PPO.ACTIVITY = 1
+            AND   PPO.CPNY_ID = #CPNY_ID#
+        ]]> 
+        <include refid="purchaseOrderCondition" />
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY PPO.CREATE_DATE DESC
+            ]]>
+        </isEmpty>
+    </select>
+    <select id="getPurchaseOrder" parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[   
+            SELECT PPO.PURCHASE_ORDER_NO ORDER_NO,
+                   PPO.PURCHASE_ORDER_ID ORDER_ID,
+                   PPO.EMPID EMPID,
+                   DECODE(#language#, 'en', HRE.ENGLISHNAME, HRE.CHINESENAME) as CHINESENAME, 
+                   TO_CHAR(PPO.PURCHASE_DATE,'YYYY-MM-DD') PURCHASE_DATE,
+                   PPO.PAYABLE_AMOUNT PAYABLE_AMOUNT,
+                   PPO.PAYMENT_MODE PAYMENT_MODE_CODE,
+                   DECODE(#language#, 'en', A.CODE_EN_NAME, A.CODE_NAME) as PAYMENT_MODE, 
+                   PPO.TRANSPORT_MODE TRANSPORT_MODE,
+                   PPO.STATUS STATUS,
+                   PPO.REMARKS,
+                   PPO.CHECKER_ID CHECKER_ID,
+                   DECODE(#language#, 'en', HRE1.ENGLISHNAME, HRE1.CHINESENAME) as CHECKER,
+                   (SELECT SUM(PPOD.QUANTITY)
+                    FROM PROSTOR_PURCHASE_ORDER_DETAIL PPOD
+                    WHERE PPOD.PURCHASE_ORDER_ID = PPO.PURCHASE_ORDER_ID
+                    AND   PPOD.CPNY_ID = #CPNY_ID#
+                    AND   PPOD.ACTIVITY = 1) SUM_QUANTITY,
+                   HC.CPNY_NAME,
+                   HC.CPNY_ADDR,
+                   HC.CPNY_TEL_NO
+            FROM PROSTOR_PURCHASE_ORDER PPO,
+                 HR_EMPLOYEE HRE, 
+                 SY_CODE A,
+                 HR_EMPLOYEE HRE1,
+                 HR_COMPANY HC
+            WHERE PPO.EMPID = HRE.EMPID(+)
+            AND   PPO.PAYMENT_MODE = A.CODE_ID(+)
+            AND   PPO.CHECKER_ID = HRE1.EMPID(+)
+            AND   PPO.ACTIVITY = 1
+            AND   PPO.CPNY_ID = #CPNY_ID#
+            AND   HC.CPNY_ID = #CPNY_ID#
+        ]]>
+        <include refid="getPurchaseOrderCondition" />
+    </select>
+    <select id="getPurchaseOrderId" parameterClass="linkMap"  resultClass="String">
+        <![CDATA[
+            SELECT   PPO.PURCHASE_ORDER_ID PURCHASE_ORDER_ID
+              FROM   PROSTOR_PURCHASE_ORDER PPO
+              WHERE PPO.PURCHASE_ORDER_NO = #PURCHASE_ORDER_NO#
+        ]]>     
+    </select>
+    <select id="getPurchaseOrderCnt" parameterClass="linkMap"  resultClass="int">
+        <![CDATA[
+            SELECT COUNT(*)
+            FROM PROSTOR_PURCHASE_ORDER PPO,
+                 HR_EMPLOYEE HRE, 
+                 SY_CODE A,
+                 HR_EMPLOYEE HRE1
+            WHERE PPO.EMPID = HRE.EMPID(+)
+            AND   PPO.PAYMENT_MODE = A.CODE_ID(+)
+            AND   PPO.CHECKER_ID = HRE1.EMPID(+)
+            AND   PPO.ACTIVITY = 1
+            AND   PPO.CPNY_ID = #CPNY_ID#
+        ]]> 
+        <include refid="purchaseOrderCondition" />
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY PPO.CREATE_DATE DESC
+            ]]>
+        </isEmpty>
+    </select>
+    <select id="getPurchaseOrderDetailList" parameterClass="linkMap"  resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT   PPOD.PURCHASE_ORDER_DETAIL_NO DETAIL_NO,
+                     PPOD.PRODUCT_NO PRODUCT_NO,
+                     PPOD.PRODUCT_ID PRODUCT_ID,
+                     PPOD.PRODUCT_NAME PRODUCT_NAME,
+                     PPOD.PRODUCT_SPECIFICATION SPECIFICATION,
+                     PPOD.PRODUCT_NAME||'('||PPOD.PRODUCT_SPECIFICATION||')' NAME_SPECIFICATION,
+                     PPOD.PRODUCT_UNIT UNIT_CODE,
+                     PPOD.PRODUCT_CAS PRODUCT_CAS,
+                     PPOD.SUPPLIER_NO SUPPLIER_NO,
+                     PPOD.SUPPLIER_NAME SUPPLIER,
+                     PPOD.SUPPLIER_PRODUCT_NO SUPPLIER_PRODUCT_NO,
+                     PPOD.SUPPLIER_PRODUCT_ID SUPPLIER_PRODUCT_ID,
+                     PPOD.SUPPLIER_UNIT_PRICE UNIT_PRICE,
+                     PPOD.SUPPLIER_PRODUCT_NAME||'('||PPOD.SUPPLIER_PRODUCT_SPECIFICATION||')' SUPPLIER_PRODUCT,
+                     PPOD.SUPPLIER_PRODUCT_NAME SUPPLIER_PRODUCT_NAME,
+                     PPOD.SUPPLIER_PRODUCT_SPECIFICATION SUPPLIER_PRODUCT_SPECIFICATION,
+                     PPOD.QUANTITY QUANTITY,
+                     PPOD.SUM_MONEY_ADD SUM_MONEY,
+                     PPOD.EXPECTED_ARRIVAL_DATE ARRIVAL_DATE,
+                     PPOD.REMARKS REMARKS
+              FROM   PROSTOR_PURCHASE_ORDER_DETAIL PPOD,
+                     PROSTOR_PURCHASE_ORDER PPO
+              WHERE PPOD.CPNY_ID = #CPNY_ID#
+              AND   PPOD.ACTIVITY = 1
+        ]]>
+        <include refid="getPurchaseOrderDetailListCondition" />
+    </select>
+    <select id="getPurchaseOrderDetailCnt" parameterClass="linkMap"  resultClass="int">
+        <![CDATA[
+            SELECT   COUNT(*)
+              FROM   PROSTOR_PURCHASE_ORDER_DETAIL PPOD,
+                     PROSTOR_PURCHASE_ORDER PPO
+              WHERE PPO.PURCHASE_ORDER_NO = #PURCHASE_ORDER_NO#
+              AND   PPOD.PURCHASE_ORDER_ID = PPO.PURCHASE_ORDER_ID
+              AND   PPOD.CPNY_ID = #CPNY_ID#
+              AND   PPOD.ACTIVITY = 1
+        ]]>
+        <include refid="getPurchaseOrderDetailListCondition" />
+    </select>
+    <update id="deletePurchaseOrder" parameterClass="linkMap">
+        <![CDATA[
+            DECLARE
+            BEGIN
+                UPDATE PROSTOR_PURCHASE_ORDER SET ACTIVITY = 0 
+                WHERE PURCHASE_ORDER_ID = #PURCHASE_ORDER_ID#
+                AND CPNY_ID = #CPNY_ID#;
+                UPDATE PROSTOR_PURCHASE_ORDER_DETAIL SET ACTIVITY = 0 
+                WHERE PURCHASE_ORDER_ID = #PURCHASE_ORDER_ID#
+                AND CPNY_ID = #CPNY_ID#;
+            END; 
+        ]]> 
+    </update>
+    <update id="updatePurchaseOrder" parameterClass="linkMap">
+        <![CDATA[
+            UPDATE PROSTOR_PURCHASE_ORDER 
+            SET    EMPID = #EMPID#,
+                   PURCHASE_DATE = TO_DATE(#PURCHASE_DATE#,'yyyy-mm-dd'),
+                   PAYABLE_AMOUNT = #PAYABLE_AMOUNT#,
+                   PAYMENT_MODE = #PAYMENT_MODE#,
+                   STATUS = #STATUS#,
+                   UPDATE_DATE = SYSDATE,
+                   UPDATED_BY = #UPDATED_BY#,
+                   CPNY_ID = #CPNY_ID#,
+                   TRANSPORT_MODE = #TRANSPORT_MODE#,
+                   REMARKS = #REMARKS#,
+                   CHECKER_ID = #CHECKER_ID#
+            WHERE  PURCHASE_ORDER_NO = #PURCHASE_ORDER_NO#
+            AND    PURCHASE_ORDER_ID = #PURCHASE_ORDER_ID# 
+        ]]> 
+    </update>
+    <update id="updatePurchaseOrderDetail" parameterClass="linkMap">
+        <![CDATA[
+            UPDATE PROSTOR_PURCHASE_ORDER_DETAIL
+            SET    PRODUCT_NO = #PRODUCT_NO#,
+                   QUANTITY = #QUANTITY#,
+                   UNIT_PRICE = #UNIT_PRICE#,
+                   SUPPLIER_NO = #SUPPLIER_NO#,
+                   REMARKS = #REMARKS#,
+                   UPDATE_DATE = SYSDATE,
+                   UPDATED_BY = #UPDATED_BY#,
+                   CPNY_ID = #CPNY_ID#,
+                   SUM_MONEY = #SUM_MONEY#,
+                   EXPECTED_ARRIVAL_DATE = #EXPECTED_ARRIVAL_DATE#,
+                   SUPPLIER_PRODUCT_NO = #SUPPLIER_PRODUCT_NO#,
+                   PRODUCT_ID = #PRODUCT_ID#,
+                   PRODUCT_NAME= #PRODUCT_NAME#,
+                   PRODUCT_SPECIFICATION= #PRODUCT_SPECIFICATION#,
+                   PRODUCT_CAS= #PRODUCT_CAS#,
+                   PRODUCT_UNIT= #PRODUCT_UNIT#,
+                   SUPPLIER_NAME= #SUPPLIER_NAME#,
+                   SUPPLIER_PRODUCT_ID= #SUPPLIER_PRODUCT_ID#,
+                   SUPPLIER_PRODUCT_NAME= #SUPPLIER_PRODUCT_NAME#,
+                   SUPPLIER_PRODUCT_SPECIFICATION= #SUPPLIER_PRODUCT_SPECIFICATION#,
+                   SUPPLIER_UNIT_PRICE= #SUPPLIER_UNIT_PRICE#,
+                   SUM_MONEY_ADD= #SUM_MONEY_ADD#
+            WHERE  PURCHASE_ORDER_DETAIL_NO = #PURCHASE_ORDER_DETAIL_NO#
+            AND    PURCHASE_ORDER_ID = #PURCHASE_ORDER_ID#
+        ]]> 
+    </update>
+    <update id="deletePurchaseOrderDetail" parameterClass="linkMap">
+        <![CDATA[
+            UPDATE PROSTOR_PURCHASE_ORDER_DETAIL
+            SET    ACTIVITY = 0
+            WHERE  PURCHASE_ORDER_DETAIL_NO = #PURCHASE_ORDER_DETAIL_NO#
+        ]]> 
+    </update>
+</sqlMap>

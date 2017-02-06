@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap  PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="mobile.invitationManage">
+	<sql id="getCntCondition">
+		<isNotEmpty prepend="AND" property="CUST_NO" >
+			<![CDATA[
+    		   MI.CUST_NO = #CUST_NO#
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="INVITATION_ID" >
+			<![CDATA[
+    		   MI.INVITATION = #INVITATION_ID#
+			]]>
+		</isNotEmpty>
+	 </sql>
+	 <sql id="invitationCondition">
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+				(	
+					CBI.CUST_NAME LIKE '%'||TRIM(#keyWord#)||'%'
+					OR CBI.CUST_EN_NAME LIKE '%'||TRIM(#keyWord#)||'%'
+					OR MI.INVITATION_ID LIKE '%'||TRIM(#keyWord#)||'%'
+					OR MI.REMARK LIKE '%'||TRIM(#keyWord#)||'%'
+				)
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="E_DATE" >
+			<![CDATA[
+    		   MI.CREATE_DATE <= TO_DATE(#E_DATE#,'YYYY-MM-DD')
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="S_DATE" >
+			<![CDATA[
+    		   MI.CREATE_DATE >= TO_DATE(#S_DATE#,'YYYY-MM-DD')
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="BIND_STATUS" >
+			<![CDATA[
+    		   MI.BIND_STATUS = #BIND_STATUS#
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="USE_STATUS" >
+			<![CDATA[
+    		   MI.USE_STATUS = #USE_STATUS#
+			]]>
+		</isNotEmpty>
+	 </sql>
+	<insert id="addInvitationNotBind" parameterClass="linkMap">
+		<![CDATA[
+		  INSERT INTO MOBILE_INVITATION
+			          (INVITATION_NO,
+			          INVITATION_ID,
+			          BIND_STATUS,
+			          USE_STATUS,
+			          REMARK,
+			          CREATE_DATE,
+			          CREATED_BY,
+			          ACTIVITY,
+			          CPNY_ID)
+			        VALUES
+			          (MOBILE_INVITATION_SEQ.NEXTVAL,
+			          #INVITATION_ID#,
+			          'bind0',
+			          'use0',
+			          #REMARK#,
+			          SYSDATE,
+			          #CREATED_BY#,
+			          1,
+					  #CPNY_ID#)
+		]]>
+	</insert>
+	<insert id="addInvitationBind" parameterClass="linkMap">
+		<![CDATA[
+				INSERT INTO MOBILE_INVITATION
+				          (INVITATION_NO,
+				          INVITATION_ID,
+				          CUST_NO,
+				          BIND_STATUS,
+				          USE_STATUS,
+				          REMARK,
+				          CREATE_DATE,
+				          CREATED_BY,
+				          ACTIVITY,
+				          CPNY_ID)
+				    VALUES
+				          (MOBILE_INVITATION_SEQ.NEXTVAL,
+				          #INVITATION_ID#,
+				          #CUST_NO#,
+				          'bind1',
+				          'use0',
+				          #REMARK#,
+				          SYSDATE,
+				          #CREATED_BY#,
+				          1,
+					      #CPNY_ID#)
+		]]>
+	</insert>
+	<select id="getCntByCondition" parameterClass="linkMap"  resultClass="int">
+		<![CDATA[
+			SELECT COUNT(*)
+			FROM   MOBILE_INVITATION MI
+			AND    MI.CPNY_ID = #CPNY_ID#
+		]]> 	
+		<include refid="getCntCondition" />
+	</select>
+	<select id="getInvitationList" parameterClass="linkMap"  resultClass="linkMap">
+		<![CDATA[
+			SELECT MI.INVITATION_NO,
+			       MI.INVITATION_ID,
+			       MI.CUST_NO,
+			       DECODE(#language#, 'en', CBI.CUST_EN_NAME, CBI.CUST_NAME) CUST_NAME,
+			       MI.BIND_STATUS,
+			       DECODE(#language#, 'en', A.CODE_EN_NAME, A.CODE_NAME) BIND_STATUS_NAME,
+			       MI.USE_STATUS,
+			       DECODE(#language#, 'en', B.CODE_EN_NAME, B.CODE_NAME) USE_STATUS_NAME,
+			       MI.REMARK,
+			       TO_CHAR(MI.CREATE_DATE,'YYYY-MM-DD') CREATE_DATE,
+			       MI.CREATED_BY
+			FROM MOBILE_INVITATION MI,
+			     CUST_BASIC_INFO CBI,
+			     SY_CODE A,
+			     SY_CODE B
+			WHERE MI.CUST_NO = CBI.CUST_NO(+) 
+			AND   MI.BIND_STATUS = A.CODE_ID(+)
+			AND   MI.USE_STATUS = B.CODE_ID(+)
+			AND   MI.CPNY_ID = #CPNY_ID#
+		]]> 
+		<include refid="invitationCondition" />
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY $sortname$ $sortorder$
+			]]>
+		</isNotEmpty>
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY MI.CREATE_DATE DESC
+			]]>
+		</isEmpty>
+	</select>
+	<select id="getInvitationCnt" parameterClass="linkMap"  resultClass="int">
+		<![CDATA[
+			SELECT COUNT(*)
+			FROM MOBILE_INVITATION MI,
+			     CUST_BASIC_INFO CBI,
+			     SY_CODE A,
+			     SY_CODE B
+			WHERE MI.CUST_NO = CBI.CUST_NO(+) 
+			AND   MI.BIND_STATUS = A.CODE_ID(+)
+			AND   MI.USE_STATUS = B.CODE_ID(+)
+			AND   MI.CPNY_ID = #CPNY_ID#
+		]]> 
+		<include refid="invitationCondition" />
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY $sortname$ $sortorder$
+			]]>
+		</isNotEmpty>
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY MI.CREATE_DATE DESC
+			]]>
+		</isEmpty>
+	</select>
+	<delete id="deleteInvitation" parameterClass="linkMap">
+		<![CDATA[
+			DELETE FROM MOBILE_INVITATION
+			WHERE  INVITATION_NO = #INVITATION_NO#
+			AND    CPNY_ID = #CPNY_ID#
+		]]>
+	</delete>
+</sqlMap>

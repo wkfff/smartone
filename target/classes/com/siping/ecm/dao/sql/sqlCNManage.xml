@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap
+    PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+    "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="ecm.cnManage">
+    <insert id="addChangeNo" parameterClass="engineerChange">
+        <![CDATA[
+            INSERT INTO ECM_CHANGE_NO_INFO(
+                CHANGE_NO,
+                CHANGE_ID,
+                DESCRIPTION,
+                REASON,
+                CPNY_ID,
+                S_DATE,
+                E_DATE,
+                CREATE_DATE,
+                CREATED_BY,
+                ACTIVITY,
+                RUNNING_NO)
+            VALUES(
+                #no#,
+                #id#,
+                #description#,
+                #reason#,
+                #metaData.company.companyId#,
+                #startDate#,
+                #endDate#,
+                #metaData.createDate#,
+                #metaData.createUser.adminID#,
+                #active#,
+                #processRunning.no#)
+        ]]>
+    </insert>
+
+    <update id="updateChangeNo" parameterClass="engineerChange">
+        <![CDATA[
+            UPDATE ECM_CHANGE_NO_INFO SET
+                   UPDATED_BY=#metaData.lastUpdateUser.adminID#,
+                   UPDATE_DATE=#metaData.lastUpdateDate#,
+                   DESCRIPTION=#description#,
+                   REASON = #reason#,
+                   S_DATE = #startDate#,
+                   E_DATE = #endDate#
+            WHERE CPNY_ID = #metaData.company.companyId#
+            AND   CHANGE_NO = #no#
+        ]]>
+    </update>
+
+    <update id="removeChangeNo" parameterClass="engineerChange">
+        <![CDATA[
+            UPDATE ECM_CHANGE_NO_INFO SET
+                UPDATED_BY=#metaData.lastUpdateUser.adminID#,
+                UPDATE_DATE=#metaData.lastUpdateDate#,
+                ACTIVITY=#active#
+            WHERE CPNY_ID = #metaData.company.companyId#
+            AND   CHANGE_NO = #no#
+        ]]>
+    </update>
+
+    <insert id="addObject" parameterClass="linkMap">
+        <![CDATA[
+            INSERT INTO ECM_CHANGE_OBJECT_INFO(CHANGE_NO,OBJECT_CATEGORY,OBJECT_ID,
+                   CREATED_BY,CREATE_DATE,ACTIVITY,CPNY_ID)
+            VALUES(#CHANGE_NO#,#OBJECT_CATEGORY#,#OBJECT_ID#,
+                   #CREATED_BY#,SYSDATE,1,#CPNY_ID#)
+        ]]>
+    </insert>
+
+    <delete id="deleteObject" parameterClass="linkMap">
+        <![CDATA[
+            DELETE FROM ECM_CHANGE_OBJECT_INFO
+            WHERE OBJECT_ID = #OBJECT_ID#
+                AND OBJECT_CATEGORY = #OBJECT_CATEGORY#
+                AND CHANGE_NO = #CHANGE_NO#
+                AND CPNY_ID = #CPNY_ID#
+        ]]>
+    </delete>
+
+    <select id="generateEcnNo" resultClass="string">
+        <![CDATA[
+            SELECT CHANGENO_SEQ.NEXTVAL FROM DUAL
+        ]]>
+    </select>
+</sqlMap>

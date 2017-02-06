@@ -1,0 +1,413 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap
+    PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+    "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="ess.appCheck">
+
+    <select id="otConflictWithArShift" parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+SELECT SHIFT_DATE,
+       date_format(FROM_TIME, '%Y-%m-%d %H:%i:%s') FROM_TIME,
+       date_format(TO_TIME, '%Y-%m-%d %H:%i:%s') TO_TIME
+    FROM (
+        SELECT date_format(str_to_date(#OT_DATE#, '%Y-%m-%d') - 1, '%Y-%m-%d') AS SHIFT_DATE,
+               str_to_date(concat(date_format(str_to_date(#OT_DATE#, '%Y-%m-%d') - 1, '%Y-%m-%d'),
+                       date_format(AR_SHIFT020.FROM_TIME, '%H:%i')) ,
+                       '%Y-%m-%d %H:%i') + AR_SHIFT020.BEGIN_DAY_OFFSET AS FROM_TIME,
+               str_to_date(concat(date_format(str_to_date(#OT_DATE#, '%Y-%m-%d') - 1, '%Y-%m-%d'),
+                       date_format(AR_SHIFT020.TO_TIME, '%H:%i')),
+                       '%Y-%m-%d %H:%i') + AR_SHIFT020.END_DAY_OFFSET AS TO_TIME
+          FROM AR_SHIFT010, AR_SHIFT020
+         WHERE AR_SHIFT010.SHIFT_NO = AR_SHIFT020.SHIFT_NO
+           AND AR_SHIFT020.SHIFT_NO =
+               AR_GET_SHIFTNO(#EMPID#,
+                              date_format(str_to_date(#OT_DATE#, '%Y-%m-%d') - 1, '%Y-%m-%d'))
+           AND AR_SHIFT010.DATE_TYPE_ID = 1
+        UNION
+        SELECT date_format(str_to_date(#OT_DATE#, '%Y-%m-%d'), '%Y-%m-%d') AS SHIFT_DATE,
+               str_to_date(concat(#OT_DATE#,date_format(AR_SHIFT020.FROM_TIME, '%H:%i')),
+                       '%Y-%m-%d %H:%i') + AR_SHIFT020.BEGIN_DAY_OFFSET AS FROM_TIME,
+               str_to_date(concat(#OT_DATE#, date_format(AR_SHIFT020.TO_TIME, '%H:%i')),
+                       '%Y-%m-%d %H:%i') + AR_SHIFT020.END_DAY_OFFSET AS TO_TIME
+          FROM AR_SHIFT010, AR_SHIFT020
+         WHERE AR_SHIFT010.SHIFT_NO = AR_SHIFT020.SHIFT_NO
+           AND AR_SHIFT020.SHIFT_NO = AR_GET_SHIFTNO(#EMPID#, #OT_DATE#)
+           AND AR_SHIFT010.DATE_TYPE_ID = 1
+        UNION
+        SELECT date_format(str_to_date(#OT_DATE#, '%Y-%m-%d') + 1, '%Y-%m-%d') AS SHIFT_DATE,
+               str_to_date(concat(date_format(str_to_date(#OT_DATE#, '%Y-%m-%d') + 1, '%Y-%m-%d'),
+                       date_format(AR_SHIFT020.FROM_TIME, '%H:%i')),
+                       '%Y-%m-%d %H:%i') + AR_SHIFT020.BEGIN_DAY_OFFSET AS FROM_TIME,
+               str_to_date(concat(date_format(str_to_date(#OT_DATE#, '%Y-%m-%d') + 1, '%Y-%m-%d'),
+                       date_format(AR_SHIFT020.TO_TIME, '%H:%i')),
+                       '%Y-%m-%d %H:%i') + AR_SHIFT020.END_DAY_OFFSET AS TO_TIME
+          FROM AR_SHIFT010, AR_SHIFT020
+         WHERE AR_SHIFT010.SHIFT_NO = AR_SHIFT020.SHIFT_NO
+           AND AR_SHIFT020.SHIFT_NO =
+               AR_GET_SHIFTNO(#EMPID#,
+                              date_format(str_to_date(#OT_DATE#, '%Y-%m-%d') + 1, '%Y-%m-%d'))
+           AND AR_SHIFT010.DATE_TYPE_ID = 1
+        UNION
+        SELECT date_format(str_to_date(#OT_DATE#, '%Y-%m-%d') + 2, '%Y-%m-%d') AS SHIFT_DATE,
+               str_to_date(concat(date_format(str_to_date(#OT_DATE#, '%Y-%m-%d') + 2, '%Y-%m-%d'),
+                       date_format(AR_SHIFT020.FROM_TIME, '%H:%i')),
+                       '%Y-%m-%d %H:%i') + AR_SHIFT020.BEGIN_DAY_OFFSET AS FROM_TIME,
+               str_to_date(concat(date_format(str_to_date(#OT_DATE#, '%Y-%m-%d') + 2, '%Y-%m-%d'),
+                       date_format(AR_SHIFT020.TO_TIME, '%H:%i')),
+                       '%Y-%m-%d %H:%i') + AR_SHIFT020.END_DAY_OFFSET AS TO_TIME
+          FROM AR_SHIFT010, AR_SHIFT020
+         WHERE AR_SHIFT010.SHIFT_NO = AR_SHIFT020.SHIFT_NO
+           AND AR_SHIFT020.SHIFT_NO =
+           
+               AR_GET_SHIFTNO(#EMPID#,
+                              date_format(str_to_date(#OT_DATE#, '%Y-%m-%d') + 2, '%Y-%m-%d'))
+           AND AR_SHIFT010.DATE_TYPE_ID = 1
+           )as aa
+        ]]>
+    </select>
+
+    <select id="getDataType" parameterClass="linkMap"
+        resultClass="int" remapResults="true">
+        <![CDATA[
+         SELECT AR_GET_DATETYPE1(#EMPID#, #OT_DATE#) FROM DUAL
+        ]]>
+    </select>
+
+    <select id="otConflictWithOtApp" parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+        SELECT  A.OT_FROM_TIME      AS OT_FROM_TIME,
+                A.OT_TO_TIME        AS OT_TO_TIME
+          FROM ESS_APPLY_OT A
+         WHERE NOT EXISTS (SELECT *
+                  FROM ESS_AFFIRM B
+                 WHERE B.APPLY_NO = OT_NO
+                   AND B.APPLY_TYPE = 'OtApply'
+                   AND B.AFFIRM_FLAG = 2)
+           AND A.ACTIVITY = 1
+           AND AFFIRM_FLAG <> 2
+           AND A.EMPID = #EMPID#
+        ]]>
+    </select>
+
+    <select id="otConflictWithLeaveApp" parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT LEAVE_FROM_TIME, LEAVE_TO_TIME
+              FROM ESS_APPLY_LEAVE
+             WHERE EMPID = #EMPID#
+             AND AFFIRM_FLAG <> 2
+               AND NOT EXISTS (SELECT *
+                      FROM ESS_AFFIRM
+                     WHERE APPLY_NO = LEAVE_NO
+                       AND APPLY_TYPE = 'LeaveApply'
+                       AND AFFIRM_FLAG = 2)
+               AND ACTIVITY = 1
+               AND LEAVE_TYPE_CODE LIKE 'LeaveType%'
+        ]]>
+    </select>
+
+    <select id="otConflictWithEvectionApp" parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT LEAVE_FROM_TIME, LEAVE_TO_TIME
+              FROM ESS_APPLY_LEAVE
+             WHERE EMPID = #EMPID#
+             AND AFFIRM_FLAG <> 2
+               AND NOT EXISTS (SELECT *
+                      FROM ESS_AFFIRM
+                     WHERE APPLY_NO = LEAVE_NO
+                       AND APPLY_TYPE = 'EvectionApply'
+                       AND AFFIRM_FLAG = 2)
+               AND ACTIVITY = 1
+               AND LEAVE_TYPE_CODE LIKE 'WT%'
+        ]]>
+    </select>
+
+    <select id="otConflictWithMatchApp" parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT MATCH_FROM_TIME, MATCH_TO_TIME
+              FROM ESS_MATCH_APPLY_TB
+             WHERE MATCH_EMPID = #EMPID#
+               AND NOT EXISTS (SELECT *
+                      FROM ESS_AFFIRM
+                     WHERE APPLY_NO = MATCH_NO
+                       AND APPLY_TYPE = 'MatchApply'
+                       AND AFFIRM_FLAG = 2)
+               AND ACTIVITY = 1
+        ]]>
+    </select>
+
+    <select id="otMonthlyDetailTotalOTHours" parameterClass="linkMap"
+        resultClass="double" remapResults="true">
+        <![CDATA[
+            SELECT ifnull(SUM(A.QUANTITY), 0)
+              FROM AR_DETAIL A, AR_ITEM B
+             WHERE A.AR_ITEM_NO = B.ITEM_NO
+               AND B.ITEM_GROUP_CODE = 'OverTimeGroup'
+               AND A.AR_MONTH_STR = AR_GET_MONTHSTR(#OT_DATE#)
+               AND A.EMPID = #EMPID#
+        ]]>
+    </select>
+
+    <select id="otMonthlyAppingTotalOTHours" parameterClass="linkMap"
+        resultClass="double" remapResults="true">
+        <![CDATA[
+        SELECT ifnull(SUM((str_to_date(OT_TO_TIME,'%Y-%m-%d %H:%i') -
+                    str_to_date(OT_FROM_TIME,'%Y-%m-%d %H:%i')) * 24 - OT_DEDUCTION),0)
+          FROM ESS_APPLY_OT
+         WHERE str_to_date(OT_FROM_TIME,'%Y-%m-%d %H:%i') BETWEEN AR_GET_STARTDATE(AR_GET_MONTHSTR(#OT_DATE#)) AND
+               AR_GET_ENDDATE(AR_GET_MONTHSTR(#OT_DATE#))
+           AND EMPID = #EMPID#
+           AND ACTIVITY = 1
+           AND AFFIRM_FLAG <>2
+           AND NOT EXISTS (SELECT *
+                  FROM ESS_AFFIRM
+                 WHERE APPLY_NO = OT_NO
+                   AND APPLY_TYPE = 'OtApply'
+                   AND AFFIRM_FLAG = 2)
+        ]]>
+    </select>
+
+    <select id="otCheckHolidayOT" parameterClass="linkMap"
+        resultClass="int" remapResults="true">
+        <![CDATA[
+            SELECT COUNT(*)
+              FROM AR_DYNAMIC_GROUP_EMP
+             WHERE EMPID = #EMPID#
+               AND AR_GET_SHIFTNO(#EMPID#, #OT_DATE#) = 5
+        ]]>
+    </select>
+
+    <select id="checkDetailLock" parameterClass="linkMap"
+        resultClass="string" remapResults="true">
+        <![CDATA[
+            SELECT AR_DATE_STR
+              FROM AR_DETAIL_LOCK
+             WHERE STATUS = 'LockStatus010'
+               AND (str_to_date(AR_DATE_STR, '%Y-%m-%d') BETWEEN str_to_date(#fromTime#, '%Y-%m-%d %H:%i:%s') AND
+                   str_to_date(#toTime#, '%Y-%m-%d %H:%i:%s'))
+        ]]>
+    </select>
+
+    <select id="leaveConflictWithOtApp" parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT str_to_date(OT_FROM_TIME,'%Y-%m-%d %H:%i') OT_FROM_TIME,
+                    str_to_date(OT_TO_TIME,'%Y-%m-%d %H:%i') OT_TO_TIME
+              FROM ESS_APPLY_OT
+             WHERE ACTIVITY = 1
+                AND AFFIRM_FLAG <> 2
+               AND NOT EXISTS (SELECT *
+                      FROM ESS_AFFIRM
+                     WHERE APPLY_NO = OT_NO
+                       AND APPLY_TYPE = 'OtApply'
+                       AND AFFIRM_FLAG = 2)
+               AND EMPID = #EMPID#
+        ]]>
+    </select>
+    <select id="btConflictWithLeaveApp" parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT LEAVE_FROM_TIME,
+                   LEAVE_TO_TIME
+              FROM ESS_APPLY_LEAVE
+             WHERE ACTIVITY = 1
+                AND AFFIRM_FLAG <> 2
+               AND NOT EXISTS (SELECT *
+                      FROM ESS_AFFIRM
+                     WHERE APPLY_NO = LEAVE_NO
+                       AND APPLY_TYPE = 'LeaveApply'
+                       AND AFFIRM_FLAG = 2)
+               AND EMPID = #EMPID#
+        ]]>
+    </select>
+
+    <select id="leaveConflictWithLeaveApp" parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+           SELECT date_format(LEAVE_FROM_TIME, '%Y-%m-%d %H:%i:%s') LEAVE_FROM_TIME,
+                  date_format(LEAVE_TO_TIME, '%Y-%m-%d %H:%i:%s') LEAVE_TO_TIME
+             FROM ESS_APPLY_LEAVE
+            WHERE ACTIVITY = 1
+                AND AFFIRM_FLAG <> 2
+              AND NOT EXISTS (SELECT *
+                     FROM ESS_AFFIRM
+                    WHERE APPLY_NO = LEAVE_NO
+                      AND APPLY_TYPE = 'LeaveApply'
+                      AND AFFIRM_FLAG = 2)
+              AND EMPID = #EMPID#
+        ]]>
+    </select>
+
+    <select id="btConflictWithBTApp" parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+           SELECT date_format(BT_FROM_TIME, '%Y-%m-%d %H:%i:%s') BT_FROM_TIME,
+                  date_format(BT_TO_TIME, '%Y-%m-%d %H:%i:%s') BT_TO_TIME
+             FROM ESS_APPLY_BT
+            WHERE ACTIVITY = 1
+                AND AFFIRM_FLAG <> 2
+              AND NOT EXISTS (SELECT *
+                     FROM ESS_AFFIRM
+                    WHERE APPLY_NO = BT_NO
+                      AND APPLY_TYPE = 'BTApply'
+                      AND AFFIRM_FLAG = 2)
+              AND EMPID = #EMPID#
+        ]]>
+    </select>
+
+    <select id="expConflictWithExpApp" parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+           SELECT EXP_NO
+             FROM ESS_APPLY_EXP
+            WHERE ACTIVITY = 1
+                AND AFFIRM_FLAG <> 2
+              AND NOT EXISTS (SELECT *
+                     FROM ESS_AFFIRM
+                    WHERE APPLY_NO = BT_NO
+                      AND APPLY_TYPE = 'ExpApply'
+                      AND AFFIRM_FLAG = 2)
+              AND EMPID = #EMPID#
+              AND EXP_TYPE_CODE = #EXP_TYPE_CODE#
+        ]]>
+    </select>
+
+    <select id="cardConflictWithCardApp" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+        SELECT CARD_NO
+        FROM ESS_APPLY_CARD
+        WHERE ACTIVITY = 1
+        AND AFFIRM_FLAG <> 2
+        AND EMPID = #EMPID#
+        AND CARD_DOOR_TYPE = #CARD_TYPE_CODE#
+        AND ATT_DATE = STR_TO_DATE(#ATTENDANCEDATE#,'%Y-%m-%d %T')
+        ]]>
+    </select>
+
+    <select id="leaveConflictWithMatchApp" parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+        SELECT ONDUTY_FROM_TIME, ONDUTY_TO_TIME
+          FROM ESS_APPLY_ONDUTY
+         WHERE ACTIVITY = 1
+           AND NOT EXISTS (SELECT *
+                  FROM ESS_AFFIRM
+                 WHERE APPLY_NO = ONDUTY_NO
+                   AND APPLY_TYPE = 'MatchApply'
+                   AND AFFIRM_FLAG = 2)
+           AND EMPID = #EMPID#
+        ]]>
+    </select>
+
+
+    <select id="leaveCheckValidity" parameterClass="linkMap"
+        resultClass="int" remapResults="true">
+        <![CDATA[
+           SELECT COUNT(*)
+              FROM (SELECT MIN(concat(date_format(str_to_date(#shiftDate#, '%Y-%m-%d %H:%i:%s') +
+                                       BEGIN_DAY_OFFSET,
+                                       '%Y-%m-%d') , ' ' ,
+                               date_format(FROM_TIME, '%H:%i:%s'))) FROMTIME,
+ MAX(concat(date_format(str_to_date(#shiftDate#, '%Y-%m-%d %H:%i:%s') +
+                                       END_DAY_OFFSET,
+                                       '%Y-%m-%d'), ' ',
+                               date_format(TO_TIME, '%H:%i:%s'))) TOTIME
+                      FROM AR_SHIFT020
+
+                   ) A
+             WHERE date_format(str_to_date(#LEAVE_FROM_TIME#, '%Y-%m-%d %H:%i:%s'), '%Y-%m-%d %H:%i:%s') BETWEEN
+                   FROMTIME AND TOTIME
+
+
+        ]]>
+    </select>
+
+    <select id="perAppIdCardNoCheck" parameterClass="linkMap"
+        resultClass="int" remapResults="true">
+        <![CDATA[
+            SELECT COUNT(*)
+              FROM HR_PERSONAL_INFO
+             WHERE IDCARD_NO = #IDCARD_NO#
+               AND EMPID <> #EMPID#
+        ]]>
+    </select>
+    <!-- 申请 加审核人 -->
+    <insert id="saveWorkingHoursInfo" parameterClass='linkMap'>
+    <![CDATA[
+        INSERT  INTO ESS_APPLY_WH_TEMP
+                (
+                EMPID,
+                PRO_NO,
+                START_DATE,
+                WORK_HOUR)
+        VALUES (#EMPID#,
+                #PRO_NO#,
+                str_to_date(#START_DATE#,'%Y-%m-%d'),
+                #WORK_HOUR#)
+    ]]>
+    </insert>
+    <select id="getWhInfo" parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.EMPID, T.PRO_NO,ifnull(SUM(T.WORK_HOUR), 0) WORK_HOUR
+              FROM ESS_APPLY_WH_TEMP T
+             WHERE T.EMPID = #EMPID#
+        ]]>
+        <![CDATA[
+             GROUP BY T.EMPID, T.PRO_NO
+        ]]>
+    </select>
+
+    <delete id="delWhInfo" parameterClass="linkMap">
+        <![CDATA[
+                 DELETE FROM ESS_APPLY_WH_TEMP
+                  WHERE EMPID = #EMPID#
+        ]]>
+    </delete>
+
+    <select id="whAppHoursCheck01" parameterClass="linkMap"
+        resultClass="double" remapResults="true">
+        <![CDATA[
+            SELECT ifnull(SUM(EPE.QUANTITY)*8, 0)
+              FROM ESS_PROJECT_EMP EPE
+             WHERE EPE.PRO_NO = #PRO_NO#
+               AND EPE.EMPID = #EMPID#
+        ]]>
+    </select>
+    <select id="whAppHoursCheck02" parameterClass="linkMap"
+        resultClass="double" remapResults="true">
+        <![CDATA[
+            SELECT ifnull(SUM(EAW.WORK_HOUR), 0)
+              FROM ESS_APPLY_WH EAW
+             WHERE EAW.PRO_NO = #PRO_NO#
+               AND (EAW.ACTIVITY = 1 OR EAW.ACTIVITY = 0)
+               AND EAW.EMPID = #EMPID#
+        ]]>
+        <dynamic>
+            <isNotEmpty prepend="AND" property="dataList">
+                <iterate property="dataList" open="(" close=")" conjunction="AND">
+                    <![CDATA[
+                    EAW.WH_NO <> #dataList[].WH_NO#
+                     ]]>
+                </iterate>
+            </isNotEmpty>
+        </dynamic>
+    </select>
+
+    <select id="toolAppDateCheck01" parameterClass="linkMap" resultClass="int">
+    <![CDATA[
+        SELECT COUNT(*)
+        FROM ESS_APPLY_TOOL T
+        WHERE T.TOOL_TYPE_CODE = #TOOL_TYPE_CODE#
+        AND T.ACTIVITY = 1
+        AND T.AFFIRM_FLAG <> 2
+        AND str_to_date(#BORROW_DATE#,'%Y-%m-%d %H:%i') BETWEEN T.BORROW_DATE AND
+            T.RETURN_DATE
+    ]]>
+    </select>
+
+</sqlMap>

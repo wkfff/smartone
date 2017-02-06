@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap
+        PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+        "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="cust.custContact">
+    <insert id="addContact" parameterClass="linkMap">
+        <!-- <selectKey keyProperty="contactId" resultClass="string"> SELECT CUST_CONTACTS_SEQ.NEXTVAL AS contactId FROM DUAL  
+        </selectKey> -->
+        <selectKey resultClass="int" keyProperty="CONTACTS_ID"> 
+            SELECT Auto_increment AS CONTACTS_ID
+				FROM information_schema.`TABLES`
+				WHERE Table_Schema='smartone_v1'
+				AND table_name = 'CUST_CONTACTS'
+        </selectKey>
+        <![CDATA[
+            INSERT INTO CUST_CONTACTS
+                (
+                    CONTACTS_ID,
+                    CONTACTS_NAME,
+                    CONTACTS_TYPE,
+                    CONTACTS_MOBILE1,
+                    CONTACTS_TELEPHONE,
+                    CONTACTS_EMAIL,
+                    CONTACTS_FAX,
+                    CONTACTS_PROVINCE,
+                    CONTACTS_CITY,
+                    CONTACTS_AREA,
+                    CONTACTS_ADDRESS,
+                    CUST_ID,
+                    CPNY_ID
+                )
+                VALUES(
+                    #contactId#,
+                    #contact.contactName#,
+                    #contact.contactType.codeNo#,
+                    #contact.mobilePhone#,
+                    #contact.telePhone#,
+                    #contact.email#,
+                    #contact.fax#,
+                    #contact.address.province.codeNo#,
+                    #contact.address.city.codeNo#,
+                    #contact.address.area.codeNo#,
+                    #contact.address.address#,
+                    #contact.customer.customerId#,
+                    #admin.cpnyId#
+                )
+        ]]>
+    </insert>
+    <insert id="addContactByWizard" parameterClass="linkMap">
+        <![CDATA[
+           INSERT INTO CUST_CONTACTS
+                    (
+                       
+                        CONTACTS_NAME,
+                        CONTACTS_TYPE,
+                        CONTACTS_MOBILE1,
+                        CONTACTS_TELEPHONE,
+                        CONTACTS_EMAIL,
+                        CONTACTS_FAX,
+                        CONTACTS_PROVINCE,
+                        CONTACTS_CITY,
+                        CONTACTS_AREA,
+                        CONTACTS_ADDRESS,
+                        CUST_ID,
+                        CPNY_ID
+                    )
+                    VALUES(
+                     
+                        #customer.contact.contactName#,
+                        #customer.contact.contactType.codeName#,
+                        #customer.contact.mobilePhone#,
+                        #customer.contact.telePhone#,
+                        #customer.contact.email#,
+                        #customer.contact.fax#,
+                        #customer.contact.address.province.codeNo#,
+                        #customer.contact.address.city.codeNo#,
+                        #customer.contact.address.area.codeNo#,
+                        #customer.contact.address.address#,
+                        #CUST_ID#,
+                        #admin.cpnyId#
+                    )
+        ]]>
+    </insert>
+    <update id="updateContact" parameterClass="linkMap">
+        <![CDATA[
+            UPDATE CUST_CONTACTS
+            SET   CONTACTS_TYPE=#contact.contactType.codeNo#,
+                  CONTACTS_NAME=#contact.contactName#,
+                  CONTACTS_TELEPHONE=#contact.telePhone#,
+                  CONTACTS_MOBILE1=#contact.mobilePhone#,
+                  CONTACTS_EMAIL=#contact.email#,
+                  CONTACTS_PROVINCE=#contact.address.province.codeNo#,
+                  CONTACTS_CITY=#contact.address.city.codeNo#,
+                  CONTACTS_AREA=#contact.address.area.codeNo#,
+                  CONTACTS_ADDRESS=#contact.address.address#,
+                  CONTACTS_FAX=#contact.fax#
+            WHERE CONTACTS_ID=#contact.contactId#
+            AND   CPNY_ID =#admin.cpnyId#
+        ]]>
+    </update>
+    <delete id="deleteContact" parameterClass="linkMap">
+        <![CDATA[
+            DELETE FROM CUST_CONTACTS
+            WHERE CONTACTS_ID=#contactId#
+            AND   CPNY_ID =#admin.cpnyId#
+        ]]>
+    </delete>
+    <resultMap id="contactListMap" class="contact">
+        <result property="contactId" column="CONTACT_ID" />
+        <result property="contactName" column="CONTACT_NAME" />
+        <result property="contactType.codeNo" column="CONTACT_TYPE" />
+        <result property="contactType.codeName" column="CONTACT_TYPE" />
+        <result property="address.province.codeNo" column="CONTACT_PROVINCE_CODE" />
+        <result property="address.city.codeNo" column="CONTACT_CITY_CODE" />
+        <result property="address.area.codeNo" column="CONTACT_AREA_CODE" />
+        <result property="address.province.codeName" column="CONTACT_PROVINCE" />
+        <result property="address.city.codeName" column="CONTACT_CITY" />
+        <result property="address.area.codeName" column="CONTACT_AREA" />
+        <result property="address.address" column="ADDRESS" />
+        <result property="telePhone" column="TELEPHONE" />
+        <result property="mobilePhone" column="MOBILEPHONE" />
+        <result property="email" column="EMAIL" />
+        <result property="fax" column="FAX" />
+    </resultMap>
+    <select id="getContactList" parameterClass="linkMap" resultMap="contactListMap">
+        <![CDATA[
+            SELECT CONTACTS_ID                 CONTACT_ID,
+                CONTACTS_TYPE                  CONTACT_TYPE,
+                CONTACTS_NAME                  CONTACT_NAME,
+                CONTACTS_MOBILE1               MOBILEPHONE,
+                CONTACTS_TELEPHONE             TELEPHONE,
+                CONTACTS_EMAIL                 EMAIL,
+                CONTACTS_FAX                   FAX,
+                IFNULL(CC.CONTACTS_PROVINCE,' ')          CONTACT_PROVINCE_CODE,
+                IFNULL(IF(#language# = 'en',PR.CODE_EN_NAME,PR.CODE_NAME),' ')    CONTACT_PROVINCE,
+                IFNULL(CC.CONTACTS_CITY,' ')               CONTACT_CITY_CODE,
+                IFNULL(IF(#language# = 'en',CI.CODE_EN_NAME,CI.CODE_NAME),' ')    CONTACT_CITY,
+                IFNULL(CC.CONTACTS_AREA,' ')              CONTACT_AREA_CODE,
+                IFNULL(IF(#language# = 'en',AR.CODE_EN_NAME,AR.CODE_NAME),' ')    CONTACT_AREA,
+                CONTACTS_ADDRESS               ADDRESS
+            FROM CUST_CONTACTS    CC LEFT JOIN SY_CODE          PR ON(CC.CONTACTS_PROVINCE = PR.CODE_ID)
+                 LEFT JOIN SY_CODE          CI ON(CC.CONTACTS_CITY     = CI.CODE_ID)
+                 LEFT JOIN SY_CODE          AR ON(CC.CONTACTS_AREA     = AR.CODE_ID)
+            WHERE CUST_ID=#CUST_ID#
+                 
+        ]]>
+    </select>
+    <select id="getContactCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(*) FROM CUST_CONTACTS T
+            WHERE T.CUST_ID= #CUST_ID#
+        ]]>
+    </select>
+    <select id="getContact" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT * FROM
+            CUST_CONTACTS T
+            WHERE T.CONTACTS_ID=#CONTACTS_ID#
+        ]]>
+    </select>
+</sqlMap>

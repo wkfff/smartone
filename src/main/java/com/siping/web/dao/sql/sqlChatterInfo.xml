@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="chatter.chatterInfo">
+
+	<select id="getDeptTree" resultClass="linkMap">
+		<![CDATA[
+			SELECT  HRD.DEPTNAME DEPTNAME,
+					HRD.DEPTID   DEPTID,
+					HRD.PARENT_DEPT_ID  PARENTDEPTID
+			FROM HR_DEPARTMENT HRD
+		      start with hrd.parent_dept_id = 'wooribank'
+		      connect by hrd.parent_dept_id = prior hrd.deptid
+		]]>
+	</select>
+
+	<select id="getAllEmpDeptTree" resultClass="linkMap">
+		<![CDATA[
+			SELECT  HRD.DEPTNAME DEPTNAME,
+				HRD.DEPTID   DEPTID,
+				HRD.PARENT_DEPT_ID  PARENTDEPTID,
+				1        AS      ISEXPAND,
+				NULL   AS    EMPID,
+				HRD.DEPTNAME   AS   CHINESENAME,
+				NULL   AS   ENGLISHNAME,
+				'parent'     AS   ICON
+			from HR_DEPARTMENT HRD
+			WHERE HRD.ACTIVITY = 1
+			UNION ALL
+			SELECT  HRD.DEPTNAME DEPTNAME,
+				null   as   DEPTID,
+				HRE.DEPTID  PARENTDEPTID,
+				0     as      ISEXPAND,
+				HRE.EMPID    EMPID,
+				HRE.CHINESENAME   CHINESENAME,
+				HRE.ENGLISHNAME   ENGLISHNAME,
+				'child'     AS   ICON
+			FROM HR_DEPARTMENT HRD, HR_EMPLOYEE HRE
+			WHERE HRE.DEPTID=HRD.DEPTID
+			AND HRE.ACTIVITY = 1
+		]]>
+	</select>
+</sqlMap>

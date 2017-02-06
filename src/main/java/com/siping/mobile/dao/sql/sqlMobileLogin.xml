@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap  PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="mobile.login">
+    <sql id="invitationCondition">
+        <isNotEmpty prepend="AND" property="USE_STATUS">
+			<![CDATA[
+    		   MI.USE_STATUS = #USE_STATUS#
+			]]>
+        </isNotEmpty>
+    </sql>
+    <select id="getCntByUsername" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+			SELECT COUNT(*)
+			FROM   SY_ADMIN SA
+			WHERE    SA.USERNAME = #USERNAME#
+		]]>
+    </select>
+    <select id="getCntByInvitationCondition" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+			SELECT COUNT(*)
+			FROM   MOBILE_INVITATION MI
+			WHERE  MI.INVITATION_ID = #INVITATION_ID#
+		]]>
+        <include refid="invitationCondition" />
+    </select>
+    <insert id="insertRegisterInfo" parameterClass="linkMap">
+		<![CDATA[
+			DECLARE
+				VAR_CUST_NO VARCHAR2(30);
+				VAR_CUST_ID VARCHAR2(30);
+			BEGIN
+				SELECT CUST_SEQ.NEXTVAL INTO VAR_CUST_NO FROM DUAL;
+				SELECT 'CUST'||CUST_SEQ.CURRVAL INTO VAR_CUST_ID FROM DUAL;
+				INSERT INTO CUST_BASIC_INFO(
+					CUST_NO,
+					CUST_ID,
+					CREATED_DATE,
+					ACTIVITY,
+					CPNY_ID,
+                    CUST_SALES_MODE_CODE
+				)VALUES(
+					VAR_CUST_NO,
+					VAR_CUST_ID,
+					SYSDATE,
+					1,
+					'wooribank',
+                    '0'
+				);
+			INSERT INTO SY_ADMIN(
+				ADMINNO,
+				ADMINID,
+				USERNAME,
+				PASSWORD,
+				CREATE_DATE,
+				ACTIVITY,
+				CPNY_ID,
+				ACCOUNT_TYPE
+			)VALUES(
+				SY_ADMIN_NO.NEXTVAL,
+				VAR_CUST_ID,
+				#USERNAME#,
+				#PASSWORD#,
+				SYSDATE,
+				1,
+				'wooribank',
+				'CU'
+			);
+		END;
+		]]>
+    </insert>
+</sqlMap>

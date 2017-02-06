@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap
+    PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+    "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="bom.bomManage">
+    <select id="generateBomNo" resultClass="string">
+        <![CDATA[
+            SELECT BOM_SEQ.NEXTVAL AS no FROM DUAL
+        ]]>
+    </select>
+
+    <insert id="addBOM" parameterClass="bom">
+        <![CDATA[
+            INSERT INTO BOM_HEADER_INFO(
+                BOM_NO,
+                BOM_ID,
+                MAT_V_NO,
+                FACTORY_ID,
+                DESCRIPTION,
+                LOSS_RATE,
+                CREATED_BY,
+                CREATE_DATE,
+                ACTIVITY,
+                CPNY_ID,
+                CHANGE_NO,
+                S_DATE,
+                RUNNING_NO)
+            VALUES(
+                #no#,
+                #id#,
+                #material.no#,
+                #factoryId#,
+                #description#,
+                #looseRate#,
+                #metaData.createUser.adminID#,
+                #metaData.createDate#,
+                #active#,
+                #metaData.company.companyId#,
+                #changeNo.no#,
+                #startDate#,
+                #processRunning.no#
+            )
+        ]]>
+    </insert>
+
+    <update id="updateBOMData" parameterClass="bom">
+        <![CDATA[
+            UPDATE  BOM_HEADER_INFO SET
+                    FACTORY_ID = #factoryId#,
+                    DESCRIPTION = #description#,
+                    LOSS_RATE=#looseRate#,
+                    UPDATED_BY=#metaData.lastUpdateUser.adminID#,
+                    UPDATE_DATE=#metaData.lastUpdateDate#
+            WHERE CPNY_ID = #metaData.company.companyId#
+            AND BOM_NO = #no#
+        ]]>
+    </update>
+
+    <update id="removeBOM" parameterClass="bom">
+        <![CDATA[
+            UPDATE BOM_HEADER_INFO SET
+                UPDATED_BY=#metaData.lastUpdateUser.adminID#,
+                UPDATE_DATE=#metaData.lastUpdateDate#,
+                ACTIVITY=#active#
+            WHERE CPNY_ID = #metaData.company.companyId#
+            AND BOM_NO = #no#
+        ]]>
+    </update>
+
+    <insert id="addBOMItem" parameterClass="bomItem">
+        <selectKey keyProperty="no">
+            SELECT BOM_ITEM_SEQ.NEXTVAL AS no FROM DUAL
+        </selectKey>
+        <![CDATA[
+            INSERT INTO BOM_ITEM_INFO (
+                BOM_ITEM_NO,
+                BOM_ITEM_ID,
+                MAT_V_NO,
+                BOM_NO,
+                BOM_CATEGORY_CODE,
+                AMOUNT,
+                CHANGE_NO,
+                S_DATE,
+                E_DATE,
+                LOSS_RATE,
+                CREATED_BY,
+                CREATE_DATE,
+                ACTIVITY,
+                CPNY_ID,
+                DESCRIPTION)
+            VALUES(
+                #no#,
+                #no#,
+                #material.no#,
+                #bom.no#,
+                #bomCategory#,
+                #amount#,
+                #changeNo.no#,
+                #startDate#,
+                #endDate#,
+                #looseRate#,
+                #metaData.createUser.adminID#,
+                #metaData.createDate#,
+                #active#,
+                #metaData.company.companyId#,
+                #description#)
+        ]]>
+    </insert>
+
+    <procedure id="updateBOMItem" parameterClass="bomItem">
+        <![CDATA[
+            UPDATE BOM_ITEM_INFO SET
+                E_DATE = #endDate#,
+                UPDATED_BY=#metaData.lastUpdateUser.adminID#,
+                UPDATE_DATE=#metaData.lastUpdateDate#
+            WHERE  BOM_ITEM_NO = #no#
+            AND  CPNY_ID = #metaData.company.companyId#
+        ]]>
+    </procedure>
+
+    <update id="addEndDate2ChangedItem" parameterClass="linkMap">
+        <![CDATA[
+            UPDATE BOM_ITEM_INFO SET
+                UPDATED_BY=#UPDATED_BY#,
+                UPDATE_DATE=SYSDATE,
+                E_DATE = (SELECT S_DATE FROM ECM_CHANGE_NO_INFO WHERE CHANGE_NO = #CHANGE_NO# AND CPNY_ID = #CPNY_ID#)-1
+            WHERE CPNY_ID = #CPNY_ID#
+            AND BOM_ITEM_ID = #BOM_ITEM_ID#
+        ]]>
+    </update>
+</sqlMap>

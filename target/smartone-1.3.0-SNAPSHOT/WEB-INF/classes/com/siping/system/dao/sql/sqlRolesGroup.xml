@@ -1,0 +1,377 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="system.rolesGroup">
+    <select id="getMenuSelectList" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.MENU_CODE ID,
+                   DECODE(#language#, 'en', T.MENU_EN_INTRO, T.MENU_INTRO) NAME,
+                   T.MENU_EN_INTRO EN_NAME
+              FROM SY_MENU T
+             WHERE T.DEPTH = 0
+               AND T.ACTIVITY = 1
+               AND T.CPNY_ID = #CPNY_ID#
+               AND T.MENU_CODE <> 'sy0000'
+              ORDER BY ORDERNO
+        ]]>
+    </select>
+
+    <select id="getRolesGroupInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.SCREEN_GRANT_NO,
+                   T.SCREEN_GRANT_ID,
+                   T.SCREEN_GRANT_NAME, 
+                   NVL(T.SCREEN_GRANT_EN_NAME, ' ') AS SCREEN_GRANT_EN_NAME, 
+                   T.DESCRIPTION,
+                   T.CPNY_ID,
+                   DECODE(#language#, 'en', A.CPNY_EN_NAME, A.CPNY_NAME) CPNY_NAME,
+                   T.ACTIVITY STATUS_ID,
+                   DECODE(T.ACTIVITY,
+                          '1',
+                          DECODE(#language#, 'en', 'Available', '可用'),
+                          DECODE(#language#, 'en', 'Unavailable', '不可用')) STATUS
+              FROM SY_LOGIN_SCREEN T,HR_COMPANY A
+            WHERE T.CPNY_ID = A.CPNY_ID(+)
+                  AND T.SCREEN_GRANT_ID <> '1'
+        ]]>
+        <isNotEmpty prepend="AND" property="SCREEN_GRANT_NAME">
+            <![CDATA[
+                  (INSTR(T.SCREEN_GRANT_NAME, replace(#SCREEN_GRANT_NAME:VARCHAR#,' ','')) > 0
+                  OR INSTR(T.SCREEN_GRANT_EN_NAME, replace(#SCREEN_GRANT_NAME:VARCHAR#,' ','')) > 0)
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="SCREEN_GRANT_NO">
+            <![CDATA[
+                  T.SCREEN_GRANT_NO = #SCREEN_GRANT_NO:VARCHAR#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="SCREEN_GRANT_ID">
+            <![CDATA[
+                  T.SCREEN_GRANT_ID = #SCREEN_GRANT_ID:VARCHAR#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="ACTIVITY">
+            <![CDATA[
+                  T.ACTIVITY = #ACTIVITY#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="CPNY_ID">
+            <![CDATA[
+                  T.CPNY_ID = #CPNY_ID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                  ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY T.SCREEN_GRANT_NO
+            ]]>
+        </isEmpty>
+    </select>
+
+    <select id="getRolesGroupInfoCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(T.SCREEN_GRANT_NO)
+              FROM SY_LOGIN_SCREEN T
+              WHERE T.SCREEN_GRANT_ID <> '1'
+        ]]>
+        <isNotEmpty prepend="AND" property="SCREEN_GRANT_NAME">
+            <![CDATA[
+                  (INSTR(T.SCREEN_GRANT_NAME, replace(#SCREEN_GRANT_NAME:VARCHAR#,' ','')) > 0
+                  OR INSTR(T.SCREEN_GRANT_EN_NAME, replace(#SCREEN_GRANT_NAME:VARCHAR#,' ','')) > 0)
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="SCREEN_GRANT_ID">
+            <![CDATA[
+                  T.SCREEN_GRANT_ID = #SCREEN_GRANT_ID:VARCHAR#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="ACTIVITY">
+            <![CDATA[
+                  T.ACTIVITY = #ACTIVITY#
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="AND" property="ACTIVITY">
+            <![CDATA[
+                  T.ACTIVITY = 1
+            ]]>
+        </isEmpty>
+        <isNotEmpty prepend="AND" property="CPNY_ID">
+            <![CDATA[
+                  T.CPNY_ID = #CPNY_ID#
+            ]]>
+        </isNotEmpty>
+    </select>
+    
+    <select id="getRolesGroupID" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT SY_LOGIN_SCREEN_SEQ.NEXTVAL
+              FROM DUAL 
+        ]]>     
+    </select>
+    
+    <insert id="addRolesGroupInfo" parameterClass="linkMap" >
+        <![CDATA[
+            INSERT INTO SY_LOGIN_SCREEN (
+                    SCREEN_GRANT_NO,
+                    SCREEN_GRANT_ID,
+                    SCREEN_GRANT_NAME,
+                    SCREEN_GRANT_EN_NAME,
+                    DESCRIPTION,
+                    CREATE_DATE,
+                    CREATED_BY,
+                    ORDERNO,
+                    ACTIVITY,
+                    CPNY_ID)
+                VALUES(
+                    #SCREEN_GRANT_NO:NUMERIC# ,
+                    #SCREEN_GRANT_ID:VARCHAR# ,
+                    #SCREEN_GRANT_NAME:VARCHAR# ,
+                    #SCREEN_GRANT_EN_NAME:VARCHAR# ,
+                    #DESCRIPTION:VARCHAR# ,
+                    SYSDATE ,
+                    #CREATED_BY:VARCHAR# ,
+                    #ORDERNO:NUMERIC# ,
+                    #ACTIVITY:NUMERIC# ,
+                    #CPNY_ID:VARCHAR#
+                )
+        ]]>
+    </insert>
+    
+    <update id="updateRolesGroupInfo" parameterClass="linkMap" >
+        <![CDATA[
+            UPDATE SY_LOGIN_SCREEN SET 
+                    SCREEN_GRANT_NAME = #SCREEN_GRANT_NAME:VARCHAR# ,
+                    SCREEN_GRANT_EN_NAME = #SCREEN_GRANT_EN_NAME:VARCHAR# ,
+                    DESCRIPTION = #DESCRIPTION:VARCHAR# ,
+                    UPDATE_DATE = SYSDATE,
+                    UPDATED_BY = #UPDATED_BY:VARCHAR# ,
+                    CPNY_ID = #CPNY_ID:VARCHAR# ,
+                    ACTIVITY =#ACTIVITY:NUMERIC# ,  
+                    ORDERNO =#ORDERNO:NUMERIC#  
+            WHERE SCREEN_GRANT_ID = #SCREEN_GRANT_ID:VARCHAR# 
+        ]]>
+    </update>
+    
+    <insert id="addRolesGroupPageInfo" parameterClass="linkMap" >
+        <![CDATA[
+            INSERT INTO SY_SCREEN_GRANT
+              (SCREEN_CODE,
+               SCREEN_GRANT_ID,
+               SELECTR,
+               SAVER,
+               INSERTR,
+               UPDATER,
+               DELETER,
+               CANCELR,
+               CREATE_DATE,
+               CREATED_BY, 
+               ACTIVITY)
+              SELECT A.MENU_CODE, #SCREEN_GRANT_ID:VARCHAR# , 0, 0, 0, 0, 0, 0, SYSDATE,#CREATED_BY:VARCHAR# , 1
+                FROM SY_MENU A
+               WHERE A.ACTIVITY = 1
+                 AND A.MENU_CODE IN(
+                   (SELECT C.MENU_CODE
+                            FROM SY_MENU C
+                           WHERE C.ACTIVITY = 1
+                             AND C.MENU_CODE NOT IN
+                                 (SELECT B.SCREEN_CODE
+                                    FROM SY_SCREEN_GRANT B,SY_LOGIN_SCREEN D
+                                   WHERE B.SCREEN_GRANT_ID = D.SCREEN_GRANT_ID
+                                     AND B.SCREEN_GRANT_ID = #SCREEN_GRANT_ID:VARCHAR#)
+                           START WITH C.MENU_NO = #MENU_NO#
+                          CONNECT BY PRIOR C.MENU_CODE = C.MENU_PARENT_CODE))
+               START WITH A.MENU_NO = #MENU_NO#
+              CONNECT BY PRIOR A.MENU_CODE = A.MENU_PARENT_CODE
+               ORDER SIBLINGS BY A.ORDERNO
+        ]]>
+    </insert>
+
+    <update id="updateRolesGroupPageInfo" parameterClass="linkMap" >
+        <![CDATA[
+            UPDATE SY_SCREEN_GRANT SET 
+                    SELECTR = DECODE(#MENU_TAG#,'S',#FLAG#,SELECTR),
+                    SAVER   = DECODE(#MENU_TAG#,'B',#FLAG#,SAVER),
+                    INSERTR = DECODE(#MENU_TAG#,'I',#FLAG#,INSERTR),
+                    UPDATER = DECODE(#MENU_TAG#,'U',#FLAG#,UPDATER),
+                    DELETER = DECODE(#MENU_TAG#,'D',#FLAG#,DELETER),
+                    CANCELR = DECODE(#MENU_TAG#,'C',#FLAG#,CANCELR),
+                    UPDATE_DATE = SYSDATE,
+                    UPDATED_BY = #UPDATED_BY:VARCHAR#
+            WHERE SCREEN_GRANT_ID = #SCREEN_GRANT_ID:VARCHAR#
+              AND SCREEN_CODE IN (
+                  SELECT C.MENU_CODE
+                      FROM SY_MENU C
+                     WHERE C.ACTIVITY = 1
+                     START WITH C.MENU_NO = #MENU_NO#
+                    CONNECT BY PRIOR C.MENU_CODE = C.MENU_PARENT_CODE
+                     )
+        ]]>
+    </update>
+
+    <delete id="deleteRolesGroupInfo" parameterClass="linkMap" >
+        <![CDATA[
+            DELETE SY_LOGIN_SCREEN WHERE SCREEN_GRANT_ID = #SCREEN_GRANT_ID:VARCHAR#
+        ]]>
+    </delete>
+    
+    <delete id="deleteRolesGroupPageInfo" parameterClass="linkMap" >
+        <![CDATA[
+        DELETE SY_SCREEN_GRANT 
+        ]]>
+        <dynamic prepend="WHERE">
+        <isNotEmpty prepend="AND" property="SCREEN_GRANT_ID">
+            <![CDATA[
+                  SCREEN_GRANT_ID = #SCREEN_GRANT_ID:VARCHAR#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="MENU_NO">
+            <![CDATA[
+                  SCREEN_CODE =
+                        (SELECT T.MENU_CODE FROM SY_MENU T WHERE T.MENU_NO = #MENU_NO#)
+            ]]>
+        </isNotEmpty>
+        </dynamic>
+    </delete>
+    
+    <select id="getRolesGroupPageInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT A.MENU_CODE,
+                   A.MENU_NO,
+                   A.MENU_INTRO,
+                   NVL(A.MENU_EN_INTRO, ' ') AS MENU_EN_INTRO, 
+                   A.DEPTH, 
+                   B.SCREEN_GRANT_ID,
+                   NVL(B.SELECTR, 0) AS SELECTR,
+                   NVL(B.SAVER, 0)   AS SAVER,
+                   NVL(B.INSERTR, 0) AS INSERTR,
+                   NVL(B.UPDATER, 0) AS UPDATER,
+                   NVL(B.DELETER, 0) AS DELETER,
+                   NVL(B.CANCELR, 0) AS CANCELR,
+                   A.MENU_PARENT_CODE
+              FROM (SELECT T.MENU_CODE, 
+                           T.MENU_NO,
+                           DECODE(T.DEPTH,0,T.MENU_INTRO,1,'&nbsp;&nbsp;'||T.MENU_INTRO,2,'&nbsp;&nbsp;&nbsp;&nbsp;'||T.MENU_INTRO,'') MENU_INTRO,
+                           DECODE(T.DEPTH,0,T.MENU_EN_INTRO,1,'&nbsp;&nbsp;'||T.MENU_EN_INTRO,2,'&nbsp;&nbsp;&nbsp;&nbsp;'||T.MENU_EN_INTRO,'') MENU_EN_INTRO,
+                           T.MENU_PARENT_CODE,
+                           T.DEPTH + 1 DEPTH, 
+                           ROWNUM RN
+                      FROM SY_MENU T
+                      WHERE T.ACTIVITY = 1 
+                        AND T.CPNY_ID = #CPNY_ID#
+                    ]]>
+                    <isNotEmpty prepend="" property="MENU_CODE">
+                            <![CDATA[
+                                 START WITH T.MENU_CODE = #MENU_CODE#
+                            ]]>
+                    </isNotEmpty>
+                    <isEmpty prepend="" property="MENU_CODE">
+                            <![CDATA[
+                                 START WITH T.MENU_PARENT_CODE = 'HRMS'
+                            ]]>
+                    </isEmpty>
+                    <![CDATA[
+                    CONNECT BY PRIOR T.MENU_CODE = T.MENU_PARENT_CODE
+                     ORDER SIBLINGS BY T.ORDERNO) A,
+                   SY_SCREEN_GRANT B
+             WHERE A.MENU_CODE = B.SCREEN_CODE(+)
+        ]]> 
+        <isNotEmpty prepend="AND" property="SCREEN_GRANT_ID">
+            <![CDATA[
+                 B.SCREEN_GRANT_ID(+) = #SCREEN_GRANT_ID:VARCHAR#
+            ]]>
+        </isNotEmpty>           
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                  ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                  ORDER BY RN
+            ]]>
+        </isEmpty>   
+    </select>
+    
+    <select id="getRolesGroupPageInfoCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(*) 
+              FROM (SELECT T.MENU_CODE,
+                           T.MENU_NO,
+                           T.MENU_INTRO,
+                           NVL(T.MENU_EN_INTRO, ' ') AS MENU_EN_INTRO, 
+                           T.MENU_PARENT_CODE,
+                           T.DEPTH,
+                           ROWNUM RN
+                      FROM SY_MENU T
+                      WHERE T.ACTIVITY = 1  
+                        AND T.CPNY_ID = #CPNY_ID#
+                    ]]>
+                    <isNotEmpty prepend="" property="MENU_CODE">
+                            <![CDATA[
+                                 START WITH T.MENU_CODE = #MENU_CODE#
+                            ]]>
+                    </isNotEmpty>
+                    <isEmpty prepend="" property="MENU_CODE">
+                            <![CDATA[
+                                 START WITH T.MENU_PARENT_CODE = 'HRMS'
+                            ]]>
+                    </isEmpty>
+                    <![CDATA[
+                    CONNECT BY PRIOR T.MENU_CODE = T.MENU_PARENT_CODE
+                     ORDER SIBLINGS BY T.ORDERNO) A,
+                   SY_SCREEN_GRANT B
+             WHERE A.MENU_CODE = B.SCREEN_CODE(+)
+               AND B.SCREEN_GRANT_ID(+) = #SCREEN_GRANT_ID:VARCHAR#
+               
+        ]]>
+    </select>
+    
+    <select id="getSystemMenuInfo" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT T.MENU_NO,
+                   T.MENU_CODE,
+                   DECODE(T.DEPTH,0,T.MENU_INTRO,1,'&nbsp;&nbsp;'||T.MENU_INTRO,2,'&nbsp;&nbsp;&nbsp;&nbsp;'||T.MENU_INTRO,'') MENU_INTRO,
+                   DECODE(T.DEPTH,0,T.MENU_EN_INTRO,1,'&nbsp;&nbsp;'||T.MENU_EN_INTRO,2,'&nbsp;&nbsp;&nbsp;&nbsp;'||T.MENU_EN_INTRO,'') MENU_EN_INTRO,  
+                   T.MENU_PARENT_CODE,
+                   T.DESCRIPTION,
+                   GET_SY_SCREEN_FLAG(#SCREEN_GRANT_ID:VARCHAR#,'S',T.MENU_CODE) AS SELECTR,
+                   GET_SY_SCREEN_FLAG(#SCREEN_GRANT_ID:VARCHAR#,'B',T.MENU_CODE) AS SAVER,
+                   GET_SY_SCREEN_FLAG(#SCREEN_GRANT_ID:VARCHAR#,'I',T.MENU_CODE) AS INSERTR,
+                   GET_SY_SCREEN_FLAG(#SCREEN_GRANT_ID:VARCHAR#,'U',T.MENU_CODE) AS UPDATER,
+                   GET_SY_SCREEN_FLAG(#SCREEN_GRANT_ID:VARCHAR#,'D',T.MENU_CODE) AS DELETER,
+                   GET_SY_SCREEN_FLAG(#SCREEN_GRANT_ID:VARCHAR#,'C',T.MENU_CODE) AS CANCELR,
+                   T.DEPTH + 1 DEPTH
+              FROM SY_MENU T
+              WHERE T.ACTIVITY = 1
+                AND T.CPNY_ID = #CPNY_ID#
+             
+        ]]>
+        <isNotEmpty prepend="AND" property="MENU_CODE">
+            <![CDATA[
+                  T.MENU_CODE LIKE #MENU_CODE# || '%'
+            ]]>
+        </isNotEmpty>  
+        <![CDATA[
+                  START WITH T.DEPTH = 0
+                    CONNECT BY PRIOR T.MENU_CODE = T.MENU_PARENT_CODE
+                     ORDER SIBLINGS BY T.ORDERNO 
+            ]]>
+    </select>
+    <select id="getSystemMenuInfoCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(0)
+              FROM SY_MENU T
+              WHERE T.ACTIVITY = 1
+                AND T.CPNY_ID = #CPNY_ID#
+        ]]>
+        <isNotEmpty prepend="AND" property="MENU_CODE">
+            <![CDATA[
+                  T.MENU_CODE LIKE #MENU_CODE# || '%'
+            ]]>
+        </isNotEmpty>
+    </select>
+</sqlMap>

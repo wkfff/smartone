@@ -1,0 +1,478 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap  PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="prostor.proInStorage">
+    <select id="getProInColumns" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+                SELECT 'NO' AS "COLUMN_NAME",
+                    '行号' AS ITEM_NAME,
+                    1 AS ORDER_NO
+                FROM DUAL
+                UNION ALL
+                SELECT 'PRODUCT_ID' AS "COLUMN_NAME",
+                    '货品编号' AS ITEM_NAME,
+                    1 AS ORDER_NO
+                FROM DUAL
+                UNION ALL
+                SELECT 'PRODUCT_NAME' AS "COLUMN_NAME",
+                    '货物品名' AS ITEM_NAME,
+                    2 AS ORDER_NO
+                FROM DUAL
+                UNION ALL
+                SELECT 'SPECIFICATION' AS "COLUMN_NAME",
+                    '货品规格' AS ITEM_NAME,
+                    3 AS ORDER_NO
+                FROM DUAL
+                UNION ALL
+                SELECT 'PRODUCT_CATEGORY_ID' AS "COLUMN_NAME",
+                    '货物类别' AS ITEM_NAME,
+                    4 AS ORDER_NO
+                FROM DUAL
+                UNION ALL
+                SELECT 'UNIT_CODE_ID' AS "COLUMN_NAME",
+                    '单位' AS ITEM_NAME,
+                    5 AS ORDER_NO
+                FROM DUAL
+                UNION ALL
+                SELECT 'UNIT_PRICE' AS "COLUMN_NAME",
+                    '进货价' AS ITEM_NAME,
+                    6 AS ORDER_NO
+                FROM DUAL
+                UNION ALL
+                SELECT 'UNIT_PRICE' AS "COLUMN_NAME",
+                    '平均进货价' AS ITEM_NAME,
+                    7 AS ORDER_NO
+                FROM DUAL
+
+                UNION ALL
+                SELECT 'STO'||PSI.STORAGE_NO AS COLUMN_NAME,
+                PSI.STORAGE_NAME AS ITEM_NAME,
+                PSI.STORAGE_NO+8 AS ORDER_NO
+                FROM PROSTOR_STORAGE_INFO PSI
+                WHERE PSI.ACTIVITY = 1
+                    AND PSI.CPNY_ID = #CPNY_ID#
+                
+                ORDER BY ORDER_NO
+            ]]>
+    </select>
+    
+    
+    <sql id="getSupplierListCondition">
+        <isNotEmpty prepend="AND" property="PURCHASE_ORDER_ID">
+            <![CDATA[
+                PS.SUPPLIER_NO IN (
+                    SELECT PPOD.SUPPLIER_NO
+                    FROM PROSTOR_PURCHASE_ORDER_DETAIL PPOD
+                    WHERE PPOD.ACTIVITY = 1
+                    AND PPOD.CPNY_ID = #CPNY_ID#
+                    AND PPOD.PURCHASE_ORDER_ID = #PURCHASE_ORDER_ID#
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="pid">
+            <![CDATA[
+                PS.SUPPLIER_NO IN (
+                    SELECT PPOD.SUPPLIER_NO
+                    FROM PROSTOR_PURCHASE_ORDER_DETAIL PPOD
+                    WHERE PPOD.ACTIVITY = 1
+                    AND PPOD.CPNY_ID = #CPNY_ID#
+                    AND PPOD.PURCHASE_ORDER_ID = #pid#
+                    AND PPOD.QUANTITY > NVL(PPOD.INQUANTITY,0)
+                )
+            ]]>
+        </isNotEmpty>
+    </sql>
+    <select id="getSupplierList" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT  PS.SUPPLIER_NO,
+                    PS.SUPPLIER_ID,
+                    PS.SUPPLIER_NAME
+            FROM PROSTOR_SUPPLIER PS
+            WHERE PS.ACTIVITY = 1
+            AND PS.CPNY_ID = #CPNY_ID#
+        ]]>
+        <include refid="getSupplierListCondition" />
+    </select>
+    
+    <procedure id="productInStore" parameterClass="linkMap">
+        <![CDATA[
+            {CALL PRO_INSTORAGE(#STORAGE_NO# ,#PRODUCT_NO# ,#QUANTITY:NUMBER# ,#QUANTITY_UNIT_CODE# ,#EMPID# ,#CPNY_ID#,#INSTORAGE_ID#,#PURCHASE_ORDER_ID#,#SUPPLIER_NO#,#UNIT_PRICE#)}
+        ]]>
+    </procedure>
+    
+    <select id="getInStorageSerialNum" parameterClass="linkMap" resultClass="String">
+        <![CDATA[
+            SELECT fn_sy_instorage_serial_num() SERIAL_NUM FROM DUAL
+        ]]>
+    </select>
+    
+    <insert id="addInStorageList" parameterClass="linkMap">
+        <![CDATA[
+            INSERT INTO PROSTOR_INSTORAGE_INFO(
+                INSTORAGE_NO,
+                INSTORAGE_ID,
+                PURCHASE_ORDER_ID,
+                SUPPLIER_NO,
+                CREATE_DATE,
+                CREATED_BY,
+                ACTIVITY,
+                CPNY_ID,
+                STATUS,
+                IN_DATE
+            )
+            VALUES(
+                PROSTOR_INSTORAGE_INFO_SEQ.NEXTVAL,
+                #INSTORAGE_ID#,
+                #PURCHASE_ORDER_ID#,
+                #SUPPLIER_NO#,
+                SYSDATE,
+                #CREATED_BY#,
+                1,
+                #CPNY_ID#,
+                #STATUS#,
+                TO_DATE(#IN_DATE#,'YYYY-MM-DD HH24:MI:SS')
+            )
+        ]]>
+    </insert>
+    <update id="updateInStorage" parameterClass="linkMap">
+        <![CDATA[
+            UPDATE PROSTOR_INSTORAGE_INFO SET
+                STATUS = #STATUS#,
+                IN_DATE = TO_DATE(#IN_DATE#,'YYYY-MM-DD HH24:MI:SS'),
+                UPDATED_BY = #UPDATED_BY#,
+                UPDATE_DATE = SYSDATE
+            WHERE
+                INSTORAGE_ID = #INSTORAGE_ID#
+            AND ACTIVITY = 1
+            AND CPNY_ID = #CPNY_ID#
+        ]]>
+    </update>
+    
+
+    <select id="getInstorageList" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT 
+                INSTORAGE_ID,
+                SUPPLIER_NO,
+                TO_CHAR(NVL(IN_DATE,SYSDATE),'YYYY-MM-DD HH24:MI:SS') AS IN_DATE,
+                NVL(PURCHASE_ORDER_ID,'null') PURCHASE_ORDER_ID
+            FROM PROSTOR_INSTORAGE_INFO
+            WHERE ACTIVITY = 1
+            AND STATUS = 2
+            AND CPNY_ID = #CPNY_ID#
+        ]]>
+    </select>
+    
+    
+    <sql id="getPurchaseOrderCondition">
+        <isNotEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+                (   
+                    PPO.PURCHASE_ORDER_ID LIKE '%'||TRIM(#keyWord#)||'%'
+                )
+            ]]>
+        </isNotEmpty>
+    </sql>
+    
+    <select id="getPurchaseOrderList" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT
+                PPO.PURCHASE_ORDER_NO PURCHASE_ORDER_NO,
+                PPO.PURCHASE_ORDER_ID PURCHASE_ORDER_ID,
+                TO_CHAR(PPO.PURCHASE_DATE,'YYYY-MM-DD HH24:MI') PURCHASE_DATE,
+                HE.CHINESENAME ENAME,
+                (SELECT COUNT(0) FROM PROSTOR_INSTORAGE_INFO PII
+                WHERE PII.ACTIVITY = 1
+                AND PII.CPNY_ID = #CPNY_ID#
+                AND PII.PURCHASE_ORDER_ID = PPO.PURCHASE_ORDER_ID) IN_COUNT
+            FROM
+                PROSTOR_PURCHASE_ORDER PPO,
+                HR_EMPLOYEE HE
+            WHERE
+                PPO.EMPID = HE.EMPID(+)
+            AND PPO.STATUS = 'PurchaseOrderState0'
+            AND PPO.AFFIRM_FLAG = 'affirm1'
+            AND PPO.ACTIVITY = 1
+            AND PPO.CPNY_ID = #CPNY_ID#
+        ]]>
+        <include refid="getPurchaseOrderCondition" />
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY PPO.PURCHASE_ORDER_ID
+            ]]>
+        </isEmpty>
+    </select>
+    
+    <select id="getPurchaseOrderListCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[   
+            SELECT
+                COUNT(*)
+            FROM
+                PROSTOR_PURCHASE_ORDER PPO,
+                HR_EMPLOYEE HE
+            WHERE
+                PPO.EMPID = HE.EMPID(+)
+        ]]>
+        <include refid="getPurchaseOrderCondition" />
+    </select>
+    
+    <select id="getWaitingInStorageSum" parameterClass="linkMap" resultClass="int">
+        <![CDATA[   
+            SELECT NVL(SUM(NVL(PPOD.QUANTITY,0) - NVL(PPOD.INQUANTITY,0)),0) QUANTTIY
+            FROM PROSTOR_PURCHASE_ORDER_DETAIL PPOD
+            WHERE PPOD.PURCHASE_ORDER_ID = #pid#
+            AND   PPOD.ACTIVITY = 1
+            AND   PPOD.CPNY_ID = #CPNY_ID#
+        ]]>
+    </select>
+    
+    <select id="getProductWaitingInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT PPOD.PURCHASE_ORDER_ID PURCHASE_ORDER_ID,
+                PPOD.PRODUCT_NO PRODUCT_NO,
+                PP.PRODUCT_ID PRODUCT_ID,
+                PP.PRODUCT_NAME PRODUCT_NAME,
+                S.CODE_NAME,
+                PPOD.SUPPLIER_NO SUPPLIER_NO,
+                (PPOD.QUANTITY - NVL(PPOD.INQUANTITY,0)) QUANTITY
+            FROM   PROSTOR_PRODUCT PP,
+                   PROSTOR_PURCHASE_ORDER_DETAIL PPOD,
+                   SY_CODE S
+            WHERE  PPOD.PRODUCT_NO = PP.PRODUCT_NO(+)
+            AND    PPOD.QUANTITY > NVL(PPOD.INQUANTITY,0)
+            AND    PPOD.CPNY_ID = #CPNY_ID#
+            AND    PPOD.ACTIVITY = 1
+            AND    PP.CPNY_ID = #CPNY_ID#
+            AND    PP.UNIT_CODE_ID = S.CODE_ID(+)
+            AND    PP.ACTIVITY = 1
+            AND    PPOD.PURCHASE_ORDER_ID = #pid#
+        ]]>
+    </select>
+    
+    <sql id="getInStorHistoryListCondition">
+        <isNotEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+                (   
+                    PII.INSTORAGE_ID LIKE '%'||TRIM(#keyWord#)||'%'
+                    OR PII.PURCHASE_ORDER_ID LIKE '%'||TRIM(#keyWord#)||'%'
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="FROM_DATE">
+            <![CDATA[
+                PII.IN_DATE >= TO_DATE(#FROM_DATE#,'YYYY-MM-DD')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="END_DATE">
+            <![CDATA[
+                PII.IN_DATE <= TO_DATE(#END_DATE#,'YYYY-MM-DD')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="SUPPLIER_NO">
+            <![CDATA[
+                PII.SUPPLIER_NO = #SUPPLIER_NO#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="STATUS">
+            <![CDATA[
+                PII.STATUS = #STATUS#
+            ]]>
+        </isNotEmpty>
+        <isEqual prepend="AND" property="IS_PURCHASE" compareValue="2">
+            PII.PURCHASE_ORDER_ID IS NULL
+        </isEqual>
+        <isEqual prepend="AND" property="IS_PURCHASE" compareValue="1">
+            PII.PURCHASE_ORDER_ID IS NOT NULL
+        </isEqual>
+    </sql>
+    
+    <select id="getInStorHistoryList" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT 
+                PII.INSTORAGE_NO,
+                PII.INSTORAGE_ID,
+                PII.PURCHASE_ORDER_ID,
+                PII.SUPPLIER_NO,
+                PS.SUPPLIER_NAME,
+                TO_CHAR(PII.IN_DATE,'YYYY-MM-DD HH24:MI:SS') IN_DATE,
+                NVL2(PII.UPDATED_BY ,(
+                        SELECT HE.CHINESENAME FROM HR_EMPLOYEE HE
+                        WHERE HE.EMPID = PII.UPDATED_BY
+                        AND   HE.ACTIVITY = 1
+                        AND   HE.CPNY_ID = #CPNY_ID#
+                    ),(
+                        SELECT HE.CHINESENAME FROM HR_EMPLOYEE HE
+                        WHERE HE.EMPID = PII.CREATED_BY
+                        AND   HE.ACTIVITY = 1
+                        AND   HE.CPNY_ID = #CPNY_ID#
+                    )) ENAME,
+                PII.STATUS,
+                NVL(
+                    (SELECT SUM(PIP.QUANTITY) FROM PROSTOR_INSTORAGE_PRODUCT PIP
+                    WHERE PIP.ACTIVITY = 1
+                    AND PIP.CPNY_ID = #CPNY_ID#
+                    AND PIP.INSTORAGE_ID = PII.INSTORAGE_ID),0
+                ) QUANTITY_SUM,
+                NVL(
+                    (SELECT SUM(PIP.QUANTITY*PIP.UNIT_PRICE) FROM PROSTOR_INSTORAGE_PRODUCT PIP
+                    WHERE PIP.ACTIVITY = 1
+                    AND PIP.CPNY_ID = #CPNY_ID#
+                    AND PIP.INSTORAGE_ID = PII.INSTORAGE_ID),0
+                ) PRICE_SUM
+            FROM PROSTOR_INSTORAGE_INFO PII,
+                 PROSTOR_SUPPLIER PS
+            WHERE PII.SUPPLIER_NO = PS.SUPPLIER_NO(+)
+            AND   PII.ACTIVITY = 1
+            AND   PII.CPNY_ID = #CPNY_ID#
+            AND   PS.ACTIVITY = 1
+            AND   PS.CPNY_ID = #CPNY_ID#
+        ]]>
+        <include refid="getInStorHistoryListCondition" />
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY PII.IN_DATE DESC
+            ]]>
+        </isEmpty>
+    </select>
+    
+    <select id="getInStorHistoryListCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[   
+            SELECT 
+                COUNT(PII.INSTORAGE_NO)
+            FROM PROSTOR_INSTORAGE_INFO PII,
+                 PROSTOR_SUPPLIER PS
+            WHERE PII.SUPPLIER_NO = PS.SUPPLIER_NO(+)
+            AND   PII.ACTIVITY = 1
+            AND   PII.CPNY_ID = #CPNY_ID#
+            AND   PS.ACTIVITY = 1
+            AND   PS.CPNY_ID = #CPNY_ID#
+        ]]>
+        <include refid="getInStorHistoryListCondition" />
+    </select>
+    
+    <select id="getInStorDetailList" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT 
+                PIP.PRODUCT_NO,
+                PIP.PRODUCT_ID,
+                PIP.PRODUCT_NAME,
+                PIP.SPECIFICATION,
+                PIP.PRODUCT_NUM,
+                PIP.PRODUCT_CAS,
+                PIP.UNIT_NAME,
+                PIP.UNIT_PRICE,
+                PIP.QUANTITY,
+                PIP.STORAGE_NAME,
+                PIP.STOR_ADDR,
+                PIP.QUANTITY*PIP.UNIT_PRICE SUMMONEY
+            FROM PROSTOR_INSTORAGE_PRODUCT PIP
+            WHERE PIP.ACTIVITY = 1
+            AND PIP.CPNY_ID = #CPNY_ID#
+            AND PIP.INSTORAGE_ID = #INSTORAGE_ID#
+        ]]>
+    </select>
+    
+    <select id="getInStorDetailListCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT 
+                COUNT(0)
+            FROM PROSTOR_INSTORAGE_PRODUCT PIP
+            WHERE PIP.ACTIVITY = 1
+            AND PIP.CPNY_ID = #CPNY_ID#
+            AND PIP.INSTORAGE_ID = #INSTORAGE_ID#
+        ]]>
+    </select>
+    
+    <select id="getInstorOrderById" parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT 
+                PII.INSTORAGE_NO,
+                PII.INSTORAGE_ID,
+                PII.PURCHASE_ORDER_ID,
+                PS.SUPPLIER_NAME,
+                TO_CHAR(PII.IN_DATE,'YYYY-MM-DD HH24:MI:SS') IN_DATE,
+                NVL2(PII.UPDATED_BY ,(
+                        SELECT HE.CHINESENAME FROM HR_EMPLOYEE HE
+                        WHERE HE.EMPID = PII.UPDATED_BY
+                        AND   HE.ACTIVITY = 1
+                        AND   HE.CPNY_ID = #CPNY_ID#
+                    ),(
+                        SELECT HE.CHINESENAME FROM HR_EMPLOYEE HE
+                        WHERE HE.EMPID = PII.CREATED_BY
+                        AND   HE.ACTIVITY = 1
+                        AND   HE.CPNY_ID = #CPNY_ID#
+                    )) ENAME,
+                PII.STATUS,
+                NVL(
+                    (SELECT SUM(PIP.QUANTITY) FROM PROSTOR_INSTORAGE_PRODUCT PIP
+                    WHERE PIP.ACTIVITY = 1
+                    AND PIP.CPNY_ID = #CPNY_ID#
+                    AND PIP.INSTORAGE_ID = PII.INSTORAGE_ID),0
+                ) QUANTITY_SUM,
+                NVL(
+                    (SELECT SUM(PIP.QUANTITY*PIP.UNIT_PRICE) FROM PROSTOR_INSTORAGE_PRODUCT PIP
+                    WHERE PIP.ACTIVITY = 1
+                    AND PIP.CPNY_ID = #CPNY_ID#
+                    AND PIP.INSTORAGE_ID = PII.INSTORAGE_ID),0
+                ) PRICE_SUM,
+                 HC.CPNY_NAME,
+                 HC.CPNY_ADDR,
+                 HC.CPNY_TEL_NO
+            FROM PROSTOR_INSTORAGE_INFO PII,
+                 PROSTOR_SUPPLIER PS,
+                 HR_COMPANY HC
+            WHERE PII.INSTORAGE_ID = #INSTORAGE_ID#
+            AND   PII.SUPPLIER_NO = PS.SUPPLIER_NO(+)
+            AND   PII.ACTIVITY = 1
+            AND   PII.CPNY_ID = #CPNY_ID#
+            AND   PS.ACTIVITY = 1
+            AND   PS.CPNY_ID = #CPNY_ID#
+            AND   HC.CPNY_ID = #CPNY_ID#
+        ]]>
+    </select>
+
+    <select id="getInstorRecords" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT PII.INSTORAGE_ID,
+                TO_CHAR(PII.IN_DATE,'yyyy-mm-dd hh24:mi') IN_DATE,
+                PS.SUPPLIER_NAME,
+                PP.PRODUCT_ID,
+                PP.PRODUCT_NAME,
+                PIP.SPECIFICATION,
+                PIP.UNIT_NAME,
+                PIP.QUANTITY,
+                PIP.UNIT_PRICE,
+                PIP.STORAGE_NAME
+            FROM PROSTOR_INSTORAGE_INFO PII,
+                PROSTOR_INSTORAGE_PRODUCT PIP,
+                PROSTOR_SUPPLIER PS,
+                PROSTOR_PRODUCT PP
+            WHERE PII.INSTORAGE_ID = PIP.INSTORAGE_ID(+)
+                AND PII.SUPPLIER_NO = PS.SUPPLIER_NO(+)
+                AND PIP.PRODUCT_NO = PP.PRODUCT_NO(+)
+                AND PII.ACTIVITY = 1
+                AND PII.CPNY_ID = #CPNY_ID#
+        ]]>
+        <isNotEmpty prepend="AND" property="FROM_DATE">
+            <![CDATA[
+                PII.IN_DATE >= TO_DATE(#FROM_DATE#,'YYYY-MM-DD')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="END_DATE">
+            <![CDATA[
+                PII.IN_DATE <= TO_DATE(#END_DATE#,'YYYY-MM-DD')+1
+            ]]>
+        </isNotEmpty>
+        ORDER BY PII.INSTORAGE_ID
+    </select>
+</sqlMap>

@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="att.attMonInfo">
+
+    <select id="getAttSqlColumns" parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[  
+				SELECT RI.ITEM_ID 
+				  FROM REPORT_ITEM RI,REPORT_TABLE RT,REPORT_ITEM_REFERENCE RIR
+				 WHERE RI.RT_NO = RT.RT_NO(+)
+				   AND RI.ITEM_ID = RIR.ITEM_ID(+) 
+				   AND RT.MENU_CODE = #MENU_CODE#
+				   AND RT.CPNY_ID = #CPNY_ID#
+				 ORDER BY RI.ORDERNO 
+			]]>
+   </select>
+    
+   <select id="getAttColumns" parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[
+				SELECT RI.TABLE_NAME, 
+				       RI.ITEM_ID,
+					   DECODE(#language#, 'en', RIR.ITEM_EN_NAME, RIR.ITEM_NAME) ITEM_NAME  
+				  FROM REPORT_ITEM RI,REPORT_TABLE RT,REPORT_ITEM_REFERENCE RIR
+				 WHERE RI.RT_NO = RT.RT_NO(+)
+				   AND RI.ITEM_ID = RIR.ITEM_ID(+) 
+				   AND RT.MENU_CODE = #MENU_CODE#
+				   AND RT.CPNY_ID = #CPNY_ID#
+				 ORDER BY RI.ORDERNO
+			]]>
+   </select>
+ 	  
+ 	<sql id="getAttMonInfoCondition" >
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[  
+			    (
+			    	HR_EMPLOYEE.EMPID LIKE '%' || TRIM(#keyWord:VARCHAR#) || '%'
+		         OR HR_EMPLOYEE.CHINESENAME LIKE '%' || TRIM(#keyWord:VARCHAR#) || '%'
+		         OR HR_DEPARTMENT.DEPTNAME LIKE '%' || TRIM(#keyWord:VARCHAR#) || '%'
+		         OR UPPER(AR_HISTORY.CHINESE_PINYIN) LIKE '%' || TRIM(UPPER(#keyWord:VARCHAR#)) || '%'
+		       )	
+		    ]]>
+		</isNotEmpty> 
+		
+		<isNotEmpty prepend="AND" property="empId">
+			<![CDATA[
+			      HR_EMPLOYEE.EMPID = #empId#
+		    ]]>
+		</isNotEmpty> 
+
+		<isEqual prepend="AND"  compareValue="true" property="isSupervisor">
+			<![CDATA[
+			 		 EXISTS ( SELECT *
+		  	 		  	        FROM AR_SUPERVISOR_INFO B1
+							   WHERE B1.SUPERVISED_DEPTID = HR_EMPLOYEE.DEPTID
+		 					     AND B1.AR_SUPERVISOR_ID = #AR_ADMIN_ID:VARCHAR#
+		 	 		  	 	)
+		    ]]>
+		</isEqual>
+
+		<isEqual prepend="AND"  compareValue="false" property="isSupervisor">
+			<![CDATA[
+				HR_EMPLOYEE.EMPID = #AR_ADMIN_ID:VARCHAR#
+		    ]]>
+		</isEqual>
+		
+		<isNotEmpty prepend="AND" property="DEPTID">
+			<![CDATA[
+			      	      EXISTS (
+						  SELECT     *
+	                     	FROM HR_DEPARTMENT B1
+	                     	WHERE B1.DEPTID=HR_EMPLOYEE.DEPTID
+	                 	START WITH B1.DEPTID = #DEPTID:VARCHAR#
+	                 	CONNECT BY PRIOR B1.DEPTID = B1.PARENT_DEPT_ID
+	                )
+		    ]]>
+		</isNotEmpty>
+		 
+	</sql>
+	 <select id="getAttMonInfo" parameterClass="linkMap"
+		resultClass="linkMap" remapResults="true">
+		<![CDATA[	
+		SELECT $sqlStatement$
+		  FROM AR_HISTORY, 
+			   HR_EMPLOYEE,
+			   HR_DEPARTMENT
+		 WHERE AR_HISTORY.EMPID = HR_EMPLOYEE.EMPID
+		   AND HR_EMPLOYEE.DEPTID = HR_DEPARTMENT.DEPTID
+		   AND AR_HISTORY.AR_MONTH = #ATT_MONTH:VARCHAR# 
+		 ]]>
+
+		<include refid="getAttMonInfoCondition"/>
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		  ORDER BY $sortname$ $sortorder$
+		    ]]>
+		</isNotEmpty>
+		
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+			ORDER BY   AR_HISTORY.DEPTID DESC,HR_EMPLOYEE.EMPID 
+			]]>
+		</isEmpty>  
+
+	</select>
+	
+	<select id="getAttMonInfoCnt" parameterClass="linkMap"
+		resultClass="int">
+		<![CDATA[	
+	   SELECT COUNT(*) CNT
+		  FROM AR_HISTORY, 
+			   HR_EMPLOYEE,
+			   HR_DEPARTMENT
+		 WHERE AR_HISTORY.EMPID = HR_EMPLOYEE.EMPID
+		  AND HR_EMPLOYEE.DEPTID = HR_DEPARTMENT.DEPTID
+		   AND AR_HISTORY.AR_MONTH = #ATT_MONTH:VARCHAR# 
+		]]> 
+		<include refid="getAttMonInfoCondition"/>
+	</select> 
+	
+</sqlMap>

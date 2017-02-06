@@ -1,0 +1,673 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap
+    PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+    "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="system.model">
+    <select id="getAssetID" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+        SELECT 	AAI.ASSET_NO     	ASSET_NO,
+            	AAI.ASSET_ID      	ASSET_ID,
+				(CASE WHEN #language#='en' then AAI.ASSET_EN_NAME	ELSE AAI.ASSET_NAME END)  ASSET_NAME,
+            	AAI.ALLOW_BORROW   	ALLOW_BORROW,
+            	SC.CODE_NAME  		ASSET_TYPE
+        		FROM ASS_ASSET_INFO AAI left join T_SY_CODE SC
+        		on AAI.ASSET_CATEGORY_CODE = SC.CODE_ID
+        	 	where AAI.ACTIVITY = 1 
+        	 		  AND AAI.ALLOW_BORROW = 'yes'
+        ]]>
+        <isNotEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+            (
+				AAI.ASSET_NAME LIKE concat('%',TRIM(#keyWord:VARCHAR#),'%')
+                OR AAI.ASSET_ID LIKE concat('%',TRIM(#keyWord:VARCHAR#),'%')
+            )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="ASSET_TYPE">
+            <![CDATA[
+                  AAI.ASSET_CATEGORY_CODE = #ASSET_TYPE#
+            ]]>
+        </isNotEmpty>
+    </select>
+
+    <select id="getAssetInfoCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+			SELECT COUNT(*)
+        		FROM ASS_ASSET_INFO AAI left join SY_CODE SC
+        		on AAI.ASSET_CATEGORY_CODE = SC.CODE_ID
+        	 	where AAI.ACTIVITY = 1 
+        	 		  AND AAI.ALLOW_BORROW = 'yes'
+        ]]>
+        <isNotEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+            (
+                AAI.ASSET_NAME  LIKE  concat('%',TRIM(#keyWord#),'%')
+                OR AAI.ASSET_ID  LIKE  concat('%',TRIM(#keyWord#),'%')
+            )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="ASSET_TYPE">
+            <![CDATA[
+                  AAI.ASSET_CATEGORY_CODE = #ASSET_TYPE#
+            ]]>
+        </isNotEmpty>
+    </select>
+
+    <delete id="deleteModel" parameterClass="linkMap">
+        <![CDATA[
+            DELETE FROM  SY_MODEL
+            WHERE MTYPE = #mtype#
+             AND MJSP = #mjsp#
+             AND MNAME= #mname#
+        ]]>
+    </delete>
+    <insert id="insertModel" parameterClass="linkMap">
+        <![CDATA[
+            INSERT INTO SY_MODEL(MTYPE,MJSP,MNAME,MCONTENT)
+            VALUES(#mtype#,#mjsp#,#mname#,#mcontent#)
+        ]]>
+    </insert>
+
+    <select id="getModel" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT SUBSTR(MNAME,1,LENGTH(MNAME)-5) MNAME,MCONTENT
+            FROM SY_MODEL
+            WHERE MTYPE = #mtype#
+             AND MJSP = #mjsp#
+        ]]>
+    </select>
+
+    <select id="getMenu" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT T.MENU_CODE,
+                   T.MENU_INTRO,
+                   T.MENU_EN_INTRO
+              FROM SY_MENU T
+             WHERE T.ACTIVITY = 1
+        ]]>
+        <isNotEmpty prepend="AND" property="MENU_PARENT_CODE">
+            <![CDATA[
+                  T.MENU_PARENT_CODE = #MENU_PARENT_CODE#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="DEPTH">
+            <![CDATA[
+                  T.DEPTH = #DEPTH#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="CPNY_ID">
+            <![CDATA[
+                  T.CPNY_ID = #CPNY_ID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="ADMINID">
+            <![CDATA[
+            EXISTS (
+                SELECT SCREEN_CODE
+                  FROM SY_SCREEN_GRANT
+                 WHERE SCREEN_CODE = T.MENU_CODE
+                   AND SCREEN_GRANT_ID IN
+                       (SELECT TO_NUMBER(COLUMN_VALUE) SCREEN_GRANT_ID
+                          FROM (SELECT *
+                                  FROM TABLE(CAST(SPLIT((SELECT SCREEN_GRANT_ID
+                                                          FROM SY_ADMIN
+                                                         WHERE ADMINID = #ADMINID#),
+                                                        ',') AS TYPE_SPLIT))))
+                    )
+            ]]>
+        </isNotEmpty>
+    </select>
+<!--  SELECT SY_GET_PURVIEW('url' ,#ADMINID#) FROM DUAL;请相应的改此函数-->
+    <select id="getPurview" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT SY_GET_PURVIEW('/login/home' ,#ADMINID#)
+        ]]>
+    </select>
+    
+    <select id="getMenuSplitTable" parameterClass="linkMap" resultClass="linkMap">
+         <![CDATA[
+             select get_grandIDs(#ADMINID#)
+         ]]>
+    </select>
+    <select id="getPurviewBtn" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT SCREEN_CODE,
+                  MAX(SELECTR) SELECTR,
+                  MAX(SAVER) SAVER,
+                  MAX(INSERTR) INSERTR,
+                  MAX(UPDATER) UPDATER,
+                  MAX(CANCELR) CANCELR,
+                  MAX(DELETER) DELETER
+                FROM SY_SCREEN_GRANT
+                where SCREEN_GRANT_ID in (
+                         select SCREEN_GRANT_ID from (SELECT  screen_grant_id,
+						 CASE
+							 WHEN INSTR((SELECT CONCAT(',' , screen_grant_id , ',')
+														FROM sy_admin
+													 WHERE adminid = #ADMINID#),CONCAT(',' , screen_grant_no , ',')
+													) > 0 THEN
+								1
+							 ELSE
+								0
+						 END AS count
+						FROM sy_login_screen ) as cc where cc.count=1
+                )
+                AND SCREEN_CODE = #MENU_CODE#
+                GROUP BY SCREEN_CODE
+        ]]>
+    </select>
+
+    <select id="getSyCode" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT CODE_ID,
+                (CASE WHEN #language# = 'en' then
+                    CODE_EN_NAME
+                ELSE
+                    CODE_NAME
+                END) AS CODE_NAME
+            FROM SY_CODE
+            WHERE PARENT_CODE = #parentCode#
+            AND ACTIVITY = 1
+            ORDER BY ORDERNO,CODE_ID
+        ]]>
+    </select>
+    <!-- aibi添加 -->
+    <select id="getTSyCode" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT CODE_ID,
+                (CASE WHEN #language# = 'en' then
+                    CODE_EN_NAME
+                ELSE
+                    CODE_NAME
+                END) AS CODE_NAME
+            FROM T_SY_CODE
+            WHERE PARENT_CODE = #parentCode#
+            AND ACTIVITY = 1
+            ORDER BY ORDERNO,CODE_ID
+        ]]>
+    </select>
+    <!-- end -->
+
+    <select id="getPosition" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT POSITION_ID,
+                (CASE WHEN #language# = 'en' then
+                    POSITION_EN_NAME
+                ELSE
+                    POSITION_NAME
+                END) AS POSITION_NAME,
+                POST_GROUP_ID
+            FROM HR_POSITION
+            WHERE ACTIVITY = 1
+            ORDER BY convert(if(#language#='en', POSITION_EN_NAME, POSITION_NAME)  USING gbk ) COLLATE gbk_chinese_ci ASC
+            ]]>
+
+    </select>
+
+    <select id="getPostGrade" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT
+                (CASE WHEN #language# = 'en' then
+                    POST_GRADE_EN_NAME
+                ELSE
+                    POST_GRADE_NAME
+                END) AS POST_GRADE_NAME,
+                POST_GRADE_ID
+
+            FROM HR_POST_GRADE
+            WHERE ACTIVITY = 1
+                ORDER BY convert(if(#language#='en', POST_GRADE_EN_NAME, POST_GRADE_NAME)  USING gbk ) COLLATE gbk_chinese_ci ASC
+        ]]>
+
+    </select>
+
+    <select id="getPostGroup" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT
+                (CASE WHEN #language# = 'en' then
+                    POST_GROUP_EN_NAME
+                ELSE
+                    POST_GROUP_NAME
+                END) AS POST_GROUP_NAME,
+                POST_GROUP_ID
+            FROM HR_POST_GROUP
+            WHERE ACTIVITY = 1
+            ORDER BY convert(if(#language#='en', POST_GROUP_EN_NAME, POST_GROUP_NAME)  USING gbk ) COLLATE gbk_chinese_ci ASC
+        ]]>
+    </select>
+	<!-- <select id="getPost" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT
+                POST_ID,
+                (CASE WHEN #language# = 'en' then
+                    POST_EN_NAME
+                ELSE
+                    POST_NAME
+                END) AS POST_NAME,
+                POST_GROUP_ID
+
+            FROM HR_POST
+            WHERE ACTIVITY = 1
+            ORDER BY NLSSORT(if(#language#,='en', POST_EN_NAME, POST_NAME),
+                'NLS_SORT=SCHINESE_PINYIN_M')
+        ]]> -->
+        <!--aibi更改  -->
+    <select id="getPost" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT
+                POST_ID,
+                (CASE WHEN #language# = 'en' then
+                    POST_EN_NAME
+                ELSE
+                    POST_NAME
+                END) AS POST_NAME,
+                POST_GROUP_ID
+
+            FROM HR_POST
+            WHERE ACTIVITY = 1
+            ORDER BY convert(if(#language#='en', POST_EN_NAME, POST_NAME)  USING gbk ) COLLATE gbk_chinese_ci ASC
+        ]]>
+        <!-- end -->
+
+    </select>
+
+    <select id="getProductUnit" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT
+                CODE_ID,
+                (CASE WHEN #language# = 'en' then
+                    CODE_EN_NAME
+                ELSE
+                    CODE_NAME
+                END) AS CODE_NAME
+            FROM SY_CODE
+            WHERE ACTIVITY = 1
+            AND PARENT_CODE = 'ProductUnit'
+            ORDER BY convert(if(#language#='en', CODE_EN_NAME, CODE_NAME) USING gbk) COLLATE gbk_chinese_ci ASC
+        ]]>
+    </select>
+
+    <select id="getMessageType" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT
+                CODE_ID,
+                (CASE WHEN #language# = 'en' then
+                    CODE_EN_NAME
+                ELSE
+                    CODE_NAME
+                END) AS CODE_NAME
+            FROM SY_CODE
+            WHERE ACTIVITY = 1
+            AND PARENT_CODE = 'MessageType'
+            ORDER BY convert(if(#language#= 'en', CODE_EN_NAME , CODE_NAME)USING gbk) COLLATE gbk_chinese_ci ASC
+        ]]>
+    </select>
+
+    <select id="getTransferType" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT
+                CODE_ID,
+                (CASE WHEN #language# = 'en' then
+                    CODE_EN_NAME
+                ELSE
+                    CODE_NAME
+                END) AS CODE_NAME
+            FROM SY_CODE
+            WHERE ACTIVITY = 1
+            AND PARENT_CODE = 'TransferType'
+            ORDER BY convert(if(#language#='en',CODE_EN_NAME , CODE_NAME)USING gbk) COLLATE gbk_chinese_ci ASC
+        ]]>
+    </select>
+
+    <select id="getPropertyValueType" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT
+                CODE_ID,
+                (CASE WHEN #language# = 'en' then
+                    CODE_EN_NAME
+                ELSE
+                    CODE_NAME
+                END) AS CODE_NAME
+            FROM SY_CODE
+            WHERE ACTIVITY = 1
+            AND PARENT_CODE = 'PropertyValueType'
+            ORDER BY convert(if(#language#='en',CODE_EN_NAME , CODE_NAME)USING gbk) COLLATE gbk_chinese_ci ASC
+        ]]>
+    </select>
+
+    <select id="getCompany"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT T.CPNY_ID CPNY_ID, T.CPNY_NAME CPNY_NAME, T.CPNY_EN_NAME EN_CPNY_NAME
+              FROM HR_COMPANY T
+             WHERE T.ACTIVITY = 1
+            ]]>
+    </select>
+
+    <select id="getStatus"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+         SELECT '1' STATUS_ID,
+                '可用' STATUS,
+                'Available' EN_STATUS
+           FROM DUAL
+         UNION
+         SELECT '0' STATUS_ID,
+                '不可用' STATUS,
+                'Unavailable' EN_STATUS
+           FROM DUAL
+            ]]>
+    </select>
+
+    <select id="getConStatus"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+         SELECT '1' CON_STATUS_ID,
+                '已通过' CON_STATUS,
+                'Approved' EN_CON_STATUS
+           FROM DUAL
+         UNION
+         SELECT '0' CON_STATUS_ID,
+                '未确认' CON_STATUS,
+                'Pending' EN_CON_STATUS
+           FROM DUAL
+         UNION
+         SELECT '2' CON_STATUS_ID,
+                '已否决' CON_STATUS,
+                'Rejected' EN_CON_STATUS
+           FROM DUAL
+         UNION
+         SELECT '3' CON_STATUS_ID,
+                '已取消' CON_STATUS,
+                'Cancelled' EN_CON_STATUS
+           FROM DUAL
+         UNION
+         SELECT '4' CON_STATUS_ID,
+                '已归还' CON_STATUS,
+                'Returned' EN_CON_STATUS
+           FROM DUAL
+            ]]>
+    </select>
+    <select id="getAppStatus"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+         SELECT '1' APP_STATUS_ID,
+                '已通过' APP_STATUS,
+                'Approved' EN_APP_STATUS
+           FROM DUAL
+         UNION
+         SELECT '0' APP_STATUS_ID,
+                '未审核' APP_STATUS,
+                'Pending' EN_APP_STATUS
+           FROM DUAL
+         UNION
+         SELECT '2' APP_STATUS_ID,
+                '已否决' APP_STATUS,
+                'Rejected' EN_APP_STATUS
+           FROM DUAL
+            ]]>
+    </select>
+    <select id="getOrderStatus"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+         SELECT '1' STATUS_ID,
+                '已生效' STATUS,
+                'Executed' EN_STATUS
+           FROM DUAL
+         UNION
+         SELECT '0' STATUS_ID,
+                '未生效' STATUS,
+                'Executory' EN_STATUS
+           FROM DUAL
+            ]]>
+    </select>
+
+    <select id="getShiftAttribution"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+         SELECT T.TYPE_ID ATT_ID,
+                T.TYPE_NAME ATT_NAME,
+                T.TYPE_EN_NAME ATT_EN_NAME
+            FROM AR_CALENDER_TYPE T
+           WHERE T.ACTIVITY = 1
+             AND T.CPNY_ID = #CPNY_ID#
+            ]]>
+    </select>
+
+    <select id="getProductID"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT PRODUCT_ID,PRODUCT_NAME FROM PRO_BASIC_INFO WHERE ACTIVITY=1
+        ]]>
+    </select>
+
+    <select id="getCustID"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT CUST_ID,CUST_NAME FROM CUST_BASIC_INFO WHERE ACTIVITY=1
+        ]]>
+    </select>
+
+    <select id="getObjectTypeList"   parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT  POTI.OBJECT_TYPE_ID           OBJECT_TYPE_NO,
+                    POTI.OBJECT_TYPE_NAME         OBJECT_TYPE_NAME
+            FROM    PROCESS_OBJECT_TYPE_INFO            POTI
+            WHERE   (POTI.CPNY_ID     = #CPNY_ID# OR POTI.CPNY_ID IS NULL)
+            AND     ACTIVITY = 1
+            AND     POTI.PARENT_TYPE_ID = #PARENT_TYPE_NO#
+        ]]>
+    </select>
+
+
+
+
+
+
+
+
+
+    <select id="getStatusNoList" parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <isEmpty prepend="" property="OBJECT_TYPE_ID">
+            <![CDATA[
+            SELECT  PSI.STATUS_ID               STATUS_NO,
+                    PSI.STATUS_NAME             STATUS_NAME
+            FROM    PROCESS_STATUS_INFO         PSI
+            WHERE   PSI.CPNY_ID       = #CPNY_ID#
+            AND     ACTIVITY = 1
+            ]]>
+        </isEmpty>
+        <isNotEmpty prepend="" property="OBJECT_TYPE_ID">
+            <isEmpty prepend="" property="CUR_STATUS_ID">
+                <![CDATA[
+                    SELECT  DISTINCT PII.STATUS_ID         STATUS_NO,
+                            PSI.STATUS_NAME                STATUS_NAME
+                    FROM    PROCESS_ITEM_INFO              PII
+                    		LEFT JOIN PROCESS_STATUS_INFO    PSI ON (PII.STATUS_ID       = PSI.STATUS_ID)
+                    WHERE   
+                       	 PII.ACTIVITY = 1
+                         PII.CPNY_ID = #CPNY_ID#
+                         PII.OBJECT_TYPE_ID IN
+                    (   SELECT OBJECT_TYPE_ID FROM PROCESS_OBJECT_TYPE_INFO
+                        START WITH OBJECT_TYPE_ID = #OBJECT_TYPE_NO# CONNECT BY PARENT_TYPE_ID = PRIOR OBJECT_TYPE_ID
+                    )
+                ]]>
+            </isEmpty>
+            <isNotEmpty prepend="" property="CUR_STATUS_ID">
+                <![CDATA[
+                        SELECT  PII.STATUS_ID                  STATUS_NO,
+                                PSI.STATUS_NAME                STATUS_NAME
+                        FROM    PROCESS_ITEM_INFO              PII,
+                                PROCESS_STATUS_INFO            PSI
+                        WHERE   PII.STATUS_ID       = PSI.STATUS_ID
+                        AND     PII.STATUS_ID       = #CUR_STATUS_NO#
+                        AND     PII.ACTIVITY = 1
+                        AND     PII.CPNY_ID = #CPNY_ID#
+                        AND     PII.OBJECT_TYPE_ID = #OBJECT_TYPE_NO#
+                ]]>
+                <isNotEmpty prepend="UNION ALL" property="PROCESS_RESULT">
+                    <isEqual property="PROCESS_RESULT" compareValue="0">
+                        <![CDATA[
+                            SELECT  PII.SUC_STATUS_ID              STATUS_NO,
+                                    PSI.STATUS_NAME                STATUS_NAME
+                            FROM    PROCESS_ITEM_INFO              PII,
+                                    PROCESS_STATUS_INFO            PSI
+                            WHERE   PII.SUC_STATUS_ID       = PSI.STATUS_ID
+                            AND     PII.STATUS_ID       = #CUR_STATUS_NO#
+                            AND     PII.ACTIVITY = 1
+                            AND     PII.CPNY_ID = #CPNY_ID#
+                            AND     PII.OBJECT_TYPE_ID = #OBJECT_TYPE_NO#
+                        ]]>
+                    </isEqual>
+                    <isEqual property="PROCESS_RESULT" compareValue="1">
+                        <![CDATA[
+                            SELECT  PII.PRE_STATUS_ID1             STATUS_NO,
+                                    PSI.STATUS_NAME                STATUS_NAME
+                            FROM    PROCESS_ITEM_INFO              PII,
+                                    PROCESS_STATUS_INFO            PSI
+                            WHERE   PII.PRE_STATUS_ID1       = PSI.STATUS_ID
+                            AND     PII.STATUS_ID       = #CUR_STATUS_NO#
+                            AND     PII.ACTIVITY = 1
+                            AND     PII.CPNY_ID = #CPNY_ID#
+                            AND     PII.OBJECT_TYPE_ID = #OBJECT_TYPE_NO#
+                        ]]>
+                    </isEqual>
+                    <isEqual property="PROCESS_RESULT" compareValue="2">
+                        <![CDATA[
+                            SELECT  PII.PRE_STATUS_ID2             STATUS_NO,
+                                    PSI.STATUS_NAME                STATUS_NAME
+                            FROM    PROCESS_ITEM_INFO              PII,
+                                    PROCESS_STATUS_INFO            PSI
+                            WHERE   PII.PRE_STATUS_ID2       = PSI.STATUS_ID
+                            AND     PII.STATUS_ID       = #CUR_STATUS_NO#
+                            AND     PII.ACTIVITY = 1
+                            AND     PII.CPNY_ID = #CPNY_ID#
+                            AND     PII.OBJECT_TYPE_ID = #OBJECT_TYPE_NO#
+                        ]]>
+                    </isEqual>
+                    <isEqual property="PROCESS_RESULT" compareValue="3">
+                        <![CDATA[
+                            SELECT  PII.PRE_STATUS_ID3             STATUS_NO,
+                                    PSI.STATUS_NAME                STATUS_NAME
+                            FROM    PROCESS_ITEM_INFO              PII,
+                                    PROCESS_STATUS_INFO            PSI
+                            WHERE   PII.PRE_STATUS_ID3       = PSI.STATUS_ID
+                            AND     PII.STATUS_ID       = #CUR_STATUS_NO#
+                            AND     PII.ACTIVITY = 1
+                            AND     PII.CPNY_ID = #CPNY_ID#
+                            AND     PII.OBJECT_TYPE_ID = #OBJECT_TYPE_NO#
+                        ]]>
+                    </isEqual>
+                </isNotEmpty>
+                <isEmpty prepend="UNION ALL" property="PROCESS_RESULT">
+                    <![CDATA[
+                        SELECT  PII.SUC_STATUS_ID              STATUS_NO,
+                                PSI.STATUS_NAME                STATUS_NAME
+                        FROM    PROCESS_ITEM_INFO              PII,
+                                PROCESS_STATUS_INFO            PSI
+                        WHERE   PII.SUC_STATUS_ID       = PSI.STATUS_NO
+                        AND     PII.STATUS_ID       = #CUR_STATUS_NO#
+                        AND     PII.ACTIVITY = 1
+                        AND     PII.CPNY_ID = #CPNY_ID#
+                        AND     PII.OBJECT_TYPE_ID = #OBJECT_TYPE_NO#
+                    ]]>
+                </isEmpty>
+            </isNotEmpty>
+        </isNotEmpty>
+    </select>
+    
+    
+    
+    
+    
+    <select id="getCheckTypeList" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT S.CODE_ID ID,
+                   S.CODE_NAME NAME
+            FROM  SY_CODE S
+            WHERE S.ACTIVITY=1
+                  AND S.PARENT_CODE='CheckType'
+                  AND S.CPNY_ID=#CPNY_ID#
+        ]]>
+    </select>
+    <select id="getCheckedListInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT S.EMPID,
+                    S.TYPE_NO,
+                    S.TYPE_ID,
+                    S.CHECK_KEY,
+                    H.CHINESENAME ENAME,
+                    C.CODE_NAME TYPE_NAME
+            FROM SY_CHECKTYPE S left join HR_EMPLOYEE H on S.EMPID=H.EMPID
+            					left join SY_CODE C on S.TYPE_ID = C.CODE_ID
+            WHERE S.ACTIVITY = 1
+                  AND S.CPNY_ID=#CPNY_ID#
+        ]]>
+    </select>
+    <select id="getCheckedListInfoCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(S.EMPID)
+            FROM SY_CHECKTYPE S left join HR_EMPLOYEE H on S.EMPID=H.EMPID
+            					left join SY_CODE C on S.TYPE_ID = C.CODE_ID
+            WHERE S.ACTIVITY = 1
+                  AND S.CPNY_ID=#CPNY_ID#
+        ]]>
+    </select>
+    <insert id="saveCheckedType" parameterClass="linkMap">
+        <![CDATA[
+            INSERT INTO SY_CHECKTYPE(
+                EMPID,
+                TYPE_ID,
+                CPNY_ID,
+                CHECK_KEY,
+                CREATED_BY,
+                CREATE_DATE
+            ) VALUES (
+                #EMPID#,
+                #CHECKTYPE#,
+                #CPNY_ID#,
+                TO_NUMBER(#CHECK_KEY#),
+                #DID_BY#,
+                SYSDATE
+            )
+        ]]>
+    </insert>
+    <update id="updateCheckedType" parameterClass="linkMap">
+        <![CDATA[
+            UPDATE SY_CHECKTYPE
+            SET EMPID = #EMPID#,
+                TYPE_ID = #CHECKTYPE#,
+                CPNY_ID = #CPNY_ID#,
+                CHECK_KEY = TO_NUMBER(#CHECK_KEY#),
+                UPDATED_BY = #DID_BY#,
+                UPDATE_DATE = SYSDATE
+            WHERE TYPE_NO = #TYPE_NO#
+        ]]>
+    </update>
+    <delete id="deleteCheckedType" parameterClass="linkMap">
+        <![CDATA[
+            DELETE FROM  SY_CHECKTYPE
+            WHERE TYPE_NO = #TYPE_NO#
+        ]]>
+    </delete>
+    <select id="getCheckedTypeCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(S.TYPE_NO)
+            FROM SY_CHECKTYPE S
+            WHERE S.ACTIVITY = 1
+                  AND S.TYPE_ID=#CHECKTYPE#
+                  AND S.CPNY_ID=#CPNY_ID#
+        ]]>
+    </select>
+    <select id="getApproverId" parameterClass="string" resultClass="linkMap">
+        <![CDATA[
+            SELECT S.EMPID approverId,
+                   S.CHECK_KEY
+            FROM SY_CHECKTYPE S
+            WHERE S.TYPE_ID=#TYPE_ID#
+                  AND S.CHECK_KEY=1
+        ]]>
+    </select>
+</sqlMap>

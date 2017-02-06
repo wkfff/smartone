@@ -1,0 +1,283 @@
+@CHARSET "UTF-8";
+
+/***************Common*****************/
+.clearfix:before,
+.clearfix:after {
+    content: " "; /* 1 */
+    display: table; /* 2 */
+}
+
+.clearfix:after {
+    clear: both;
+}
+
+/**
+ * For IE 6/7 only
+ * Include this rule to trigger hasLayout and contain floats.
+ */
+.clearfix {
+    *zoom: 1;
+}
+
+input,button,select,textarea{outline:none}
+
+input[type="number"]::-webkit-inner-spin-button { /*清除chrome下的小箭头*/
+    -webkit-appearance: none;
+}
+body {
+    padding: 5px;
+    margin: 0;
+}
+
+#layout1 {
+    width: 99.8%;
+}
+
+table.form {
+    width: 99.6%;
+}
+
+.formHeader{
+    height: 28px;
+    line-height: 28px;
+    font-weight: bold;
+    font-size: 12px;
+    color: #333;
+    border-bottom: solid 1px #ebebeb;
+    margin-bottom: 10px;
+    padding: 5px 10px;
+}
+
+table{
+    font-size: 12px;
+    border: 1px solid #A3C0E8;
+    width: 100%;
+}
+
+table td, table th{
+    border: 1px solid #A3C0E8;
+    /* color: #014D7E; */
+    text-align: center;
+    line-height: 20px;
+    height: 23px;
+}
+table input[type="text"]{
+    border: none;
+    width: 100%;
+    text-align: center;
+    height: 100%;
+}
+
+table th{
+    background-image: url("/resources/images/myimage/tableHeader.gif");
+}
+
+table tr.selected, table tr.selected input{
+    background-color: #DCF8A8;
+}
+
+.tableLabel {
+    height: 25px;
+    line-height: 25px;
+    color: #014d7e;
+    font-family: "宋体";
+    text-align: center;
+    background-color: #c1dbfa;
+    font-size: 12px;
+}
+
+.inputClass {
+    width: 200px;
+    height: 23px;
+    border: 1px solid #A3C0E8;
+}
+
+ul.buttonGroup{
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+ul.buttonGroup li {
+    display: inline-block;
+    margin-left: 10px;
+}
+ul.buttonGroup li:first-child{
+    margin-left: 0;
+}
+.l-button {
+    width: 79px;
+    background-image: url('/resources/images/button/button.gif');
+}
+button.l-button{
+    height: 23px;
+}
+.selected{
+    background-color: #DCF8A8;
+}
+
+.label, .value{
+    display: inline-block;
+}
+.label{
+    width: 120px;
+    padding: 5px 0;
+}
+.value{
+    margin-right: 20px;
+}
+
+.dropdown{
+    min-width: 200px;
+    max-height: 250px;
+    overflow: auto;
+    border: 1px solid #A3C0E8;
+    z-index: 999;
+    background-color: white;
+    position: absolute;
+}
+.dropdown li{
+    padding: 4px;
+    text-align: left;
+}
+.even, .even input{
+    background-color: #F5F5F5;
+}
+.dropdown li.optionHover{
+    background-color: #dcf8a8;
+    padding: 10px 4px 10px 4px;
+    cursor: pointer;
+}
+
+select{
+    border: 1px solid #A3C0E8;
+    width: 200px;
+    height: 23px;
+}
+
+input[type="text"]{
+    width: 200px;
+    height: 23px;
+    line-height: 23px;   /*For input:text, line-height and height both should be set for IE issue.*/
+    border: 1px solid #A3C0E8;
+}
+
+.deleteRow, .addRow{
+    cursor: pointer;
+}
+
+.blockdiv{
+    width: 100%;
+    height: 90px;
+    background-color: #555;
+    z-index: 888;
+    opacity: .3;
+    position: absolute;
+    top: 150px;
+    text-align: center;
+}
+input[type="radio"]{
+    margin: 6px 5px 0 8px;
+    float: left;
+}
+.radioLabel{
+    margin-right: 3px;
+    line-height: 23px;
+}
+#invoice li{
+    float: left;
+}
+.warning{
+    color: red;
+    margin-left: 10px;
+}
+.blockdiv .message{
+    position: relative;
+    top: 35%;
+    color: red;
+    font-size: 20px;
+    opacity: 1;
+}
+
+.windowMask{
+    width: 100%;
+    height: 519px;
+    background-color: #777;
+    z-index: 8000;
+    position: absolute;
+    top: 0;
+    left: 0;
+    opacity: 0.25;
+    overflow: hidden;
+}
+
+.link-button{
+    display: inline-block;
+    border: none;
+    background: none;
+    cursor: pointer;
+}
+
+
+/**********Validation************/
+input.ng-invalid.submitted {
+    border: 1px solid #FA787E;
+}
+
+
+
+
+
+/***************Storage Manage*****************/
+#storageDetailDiv {
+    display: none;
+}
+
+#storageDetailDiv select{
+    width: 140px;
+}
+
+#storageSearch #storageList {
+    margin-top: 5px;
+}
+
+#storageSearch .buttonGroup{
+    margin: 10px 10px 10px -10px;
+}
+#storageSearch table.buttonGroup, table.buttonGroup td, table.buttonGroup tr{
+    border: none;
+}
+#storageSearch table.buttonGroup{
+    position: relative;
+    left: -776px;
+}
+ul.buttonGroup li.updatebtn{
+    margin-left: -3px;
+}
+#storageList.l-panel, #storageList .l-grid-header{
+    border: none;
+}
+#storageList .l-grid-header-table{
+    border-right: none;
+}
+
+
+
+
+/***************Sales Order Manage*****************/
+#salesOrder {
+    margin-top: 5px;
+}
+
+#salesOrderContainer select#customerName{
+    width: 200px;
+}
+
+
+/***************License Key Management*************/
+#licenseManage .value{
+    width: 200px;
+}
+
+#licenseManage .l-button{
+    display: inline;
+    margin-top: 10px;
+}

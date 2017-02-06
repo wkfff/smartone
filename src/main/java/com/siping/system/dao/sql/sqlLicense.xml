@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+    PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+    "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="license">
+    <select id="getCurrentLicense" resultClass="license">
+        <![CDATA[
+            Select LICENSE_ID licenseId,
+                 LICENSE_KEY licenseKey,
+                 ACTIVATE_TYPE activateType,
+                 START_DATE startDate,
+                 DAYS days,
+                 END_DATE endDate,
+                 USE_TYPE_ID useType,
+                 ACTIVITY activity,
+                 STATUS status,
+                 CUST_ID custId
+            From license
+            Where status = 1
+        ]]>
+    </select>
+
+    <select id="getLicenseList" resultClass="license" parameterClass="linkMap">
+        <![CDATA[
+            Select LICENSE_ID licenseId,
+                 LICENSE_KEY licenseKey,
+                 ACTIVATE_TYPE activateType,
+                 TO_CHAR(START_DATE,'YYYY-MM-DD HH24:MI:SS') startDateStr,
+                 START_DATE startDate,
+                 DAYS days,
+                 TO_CHAR(END_DATE,'YYYY-MM-DD HH24:MI:SS') endDateStr,
+                 END_DATE endDate,
+                 USE_TYPE_ID useType,
+                 ACTIVITY activity,
+                 STATUS status,
+                 CUST_ID custId
+            From license
+            ORDER BY status desc,startdate desc
+        ]]>
+    </select>
+    
+    <select id="getLicenseListCnt" resultClass="int" parameterClass="linkMap">
+        <![CDATA[
+            Select count(*)
+            From license
+        ]]>
+    </select>
+    <insert id="addLicense" parameterClass="license">
+    	<![CDATA[
+    	    UPDATE LICENSE SET status = 0 WHERE status =1;
+            INSERT INTO LICENSE
+                VALUES(
+                    null,
+                    #licenseKey#,
+                    #activateType#,
+                    #startDate#,
+                    #days#,
+                    #endDate#,
+                    #useType#,
+                    1,
+                    1,
+                    ''
+                );
+        ]]>
+    </insert>
+    <update id="updateLicense" parameterClass="license">
+        <![CDATA[
+    		UPDATE LICENSE
+                SET activate_type = #activateType#,
+                    start_date = #startDate#,
+                    days = #days#,
+                    end_date = #endDate#,
+                    use_type_id = #useType#
+                WHERE license_key = #licenseKey#
+        ]]>
+    </update>
+    <select id="getLicenseCnt"  resultClass="int" parameterClass="license">
+       <![CDATA[
+       	  SELECT count(*) from license where LICENSE_KEY=#licenseKey#
+       ]]>
+    </select>
+    
+    <insert id="addOrUpdateLicense" parameterClass="license">
+  
+        <![CDATA[
+        
+        BEGIN
+            DECLARE VAR_CNT int;
+            SELECT COUNT(*) INTO VAR_CNT FROM LICENSE WHERE LICENSE_KEY = #licenseKey#;
+            
+            IF VAR_CNT > 0 THEN
+                UPDATE LICENSE
+                SET activate_type = #activateType#,
+                    start_date = #startDate#,
+                    days = #days#,
+                    end_date = #endDate#,
+                    use_type_id = #useType#
+                WHERE license_key = #licenseKey#;
+            ELSE
+                UPDATE LICENSE
+                SET status = 0
+                WHERE status =1;
+            
+                INSERT INTO LICENSE
+                VALUES(
+                    null,
+                    #licenseKey#,
+                    #activateType#,
+                    #startDate#,
+                    #days#,
+                    #endDate#,
+                    #useType#,
+                    1,
+                    1,
+                    ''
+                );
+            END IF;
+        END;
+        ]]>
+    </insert>
+</sqlMap>

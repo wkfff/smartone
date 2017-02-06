@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+    PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+    "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="att.daliyLock">
+ 
+     <select id="validateDailyLock" parameterClass="linkMap" resultClass="int">
+        <![CDATA[             
+             SELECT DECODE(STATUS,'LockStatus020',0,1) 
+                    FROM AR_DETAIL_LOCK
+                   WHERE AR_DATE_STR = TO_CHAR(TO_DATE(#AR_DATE_STR#,'YYYY-MM-DD'),'YYYY-MM-DD');
+        ]]>
+    </select>
+    <!-- add detail lock data by batch -->
+    <insert id="addDailyLock" parameterClass="linkMap" >
+        <![CDATA[    
+                INSERT INTO AR_DETAIL_LOCK 
+                       ( LOCK_NO,
+                         AR_DATE_STR,
+                         AR_MONTH_STR,
+                         STATUS,
+                         CREATE_DATE,
+                         CREATED_BY,
+                         UPDATE_DATE,
+                         UPDATED_BY,
+                         ACTIVITY)
+                  SELECT AR_DETAIL_LOCK_SEQ.NEXTVAL,
+                         TO_CHAR(DDATE,'YYYY-MM-DD'),
+                         GET_ARMONTH(DDATE),
+                         'LockStatus020',
+                         SYSDATE,
+                         #SupervisorID#,
+                         SYSDATE,
+                         #SupervisorID#,
+                         1
+                    FROM AR_CALENDER
+                   WHERE DDATE BETWEEN TO_DATE(#from_date#,'YYYY-MM-DD') AND TO_DATE(#to_date#,'YYYY-MM-DD')
+                     AND NOT EXISTS (SELECT *
+                                       FROM AR_DETAIL_LOCK
+                                      WHERE AR_DATE_STR = TO_CHAR(DDATE,'YYYY-MM-DD')
+                                    )
+          ]]>
+     </insert>
+    
+    <update id="updateAttDaliyLockInfo" parameterClass="linkMap">
+        <![CDATA[
+            UPDATE AR_DETAIL_LOCK SET
+                STATUS = DECODE(#MONTHLY_LOCK_FLAG#,'0','LockStatus020','LockStatus010'), 
+                UPDATED_BY = #UPDATED_BY:VARCHAR#,
+                UPDATE_DATE = SYSDATE 
+        ]]>
+        <dynamic prepend="WHERE"> 
+            <isNotEmpty prepend="" property="AR_DATE_STR">
+                <![CDATA[
+                      AR_DATE_STR = #AR_DATE_STR#
+                ]]>
+            </isNotEmpty>
+            <isNotEmpty prepend="" property="arMonth">
+                <![CDATA[
+                      AR_MONTH_STR = #arMonth#
+                ]]>
+            </isNotEmpty>
+        </dynamic>  
+    </update>
+    
+    <select id="getAttDaliyLockInfo" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[ 
+SELECT LOCK_NO, AR_DATE_STR, AR_MONTH_STR, STATUS, ACTIVITY, ARC.*
+  FROM AR_DETAIL_LOCK ARD,
+       (SELECT *
+          FROM AR_CALENDER
+         WHERE (SELECT GET_ARMONTH(DDATE) FROM DUAL) = #AR_MONTH#
+         ORDER BY IYEAR, IMONTH, IDAY) ARC
+ WHERE ACTIVITY = 1
+   AND ARD.AR_DATE_STR = TO_CHAR(ARC.DDATE, 'YYYY-MM-DD')
+            ]]>
+    </select>
+    
+</sqlMap>

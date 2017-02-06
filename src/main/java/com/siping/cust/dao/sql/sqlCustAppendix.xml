@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="cust.custAppendix">
+
+	<sql id="CustAppendixCondition">
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+				(	
+					CBI.CUST_NAME          LIKE CONCAT('%',TRIM(#keyWord#),'%')
+					OR CUAP.CUST_ID         LIKE CONCAT('%',TRIM(#keyWord#),'%')
+					OR CUAP.ORIGINAL_NAME      LIKE CONCAT('%',TRIM(#keyWord#),'%')
+				)
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="OWNER_ID">
+			<![CDATA[
+				CBI.OWNER_ID= #OWNER_ID#
+			]]>
+		</isNotEmpty> 
+		<isNotEmpty prepend="AND" property="CUST_TYPE_CODE">
+			<![CDATA[
+				CBI.CUST_TYPE_CODE= #CUST_TYPE_CODE#
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="CUST_LEVEL_CODE">
+			<![CDATA[
+				CBI.CUST_LEVEL_CODE= #CUST_LEVEL_CODE#
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="CUST_STATUS_CODE">
+			<![CDATA[
+				CBI.CUST_STATUS_CODE= #CUST_STATUS_CODE#
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="E_DATE" >
+			<![CDATA[
+    		   CBI.CREATED_DATE <= STR_TO_DATE(#E_DATE#,'%Y-%m-%d')
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="S_DATE" >
+			<![CDATA[
+    		   CBI.CREATED_DATE >= STR_TO_DATE(#S_DATE#,'%Y-%m-%d')
+			]]>
+		</isNotEmpty>
+		<isEqual prepend="AND" property="isSupervisor" compareValue="false">
+			<![CDATA[
+				CBI.OWNER_ID = #EMP_ID#
+			]]>
+		</isEqual>
+		<isEqual prepend="AND" property="isSupervisor" compareValue="true">
+			<![CDATA[
+				HE.DEPTID IN (SELECT SUPERVISED_DEPTID FROM SALES_SUPERVISOR_INFO WHERE SUPERVISOR_ID = #EMP_ID# )
+			]]>
+		</isEqual>		
+	</sql>	
+    
+    <select id="getAppendixList" parameterClass="linkMap" resultClass="linkMap">
+		<!-- <![CDATA[	
+			SELECT CUAP.CUST_ID, CUAP.CUST_APPEN_ID,
+               if(#language# = 'en', A.CODE_EN_NAME, A.CODE_NAME)          TARGET_GROUP,
+               CBI.CUST_NAME                                              CUST_NAME,
+               CUAP.APPENDIX_NAME                                             APPENDIX_NAME,
+               CUAP.APPENDIX_FORMAT                                           APPENDIX_FORMAT,
+               CUAP.ORIGINAL_NAME                                             ORIGINAL_NAME,
+               CUAP.STORE_PATH                                                STORE_PATH,
+               DATE_FORMAT(CUAP.CREATE_DATE,'%Y-%m-%d')                         CREATE_DATE,
+               CUAP.REMARK                                                    REMARK
+          FROM CUST_APPENDIX_INFO       CUAP,
+               CUST_BASIC_INFO          CBI,  
+               HR_EMPLOYEE         HE,
+               SY_CODE          A
+         WHERE CUAP.TARGET_GROUP_CODE = A.CODE_ID(+)
+           AND CUAP.ACTIVITY = 1
+           AND CBI.OWNER_ID = HE.EMPID(+)
+           AND CUAP.CUST_ID = CBI.CUST_ID
+		]]> -->
+		<![CDATA[	
+			SELECT CUAP.CUST_ID, CUAP.CUST_APPEN_ID,
+               if(#language# = 'en', A.CODE_EN_NAME, A.CODE_NAME)          TARGET_GROUP,
+               CBI.CUST_NAME                                              CUST_NAME,
+               CUAP.APPENDIX_NAME                                             APPENDIX_NAME,
+               CUAP.APPENDIX_FORMAT                                           APPENDIX_FORMAT,
+               CUAP.ORIGINAL_NAME                                             ORIGINAL_NAME,
+               CUAP.STORE_PATH                                                STORE_PATH,
+               DATE_FORMAT(CUAP.CREATE_DATE,'%Y-%m-%d')                         CREATE_DATE,
+               CUAP.REMARK                                                    REMARK
+          FROM CUST_APPENDIX_INFO       CUAP
+               LEFT JOIN CUST_BASIC_INFO          CBI ON CUAP.CUST_ID = CBI.CUST_ID 
+               LEFT JOIN HR_EMPLOYEE         HE ON CBI.OWNER_ID = HE.EMPID
+               LEFT JOIN SY_CODE          A ON CUAP.TARGET_GROUP_CODE = A.CODE_ID
+         WHERE  CUAP.ACTIVITY = 1
+          
+		]]>
+		<include refid="CustAppendixCondition" />
+	</select>
+	
+	<select id="getAppendixListCnt" parameterClass="linkMap" resultClass="int">
+		<!-- <![CDATA[	
+		SELECT COUNT(0)
+          FROM CUST_APPENDIX_INFO       CUAP,
+               CUST_BASIC_INFO          CBI,  
+               HR_EMPLOYEE         HE,
+               SY_CODE          A
+         WHERE CUAP.TARGET_GROUP_CODE = A.CODE_ID(+)
+           AND CUAP.ACTIVITY = 1
+           AND CBI.OWNER_ID = HE.EMPID(+)
+           AND CUAP.CUST_ID = CBI.CUST_ID
+		]]> -->
+		<![CDATA[	
+		SELECT COUNT(0)
+          FROM CUST_APPENDIX_INFO       CUAP
+               LEFT JOIN CUST_BASIC_INFO          CBI  CUAP.CUST_ID = CBI.CUST_ID
+               LEFT JOIN HR_EMPLOYEE         HE ON CBI.OWNER_ID = HE.EMPID
+               LEFT JOIN SY_CODE          A ON CUAP.TARGET_GROUP_CODE = A.CODE_ID
+         WHERE  CUAP.ACTIVITY = 1
+           
+		]]>
+		<include refid="CustAppendixCondition" />
+	</select>
+	
+    <select id="getAppendixDetail" parameterClass="linkMap" resultClass="linkMap" >
+    	<![CDATA[
+    	SELECT CUST_ID, APPENDIX_NAME, APPENDIX_FORMAT, ORIGINAL_NAME, STORE_PATH
+    	FROM CUST_APPENDIX_INFO 
+    	WHERE CUST_APPEN_ID = #CUST_APPEN_ID#
+    	]]>    	
+    </select>
+    
+    <update id="removeAppendix" parameterClass="linkMap">
+	<![CDATA[
+		UPDATE CUST_APPENDIX_INFO SET UPDATED_BY=#UPDATED_BY#, UPDATE_DATE=SYSDATE, ACTIVITY=0, REMOVE_REMARK=#REMOVE_REMARK#
+		                   WHERE CUST_APPEN_ID = #CUST_APPEN_ID#                                 
+	]]>	
+	</update>
+	
+</sqlMap>

@@ -1,0 +1,551 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+    PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+    "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="cust.custAction">
+    <sql id="CustActionSearchCondition">
+        <isNotEmpty prepend="AND" property="keyWord">
+            <!-- <![CDATA[
+                (   
+                        CBI.CUST_NAME          LIKE '%'||TRIM(#keyWord#)||'%'
+                        OR CBI.CUST_EN_NAME    LIKE '%'||TRIM(#keyWord#)||'%'
+                        OR CAI.CUST_ACTION_CONTENT     LIKE '%'||TRIM(#keyWord#)||'%'
+                )
+            ]]> -->
+            <![CDATA[
+                (   
+                        CBI.CUST_NAME          LIKE CONCAT('%',TRIM(#keyWord#),'%')
+                        OR CBI.CUST_EN_NAME    LIKE CONCAT('%',TRIM(#keyWord#),'%')
+                        OR CAI.CUST_ACTION_CONTENT     LIKE CONCAT('%',TRIM(#keyWord#),'%')
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="ACTION_TYPE_CODE">
+            <![CDATA[
+                CAI.ACTION_TYPE_CODE = #ACTION_TYPE_CODE#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="CUST_TYPE_CODE">
+            <![CDATA[
+                CBI.CUST_TYPE_CODE = #CUST_TYPE_CODE#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="CUST_ID">
+            <![CDATA[
+                CBI.CUST_ID = #CUST_ID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="ACTION_TYPE_CODE">
+            <![CDATA[
+                CAI.ACTION_TYPE_CODE = #ACTION_TYPE_CODE#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="CUST_ACTION_STATE_CODE">
+            <![CDATA[
+                CAI.CUST_ACTION_STATE_CODE= #CUST_ACTION_STATE_CODE#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="CUST_ACTION_WAY_CODE">
+            <![CDATA[
+                CAI.CUST_ACTION_WAY_CODE= #CUST_ACTION_WAY_CODE#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="REMINDER">
+            <![CDATA[
+                CAI.REMINDER= TO_NUMBER(#REMINDER#)
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="E_DATE">
+            <![CDATA[
+               CAI.CUST_ACTION_TIME <= str_to_date(#E_DATE#,'%Y-%m-%d')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="S_DATE">
+            <![CDATA[
+               CAI.CUST_ACTION_TIME >= str_to_date(#S_DATE#,'%Y-%m-%d')
+            ]]>
+        </isNotEmpty>
+        <isEqual prepend="AND" property="isSupervisor" compareValue="false">
+            <![CDATA[
+                CAI.EMP_ID = #ADMIN_ID#
+            ]]>
+        </isEqual>
+        <isEqual prepend="AND" property="isSupervisor" compareValue="true">
+            <![CDATA[
+                HE.DEPTID IN (SELECT SUPERVISED_DEPTID FROM SALES_SUPERVISOR_INFO WHERE SUPERVISOR_ID = #ADMIN_ID# )
+            ]]>
+            <isNotEmpty prepend="AND" property="EMPID">
+                <![CDATA[
+                    CAI.EMP_ID = #EMPID#
+                ]]>
+            </isNotEmpty>
+        </isEqual> 
+
+        <![CDATA[
+                ORDER BY CAI.CREATED_DATE DESC
+        ]]>
+    </sql>
+    <select id="getCustomerActionList" parameterClass="linkMap" resultClass="linkMap">
+        <!-- <![CDATA[
+            SELECT CUST_ACTION_NO                                   CUST_ACTION_NO,
+                   CAI.CUST_ID                                       CUST_ID,
+                   CAI.MOBILEPHONE                                  MOBILEPHONE,
+                   CAI.CONTACT                                       CONTACT,
+                   CAI.PURCHASE_TEND_CODE                           PURCHASE_TEND_CODE,
+                   IF(#language# = 'en',CBI.CUST_EN_NAME,CBI.CUST_NAME) CUST_NAME,
+                   CAI.EMP_ID                                        EMP_ID,
+                   IF(#language# = 'en',HE.ENGLISHNAME,HE.CHINESENAME) EMP_NAME,
+                   CAI.CUST_ACTION_WAY_CODE                          CUST_ACTION_WAY_CODE,
+                   DATE_FORMAT(CAI.CUST_ACTION_TIME,'%Y-%m-%d')        CUST_ACTION_TIME,
+                   CAI.CUST_ACTION_CONTENT                           CUST_ACTION_CONTENT,
+                   CAI.REMARK                                        REMARK,
+                   CAI.CUST_ACTION_STATE_CODE                        CUST_ACTION_STATE_CODE,
+                   CAI.REMINDER                                      REMINDER,
+                   IF(#language# = 'en',A.CODE_EN_NAME,A.CODE_NAME)    CUST_ACTION_WAY,
+                   IF(#language# = 'en',B.CODE_EN_NAME,B.CODE_NAME)    CUST_ACTION_STATE,
+                   IF(#language# = 'en',C.CODE_EN_NAME,C.CODE_NAME)    CUST_TYPE,
+                   IF(#language# = 'en',D.CODE_EN_NAME,D.CODE_NAME)    PURCHASE_TEND,
+                   IF(#language# = 'en',E.CODE_EN_NAME,E.CODE_NAME)    TRACE_STATUS,
+                   IF(#language# = 'en',F.CODE_EN_NAME,F.CODE_NAME)    ACTION_TYPE
+            FROM   CUST_ACTION_INFO    CAI, CUST_BASIC_INFO CBI, HR_EMPLOYEE HE,
+                   SY_CODE             A,
+                   SY_CODE             B,
+                   SY_CODE             C,
+                   SY_CODE             D,
+                   SY_CODE             E,
+                   SY_CODE             F
+            WHERE CAI.ACTIVITY = 1
+            AND   CAI.CUST_ID =  CBI.CUST_ID(+)
+            AND   CAI.EMP_ID = HE.EMPID(+)
+            AND   CAI.CUST_ACTION_WAY_CODE = A.CODE_ID(+)
+            AND   CAI.CUST_ACTION_STATE_CODE = B.CODE_ID(+)
+            AND   CBI.CUST_TYPE_CODE = C.CODE_ID(+)
+            AND   CAI.PURCHASE_TEND_CODE = D.CODE_ID(+)
+            AND   CAI.TRACE_STATUS_CODE = E.CODE_ID(+)
+            AND   CAI.ACTION_TYPE_CODE = F.CODE_ID(+)
+            
+        ]]> -->
+        <![CDATA[
+            SELECT CUST_ACTION_NO                                   CUST_ACTION_NO,
+                   CAI.CUST_ID                                       CUST_ID,
+                   CAI.MOBILEPHONE                                  MOBILEPHONE,
+                   CAI.CONTACT                                       CONTACT,
+                   CAI.PURCHASE_TEND_CODE                           PURCHASE_TEND_CODE,
+                   IF(#language# = 'en',CBI.CUST_EN_NAME,CBI.CUST_NAME) CUST_NAME,
+                   CAI.EMP_ID                                        EMP_ID,
+                   IF(#language# = 'en',HE.ENGLISHNAME,HE.CHINESENAME) EMP_NAME,
+                   CAI.CUST_ACTION_WAY_CODE                          CUST_ACTION_WAY_CODE,
+                   DATE_FORMAT(CAI.CUST_ACTION_TIME,'%Y-%m-%d')        CUST_ACTION_TIME,
+                   CAI.CUST_ACTION_CONTENT                           CUST_ACTION_CONTENT,
+                   CAI.REMARK                                        REMARK,
+                   CAI.CUST_ACTION_STATE_CODE                        CUST_ACTION_STATE_CODE,
+                   CAI.REMINDER                                      REMINDER,
+                   IF(#language# = 'en',A.CODE_EN_NAME,A.CODE_NAME)    CUST_ACTION_WAY,
+                   IF(#language# = 'en',B.CODE_EN_NAME,B.CODE_NAME)    CUST_ACTION_STATE,
+                   IF(#language# = 'en',C.CODE_EN_NAME,C.CODE_NAME)    CUST_TYPE,
+                   IF(#language# = 'en',D.CODE_EN_NAME,D.CODE_NAME)    PURCHASE_TEND,
+                   IF(#language# = 'en',E.CODE_EN_NAME,E.CODE_NAME)    TRACE_STATUS,
+                   IF(#language# = 'en',F.CODE_EN_NAME,F.CODE_NAME)    ACTION_TYPE
+            FROM   CUST_ACTION_INFO    CAI
+                   LEFT JOIN  CUST_BASIC_INFO CBI ON CAI.CUST_ID =  CBI.CUST_ID
+                   LEFT JOIN HR_EMPLOYEE HE ON CAI.EMP_ID = HE.EMPID
+                   LEFT JOIN SY_CODE             A ON CAI.CUST_ACTION_WAY_CODE = A.CODE_ID
+                   LEFT JOIN SY_CODE             B ON CAI.CUST_ACTION_STATE_CODE = B.CODE_ID
+                   LEFT JOIN SY_CODE             C ON CBI.CUST_TYPE_CODE = C.CODE_ID
+                   LEFT JOIN SY_CODE             D ON CAI.PURCHASE_TEND_CODE = D.CODE_ID
+                   LEFT JOIN SY_CODE             E ON CAI.TRACE_STATUS_CODE = E.CODE_ID
+                   LEFT JOIN SY_CODE             F ON CAI.ACTION_TYPE_CODE = F.CODE_ID
+            WHERE CAI.ACTIVITY = 1
+         
+        ]]> 
+        <include refid="CustActionSearchCondition" />
+    </select>
+    <select id="getCustomerActionListCnt" parameterClass="linkMap" resultClass="int">
+       <!--  <![CDATA[
+            SELECT COUNT(0)
+            FROM   CUST_ACTION_INFO    CAI, CUST_BASIC_INFO CBI, HR_EMPLOYEE HE,
+                   SY_CODE             A,
+                   SY_CODE             B,
+                   SY_CODE             C,
+                   SY_CODE             D,
+                   SY_CODE             E,
+                   SY_CODE             F
+            WHERE CAI.ACTIVITY = 1
+            AND   CAI.CUST_ID =  CBI.CUST_ID(+)
+            AND   CAI.EMP_ID = HE.EMPID(+)
+            AND   CAI.CUST_ACTION_WAY_CODE = A.CODE_ID(+)
+            AND   CAI.CUST_ACTION_STATE_CODE = B.CODE_ID(+)
+            AND   CBI.CUST_TYPE_CODE = C.CODE_ID(+)
+            AND   CAI.PURCHASE_TEND_CODE = D.CODE_ID(+)
+            AND   CAI.TRACE_STATUS_CODE = E.CODE_ID(+)
+            AND   CAI.ACTION_TYPE_CODE = F.CODE_ID(+)
+        ]]> -->
+        <![CDATA[
+            SELECT COUNT(0)
+            FROM   CUST_ACTION_INFO    CAI 
+            LEFT JOIN CUST_BASIC_INFO CBI ON CAI.CUST_ID =  CBI.CUST_ID
+            LEFT JOIN HR_EMPLOYEE HE ON CAI.EMP_ID = HE.EMPID 
+            LEFT JOIN SY_CODE  A ON CAI.CUST_ACTION_WAY_CODE = A.CODE_ID
+            LEFT JOIN  SY_CODE B ON CAI.CUST_ACTION_STATE_CODE = B.CODE_ID
+            LEFT JOIN  SY_CODE C ON CBI.CUST_TYPE_CODE = C.CODE_ID
+            LEFT JOIN SY_CODE  D ON CAI.PURCHASE_TEND_CODE = D.CODE_ID
+            LEFT JOIN SY_CODE  E ON CAI.TRACE_STATUS_CODE = E.CODE_ID
+            LEFT JOIN  SY_CODE  F ON CAI.ACTION_TYPE_CODE = F.CODE_ID
+            WHERE CAI.ACTIVITY = 1
+            
+        ]]>
+        <include refid="CustActionSearchCondition" />
+    </select>
+    <select id="getSimpleCustomerActionList" parameterClass="linkMap" resultClass="linkMap">
+        <!-- <![CDATA[
+            SELECT CUST_ACTION_NO                                   CUST_ACTION_NO,
+                   CAI.CUST_ID                                       CUST_ID,
+                   IF(#language# = 'en',CBI.CUST_EN_NAME,CBI.CUST_NAME) CUST_NAME,
+                   CAI.EMP_ID                                        EMP_ID,
+                   IF(#language# = 'en',HE.ENGLISHNAME,HE.CHINESENAME) EMP_NAME,
+                   CAI.CUST_ACTION_WAY_CODE                          CUST_ACTION_WAY_CODE,
+                   DATE_FORMAT(CAI.CUST_ACTION_TIME,'%Y-%m-%d')        CUST_ACTION_TIME,
+                   CAI.CUST_ACTION_CONTENT                           CUST_ACTION_CONTENT,
+                   CAI.REMARK                                        REMARK,
+                   CAI.CUST_ACTION_STATE_CODE                        CUST_ACTION_STATE_CODE,
+                   CAI.REMINDER                                      REMINDER,
+                   IF(#language# = 'en',A.CODE_EN_NAME,A.CODE_NAME)    CUST_ACTION_WAY,
+                   IF(#language# = 'en',B.CODE_EN_NAME,B.CODE_NAME)    CUST_ACTION_STATE,
+                   IF(#language# = 'en',C.CODE_EN_NAME,C.CODE_NAME)    CUST_TYPE,
+                   IF(#language# = 'en',D.CODE_EN_NAME,D.CODE_NAME)    PURCHASE_TEND,
+                   IF(#language# = 'en',E.CODE_EN_NAME,E.CODE_NAME)    TRACE_STATUS,
+                   IF(#language# = 'en',F.CODE_EN_NAME,F.CODE_NAME)    ACTION_TYPE
+            FROM   CUST_ACTION_INFO    CAI, 
+                   CUST_BASIC_INFO CBI, 
+                   HR_EMPLOYEE HE,
+                   SY_CODE             A,
+                   SY_CODE             B,
+                   SY_CODE             C,
+                   SY_CODE             D,
+                   SY_CODE             E,
+                   SY_CODE             F
+            WHERE CAI.ACTIVITY = 1
+            AND   CAI.CUST_ID =  CBI.CUST_ID(+)
+            AND   CAI.EMP_ID = HE.EMPID(+)
+            AND   CAI.CUST_ACTION_WAY_CODE = A.CODE_ID(+)
+            AND   CAI.CUST_ACTION_STATE_CODE = B.CODE_ID(+)
+            AND   CBI.CUST_TYPE_CODE = C.CODE_ID(+)
+            AND   CAI.PURCHASE_TEND_CODE = D.CODE_ID(+)
+            AND   CAI.TRACE_STATUS_CODE = E.CODE_ID(+)
+            AND   CAI.ACTION_TYPE_CODE = F.CODE_ID(+)
+            AND   CAI.CUST_ACTION_NO IN(SELECT MAX(CUST_ACTION_NO) FROM CUST_ACTION_INFO  WHERE ACTION_TYPE_CODE=#ACTION_TYPE_CODE# GROUP BY CUST_ID)
+        ]]> -->
+        <![CDATA[
+            SELECT CUST_ACTION_NO                                   CUST_ACTION_NO,
+                   CAI.CUST_ID                                       CUST_ID,
+                   IF(#language# = 'en',CBI.CUST_EN_NAME,CBI.CUST_NAME) CUST_NAME,
+                   CAI.EMP_ID                                        EMP_ID,
+                   IF(#language# = 'en',HE.ENGLISHNAME,HE.CHINESENAME) EMP_NAME,
+                   CAI.CUST_ACTION_WAY_CODE                          CUST_ACTION_WAY_CODE,
+                   DATE_FORMAT(CAI.CUST_ACTION_TIME,'%Y-%m-%d')        CUST_ACTION_TIME,
+                   CAI.CUST_ACTION_CONTENT                           CUST_ACTION_CONTENT,
+                   CAI.REMARK                                        REMARK,
+                   CAI.CUST_ACTION_STATE_CODE                        CUST_ACTION_STATE_CODE,
+                   CAI.REMINDER                                      REMINDER,
+                   IF(#language# = 'en',A.CODE_EN_NAME,A.CODE_NAME)    CUST_ACTION_WAY,
+                   IF(#language# = 'en',B.CODE_EN_NAME,B.CODE_NAME)    CUST_ACTION_STATE,
+                   IF(#language# = 'en',C.CODE_EN_NAME,C.CODE_NAME)    CUST_TYPE,
+                   IF(#language# = 'en',D.CODE_EN_NAME,D.CODE_NAME)    PURCHASE_TEND,
+                   IF(#language# = 'en',E.CODE_EN_NAME,E.CODE_NAME)    TRACE_STATUS,
+                   IF(#language# = 'en',F.CODE_EN_NAME,F.CODE_NAME)    ACTION_TYPE
+            FROM   CUST_ACTION_INFO    CAI LEFT JOIN CUST_BASIC_INFO CBI ON(CAI.CUST_ID =  CBI.CUST_ID)
+                   LEFT JOIN HR_EMPLOYEE HE ON CAI.EMP_ID = HE.EMPID
+                   LEFT JOIN SY_CODE             A ON(CAI.CUST_ACTION_WAY_CODE = A.CODE_ID)
+                   LEFT JOIN SY_CODE             B ON(CAI.CUST_ACTION_STATE_CODE = B.CODE_ID)
+                   LEFT JOIN SY_CODE             C ON(CBI.CUST_TYPE_CODE = C.CODE_ID)
+                   LEFT JOIN SY_CODE             D ON(CAI.PURCHASE_TEND_CODE = D.CODE_ID)
+                   LEFT JOIN SY_CODE             E ON(CAI.TRACE_STATUS_CODE = E.CODE_ID)
+                   LEFT JOIN SY_CODE             F ON(CAI.ACTION_TYPE_CODE = F.CODE_ID)
+            WHERE CAI.ACTIVITY = 1
+            AND   CAI.CUST_ACTION_NO IN(SELECT MAX(CUST_ACTION_NO) FROM CUST_ACTION_INFO  WHERE ACTION_TYPE_CODE=#ACTION_TYPE_CODE# GROUP BY CUST_ID)
+        ]]>
+        <include refid="CustActionSearchCondition" />
+    </select>
+    <select id="getSimpleCustomerActionListCnt" parameterClass="linkMap" resultClass="int">
+        <!-- <![CDATA[
+            SELECT COUNT(*)
+            FROM   CUST_ACTION_INFO    CAI, 
+                   CUST_BASIC_INFO CBI,
+                   HR_EMPLOYEE HE,
+                   SY_CODE             A,
+                   SY_CODE             B,
+                   SY_CODE             C,
+                   SY_CODE             D,
+                   SY_CODE             E,
+                   SY_CODE             F
+            WHERE CAI.ACTIVITY = 1
+            AND   CAI.CUST_ID =  CBI.CUST_ID(+)
+            AND   CAI.EMP_ID = HE.EMPID(+)
+            AND   CAI.CUST_ACTION_WAY_CODE = A.CODE_ID(+)
+            AND   CAI.CUST_ACTION_STATE_CODE = B.CODE_ID(+)
+            AND   CBI.CUST_TYPE_CODE = C.CODE_ID(+)
+            AND   CAI.PURCHASE_TEND_CODE = D.CODE_ID(+)
+            AND   CAI.TRACE_STATUS_CODE = E.CODE_ID(+)
+            AND   CAI.ACTION_TYPE_CODE = F.CODE_ID(+)
+            AND   CAI.CUST_ACTION_NO IN(SELECT MAX(CUST_ACTION_NO) FROM CUST_ACTION_INFO  WHERE ACTION_TYPE_CODE=#ACTION_TYPE_CODE# GROUP BY CUST_ID)
+            
+        ]]> -->
+        <![CDATA[
+            SELECT COUNT(*)
+            FROM   CUST_ACTION_INFO    CAI LEFT JOIN CUST_BASIC_INFO CBI ON(CAI.CUST_ID =  CBI.CUST_ID)
+                   LEFT JOIN HR_EMPLOYEE HE ON(CAI.EMP_ID = HE.EMPID)
+                   LEFT JOIN SY_CODE  A ON(CAI.CUST_ACTION_WAY_CODE = A.CODE_ID)
+                   LEFT JOIN SY_CODE  B ON(CAI.CUST_ACTION_STATE_CODE = B.CODE_ID)
+                   LEFT JOIN SY_CODE  C ON(CBI.CUST_TYPE_CODE = C.CODE_ID)
+                   LEFT JOIN SY_CODE  D ON(CAI.PURCHASE_TEND_CODE = D.CODE_ID)
+                   LEFT JOIN SY_CODE  E ON(CAI.TRACE_STATUS_CODE = E.CODE_ID)
+                   LEFT JOIN SY_CODE  F ON(CAI.ACTION_TYPE_CODE = F.CODE_ID)
+            WHERE CAI.ACTIVITY = 1
+             AND CAI.CUST_ACTION_NO IN(SELECT MAX(CUST_ACTION_NO) FROM CUST_ACTION_INFO  WHERE ACTION_TYPE_CODE=#ACTION_TYPE_CODE# GROUP BY CUST_ID)
+            
+        ]]>
+        <include refid="CustActionSearchCondition" />
+    </select>
+    <insert id="addCustomerAction" parameterClass="linkMap">
+    <![CDATA[
+        DECLARE
+        BEGIN   
+            INSERT INTO CUST_ACTION_INFO(
+                    CUST_ID,
+                    CUST_ACTION_WAY_CODE,
+                    EMP_ID,
+                    CUST_ACTION_STATE_CODE,
+                    CUST_ACTION_TIME,
+                    CUST_ACTION_CONTENT,
+                    PURCHASE_TEND_CODE,
+                    ACTION_TYPE_CODE,
+                    CREATED_BY,
+                    CREATED_DATE,
+                    ACTIVITY,
+                    ORDER_NO,
+                    MOBILEPHONE,
+                    CONTACT
+                    ) 
+            VALUES(
+                    #CUST_ID#,
+                    #CUST_ACTION_WAY_CODE#,
+                    #EMP_ID#,
+                    IFNULL(#CUST_ACTION_STATE_CODE#,'CustActionState001'),
+                    str_to_date(#CUST_ACTION_TIME#,'%Y-%m-%d'),
+                    #CUST_ACTION_CONTENT#,
+                    #PURCHASE_TEND_CODE#,
+                    #ACTION_TYPE_CODE#,#CREATED_BY#,
+                    NOW(),
+                    1,
+                    CUST_ACTION_SEQ.CURRVAL,
+                    (SELECT MAX(CONTACTS_MOBILE1) FROM CUST_CONTACTS WHERE CUST_ID=#CUST_ID# AND CONTACTS_NAME=#CONTACT# ),
+                    #CONTACT#);
+            
+        END;    
+    ]]>
+    </insert>
+    <update id="updateCustomerAction" parameterClass="linkMap">
+    <![CDATA[
+        DECLARE
+        VAR_STATE VARCHAR(20);
+        BEGIN
+        SELECT CUST_ACTION_STATE_CODE INTO VAR_STATE FROM CUST_ACTION_INFO WHERE CUST_ACTION_NO = #CUST_ACTION_NO# AND ACTIVITY = 1;
+        
+        IF VAR_STATE <> 'CustActionState005' OR VAR_STATE IS NULL THEN
+            UPDATE CUST_ACTION_INFO 
+            SET     CUST_ID = #CUST_ID#,
+                    EMP_ID = EMP_ID,
+                    CUST_ACTION_WAY_CODE = #CUST_ACTION_WAY_CODE#,
+                    CUST_ACTION_TIME = str_to_date(#CUST_ACTION_TIME#,'%Y-%m-%d'),
+                    CUST_ACTION_STATE_CODE = #CUST_ACTION_STATE_CODE#,
+                    CUST_ACTION_CONTENT = #CUST_ACTION_CONTENT#,
+                    CONTACT = #CONTACT#,
+                    MOBILEPHONE = #MOBILEPHONE#,
+                    PURCHASE_TEND_CODE = #PURCHASE_TEND_CODE#,
+                    REMARK = #REMARK#,
+                    UPDATED_BY = #UPDATED_BY#,
+                    UPDATED_DATE = NOW()
+            WHERE CUST_ACTION_NO = #CUST_ACTION_NO#;  
+        END IF;
+        END; 
+    ]]>
+    </update>
+    <update id="removeCustomerAction" parameterClass="linkMap">
+    <![CDATA[
+        DECLARE
+        BEGIN
+        UPDATE CUST_ACTION_INFO
+        SET ACTIVITY= 0,UPDATED_BY = #UPDATED_BY#, UPDATED_DATE = NOW()
+        WHERE CUST_ACTION_NO = #CUST_ACTION_NO#;
+        END; 
+    ]]>
+    </update>
+    
+    <insert id="saveAction" parameterClass="action">
+        <![CDATA[
+           INSERT INTO CUST_ACTION_INFO
+                    (
+                       
+                        CUST_ID,
+                        EMP_ID,
+                        CUST_ACTION_WAY_CODE,
+                        CUST_ACTION_CONTENT,
+                        CUST_ACTION_STATE_CODE,
+                        CREATED_DATE,
+                        CUST_ACTION_TIME,
+                        ACTION_TYPE_CODE,
+                        PURCHASE_TEND_CODE,
+                        CONTACT,
+                        MOBILEPHONE
+                    )
+                    VALUES(
+                      
+                        #custId#,
+                        #empId#,
+                        #actionWayCode.codeNo#,
+                        #actionContent#,
+                        #actionState.codeNo#,
+                        NOW(),
+                        #actionTime#,
+                        #actionType.codeNo#,
+                        #purchase.codeNo#,
+                        #contact#,
+                        (SELECT CONTACTS_MOBILE1 FROM CUST_CONTACTS WHERE CONTACTS_NAME= #contact# AND CUST_ID=#custId#)
+                    )
+        ]]>
+    </insert>
+    <update id="updateAction" parameterClass="action">
+        <![CDATA[
+            UPDATE CUST_ACTION_INFO 
+                SET CUST_ACTION_WAY_CODE=#actionWayCode.codeNo#,
+                    CUST_ACTION_CONTENT=#actionContent#,
+                    CUST_ACTION_TIME=#actionTime#,
+                    ACTION_TYPE_CODE=#actionType.codeNo#,
+                    CUST_ACTION_STATE_CODE=#actionState.codeNo#,
+                    PURCHASE_TEND_CODE=#purchase.codeNo#,
+                    CONTACT=#contact#,
+                    MOBILEPHONE=(SELECT MAX(CONTACTS_MOBILE1) FROM CUST_CONTACTS WHERE CONTACTS_NAME= #contact# AND CUST_ID=#custId#)
+            WHERE   CUST_ACTION_NO=#custActionNo#
+        ]]>
+    </update>
+    <resultMap class="action" id="actionMap">
+        <result property="custActionNo" column="custActionNo"/>
+        <result property="actionTime" column="actionTime"/>
+        <result property="empId" column="empId"/>
+        <result property="actionType.codeName" column="actionType"/>
+        <result property="actionType.codeId" column="actionTypeId"/>
+        <result property="actionWayCode.codeName" column="actionWayCode"/>
+        <result property="actionWayCode.codeId" column="actionWayCodeId"/>
+        <result property="contact" column="contact"/>
+        <result property="mobilePhone" column="mobilePhone"/>
+        <result property="purchase.codeName" column="purchase"/>
+        <result property="purchase.codeId" column="purchaseId"/>
+        <result property="actionState.codeName" column="actionState"/>
+        <result property="actionState.codeId" column="actionStateId"/>
+        <result property="actionContent" column="actionContent"/>
+    </resultMap>
+    <select id="getActionByCustId" parameterClass="linkMap" resultMap="actionMap">
+        <![CDATA[
+            SELECT CAI.CUST_ACTION_NO     custActionNo,
+                   CAI.CUST_ACTION_TIME   actionTime,
+                   HR.CHINESENAME         empId,
+                   A.CODE_NAME            actionType,
+                   A.CODE_ID              actionTypeId,
+                   B.CODE_NAME            actionWayCode,
+                   B.CODE_ID              actionWayCodeId,
+                   CAI.CONTACT            contact,
+                   CAI.MOBILEPHONE        mobilePhone,
+                   C.CODE_NAME            purchase,
+                   C.CODE_ID              purchaseId,
+                   CAI.CUST_ACTION_CONTENT actionContent,
+                   D.CODE_NAME           actionState,
+                   D.CODE_ID           actionStateId
+          FROM CUST_ACTION_INFO CAI LEFT JOIN SY_CODE A ON( CAI.ACTION_TYPE_CODE=A.CODE_ID)
+               LEFT JOIN SY_CODE B ON(CAI.CUST_ACTION_WAY_CODE=B.CODE_ID)
+               LEFT JOIN SY_CODE C ON(CAI.PURCHASE_TEND_CODE=C.CODE_ID)
+               LEFT JOIN SY_CODE D ON(CAI.CUST_ACTION_STATE_CODE=D.CODE_ID)
+               LEFT JOIN HR_EMPLOYEE HR ON(CAI.EMP_ID=HR.EMPID)
+          WHERE  
+            CAI.CUST_ID=#CUST_ID#
+            ORDER BY actionTime DESC
+        ]]>
+    </select>
+
+    <select id="getCountByCustId" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(*) FROM CUST_ACTION_INFO WHERE CUST_ID=#CUST_ID#
+        ]]>
+    </select>
+    <delete id="deleteAction" parameterClass="string">
+        <![CDATA[
+            DELETE FROM CUST_ACTION_INFO WHERE CUST_ACTION_NO=#custActionNo#
+        ]]>
+    </delete>
+    
+    <update id="changeActionState" parameterClass="action">
+        <![CDATA[
+            UPDATE CUST_ACTION_INFO 
+            SET CUST_ACTION_STATE_CODE=#actionState.codeId# 
+            WHERE CUST_ACTION_NO=#custActionNo#
+        ]]>
+    </update>
+    
+    <resultMap class="action" id="actionConditionMap">
+        <result property="custActionNo" column="custActionNo"/>
+        <result property="actionTime" column="actionTime"/>
+        <result property="empId" column="empName"/>
+        <result property="actionState.codeName" column="actionState"/>
+    </resultMap>
+    <select  id="getCustActionByCondition"  parameterClass="linkMap" resultMap="actionConditionMap">
+        <!-- <![CDATA[
+           SELECT CAI.CUST_ACTION_NO custActionNo, CAI.CUST_ACTION_TIME actionTime,CBI.CUST_NAME  empName,A.CODE_NAME  actionState
+            FROM CUST_ACTION_INFO CAI ,
+                 CUST_BASIC_INFO CBI,
+                 SY_CODE A
+            WHERE str_to_date(CAI.CUST_ACTION_TIME,'%Y-%m')=#CUST_ACTION_TIME#
+            AND  CAI.CUST_ACTION_STATE_CODE=A.CODE_ID
+            AND  CAI.EMP_ID=#EMP_ID#
+            AND CAI.CUST_ID=CBI.CUST_ID(+)
+        ]]> -->
+        <![CDATA[
+           SELECT CAI.CUST_ACTION_NO custActionNo, CAI.CUST_ACTION_TIME actionTime,CBI.CUST_NAME  empName,A.CODE_NAME  actionState
+            FROM CUST_ACTION_INFO CAI LEFT JOIN
+                 CUST_BASIC_INFO CBI ON CAI.CUST_ID=CBI.CUST_ID 
+                 LEFT JOIN SY_CODE A ON CAI.CUST_ACTION_STATE_CODE=A.CODE_ID
+            WHERE str_to_date(CAI.CUST_ACTION_TIME,'%Y-%m')=#CUST_ACTION_TIME#
+            AND  CAI.EMP_ID=#EMP_ID#   
+        ]]>
+    </select>
+
+    <resultMap class="action" id="actionById">
+        <result property="custActionNo" column="custActionNo"/>
+        <result property="custId" column="custId"/>
+        <result property="empId" column="empId"/>
+        <result property="actionWayCode.codeId" column="actionWayCodeId"/>
+        <result property="actionTime" column="actionTime"/>
+        <result property="actionContent" column="actionContent"/>
+        <result property="purchase.codeId" column="purchaseId"/>
+        <result property="actionType.codeId" column="actionTypeId"/>
+        <result property="createDate" column="createDate"/>
+        <result property="contact" column="contact"/>
+        <result property="actionState.codeId" column="actionStateId"/>
+    </resultMap>
+    <select id="getActionById" parameterClass="int" resultMap="actionById">
+        <![CDATA[
+               SELECT  CAI.CUST_ACTION_NO       custActionNo ,
+                    CBI.CUST_NAME             custId,
+                    CAI.EMP_ID               empId,
+                    CAI.CUST_ACTION_WAY_CODE actionWayCodeId,
+                    CAI.CUST_ACTION_TIME     actionTime,
+                    CAI.CUST_ACTION_CONTENT  actionContent,
+                    CAI.PURCHASE_TEND_CODE   purchaseId,
+                    CAI.ACTION_TYPE_CODE     actionTypeId,
+                    CAI.CREATED_DATE         createDate ,
+                    CAI.CUST_ACTION_STATE_CODE actionStateId ,
+                    CAI.CONTACT             contact
+            FROM   CUST_ACTION_INFO CAI LEFT JOIN CUST_BASIC_INFO  CBI on  CAI.CUST_ID=CBI.CUST_ID
+            WHERE     CUST_ACTION_NO=#custActionNo#
+        ]]>
+    </select>
+
+</sqlMap>

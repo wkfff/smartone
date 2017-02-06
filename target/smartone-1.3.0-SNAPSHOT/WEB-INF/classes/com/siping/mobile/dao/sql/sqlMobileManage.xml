@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap
+        PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+        "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="mobile.mobileManage">
+	
+	<sql id="getMobileAreaListCondition">
+        <isNotEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+                MA.M_AREA_NAME LIKE '%'||TRIM(#keyWord#)||'%'
+            ]]>
+        </isNotEmpty>
+    </sql>
+	
+	<select id="getMobileAreaList" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+        	SELECT 
+        	    MA.M_AREA_NO,
+                MA.M_AREA_ID,
+                MA.M_AREA_NAME,
+                MA.ORDERNO
+        	FROM MOBILE_AREA MA
+        	WHERE MA.ACTIVITY = 1
+        ]]>
+        <include refid="getMobileAreaListCondition"/>
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY MA.ORDERNO DESC
+            ]]>
+        </isEmpty>
+    </select>
+    <select id="getMobileAreaListCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(0)
+            FROM MOBILE_AREA MA
+            WHERE MA.ACTIVITY = 1
+        ]]>
+        <include refid="getMobileAreaListCondition"/>
+    </select>
+	
+    <insert id="addMobileAreaInfo" parameterClass="linkMap">
+    	<selectKey resultClass="String" keyProperty="M_AREA_NO" >
+    		<![CDATA[
+        		SELECT MOBILE_AREA_SEQ.NEXTVAL AS M_AREA_NO FROM DUAL
+        	]]>
+     	</selectKey>
+        <![CDATA[
+			INSERT INTO MOBILE_AREA(
+				M_AREA_NO,
+                M_AREA_ID,
+                M_AREA_NAME,
+                ORDERNO,
+                CREATE_DATE,
+                CREATED_BY,
+                ACTIVITY,
+                CPNY_ID
+			)
+			VALUES(
+				#M_AREA_NO#,
+				'M_AREA'||#M_AREA_NO#,
+				#M_AREA_NAME#,
+				#ORDERNO#,
+				SYSDATE,
+				#CREATED_BY#,
+				1,
+				#CPNY_ID#
+			)
+		]]>
+    </insert>
+    
+    <update id="updateMobileAreaInfo" parameterClass="linkMap" >
+        <![CDATA[
+            UPDATE MOBILE_AREA MA
+            SET 
+                MA.M_AREA_NAME = #M_AREA_NAME# ,  
+                MA.ORDERNO = #ORDERNO#, 
+                MA.UPDATE_DATE = SYSDATE,  
+                MA.UPDATED_BY = #UPDATED_BY#
+            WHERE MA.M_AREA_NO = #M_AREA_NO#
+            AND MA.ACTIVITY = 1
+            AND MA.CPNY_ID = #CPNY_ID#
+        ]]>
+    </update>
+    
+    <delete id="deleteMobileArea" parameterClass="linkMap">
+        <![CDATA[
+            DECLARE
+            BEGIN
+                UPDATE MOBILE_AREA
+                SET ACTIVITY = 0
+                WHERE M_AREA_NO = #M_AREA_NO#
+                AND ACTIVITY = 1
+                AND CPNY_ID = #CPNY_ID#;
+                
+                DELETE FROM MOBILE_AREA_PRODUCT
+	            WHERE CPNY_ID = #CPNY_ID#
+	            AND M_AREA_NO = #M_AREA_NO#;
+            END;
+        ]]>
+    </delete>
+    
+    <delete id="deleteProductByArea" parameterClass="linkMap">
+        <![CDATA[
+             DELETE FROM MOBILE_AREA_PRODUCT
+             WHERE CPNY_ID = #CPNY_ID#
+             AND M_AREA_NO = #M_AREA_NO#
+        ]]>
+    </delete>
+    
+    <insert id="saveProductToArea" parameterClass="linkMap">
+        <![CDATA[
+            INSERT INTO MOBILE_AREA_PRODUCT(
+                M_AREA_NO,
+			    PRODUCT_NO,
+			    CREATE_DATE,
+			    CREATED_BY,
+			    ACTIVITY,
+			    CPNY_ID
+            )
+            VALUES(
+                #M_AREA_NO#,
+                #PRODUCT_NO#,
+                SYSDATE,
+                #CREATED_BY#,
+                1,
+                #CPNY_ID#
+            )
+        ]]>
+    </insert>
+    
+    <select id="getMobileAdv" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT 
+                MA.ADV_NO,
+                MA.ADV_ID,
+                MA.PRODUCT_NO,
+                PP.PRODUCT_ID,
+                PP.PRODUCT_NAME,
+                MA.PHOTOPATH
+            FROM MOBILE_ADV MA,
+                 PROSTOR_PRODUCT PP
+            WHERE MA.ACTIVITY = 1
+            AND   MA.PRODUCT_NO = PP.PRODUCT_NO
+            AND   PP.ACTIVITY = 1
+        ]]>
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY MA.ADV_NO
+            ]]>
+        </isEmpty>
+    </select>
+    <select id="getMobileAdvCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT 
+                COUNT(0)
+            FROM MOBILE_ADV MA,
+                 PROSTOR_PRODUCT PP
+            WHERE MA.ACTIVITY = 1
+            AND   MA.PRODUCT_NO = PP.PRODUCT_NO
+            AND   PP.ACTIVITY = 1
+        ]]>
+    </select>
+    
+    <update id="addOrUpdateMobileAdv" parameterClass="linkMap" >
+        <![CDATA[
+            DECLARE
+                VAR_COUNT NUMBER:=0;
+            BEGIN
+                SELECT COUNT(0) INTO VAR_COUNT FROM MOBILE_ADV MA
+                WHERE MA.ACTIVITY = 1
+                AND MA.CPNY_ID = #CPNY_ID#
+                AND MA.PRODUCT_NO = #PRODUCT_NO#;
+                
+                IF VAR_COUNT > 0 THEN
+                    UPDATE MOBILE_ADV
+                    SET PHOTOPATH = #PHOTOPATH#,
+                        UPDATE_DATE = SYSDATE,
+                        UPDATED_BY = #UPDATED_BY#
+                    WHERE ACTIVITY = 1
+                    AND CPNY_ID = #CPNY_ID#
+                    AND PRODUCT_NO = #PRODUCT_NO#;
+                ELSE
+                    INSERT INTO MOBILE_ADV(ADV_NO,ADV_ID,PRODUCT_NO,PHOTOPATH,CREATE_DATE,CREATED_BY,ACTIVITY,CPNY_ID)
+                    VALUES(MOBILE_ADV_SEQ.NEXTVAL,'ADV'||MOBILE_ADV_SEQ.CURRVAL,#PRODUCT_NO#,#PHOTOPATH#,SYSDATE,#CREATED_BY#,1,#CPNY_ID#);
+                END IF;
+            END;
+        ]]>
+    </update>
+    
+    <delete id="deleteMobileAdv" parameterClass="linkMap">
+        <![CDATA[
+        DELETE FROM MOBILE_ADV MA
+        WHERE MA.ACTIVITY = 1
+        AND MA.CPNY_ID = #CPNY_ID#
+        AND MA.ADV_NO = #ADV_NO#
+        ]]>
+    </delete>
+    
+    <select id="getSalesModeNoByCu" parameterClass="String" resultClass="String">
+        <![CDATA[
+            SELECT CBI.CUST_SALES_MODE_CODE
+            FROM CUST_BASIC_INFO CBI
+            WHERE CBI.ACTIVITY = 1
+            AND CBI.CUST_ID = #CUST_ID#
+        ]]>
+    </select>
+</sqlMap>

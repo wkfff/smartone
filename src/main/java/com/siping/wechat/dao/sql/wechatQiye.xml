@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"  "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="wechatQiye">
+    <insert id="addLeave" parameterClass="com.siping.hrm.bean.ApplyLeave">
+        INSERT INTO ess_apply_leave(
+            leave_no,
+            empid,
+            leave_type_code,
+            leave_from_time,
+            leave_to_time,
+            leave_reason,
+            leave_wa_empid,
+            create_date,
+            created_by,
+            processid
+        )values(
+            ess_apply_leave_seq.nextval,
+            #empid#,
+            #leaveTypeCode#,
+            TO_DATE(#leaveFromTime#,'yyyy-mm-dd hh24:mi'),
+            TO_DATE(#leaveToTime#,'yyyy-mm-dd hh24:mi'),
+            #leaveReason#,
+            #leaveWaEmpid#,
+            SYSDATE,
+            #empid#,
+            #processId#
+        )
+    </insert>
+    <select id="selectLeaveListByEmp" parameterClass="java.lang.String" resultClass="com.siping.hrm.bean.ApplyLeave">
+        SELECT e.leave_no leaveNo,
+            h.chinesename empid,
+            s.code_name leaveTypeCode,
+            TO_CHAR(e.leave_from_time,'yyyy-mm-dd hh24:mi') leaveFromTime,
+            TO_CHAR(e.e.leave_to_time,'yyyy-mm-dd hh24:mi') leaveToTime,
+            e.leave_reason leaveReason,
+            hr.chinesename leaveWaEmpid,
+            TO_CHAR(e.create_date,'yyyy-mm-dd hh24:mi') createDate,
+            e.created_by createdBy,
+            e.processid processId
+        FROM ess_apply_leave e,
+            hr_employee h,
+            sy_code s,
+            hr_employee hr
+        WHERE e.empid = h.empid(+)
+        AND e.leave_type_code = s.code_id(+)
+        AND e.leave_wa_empid = hr.empid(+)
+        AND e.empid = #empid#
+        ORDER BY e.leave_no DESC
+    </select>
+    <insert id="addBusiTrip" parameterClass="com.siping.hrm.bean.ApplyBusiTrip">
+        INSERT INTO ess_apply_bt(
+            bt_no,
+            empid,
+            bt_type_code,
+            bt_from_time,
+            bt_to_time,
+            bt_content,
+            bt_wa_empid,
+            create_date,
+            created_by,
+            bt_city,
+            bt_province,
+            processid
+        )VALUES(
+            ess_apply_bt_seq.nextval,
+            #empid#,
+            #btTypeCode#,
+            TO_DATE(#btFromTime#,'yyyy-mm-dd hh24:mi'),
+            TO_DATE(#btToTime#,'yyyy-mm-dd hh24:mi'),
+            #btContent#,
+            #btWaEmpid#,
+            SYSDATE,
+            #empid#,
+            #btCity#,
+            #btProvince#,
+            #processId#
+        )
+    </insert>
+    <select id="selectBtListByEmp" parameterClass="java.lang.String" resultClass="com.siping.hrm.bean.ApplyBusiTrip">
+        SELECT e.bt_no btNo,
+            h.chinesename empid,
+            s.code_name btTypeCode,
+            TO_CHAR(e.bt_from_time,'yyyy-mm-dd hh24:mi') btFromTime,
+            TO_CHAR(e.bt_to_time,'yyyy-mm-dd hh24:mi') btToTime,
+            e.bt_content btContent,
+            hr.chinesename btWaEmpid,
+            TO_CHAR(e.create_date,'yyyy-mm-dd hh24:mi') createDate,
+            e.created_by createdBy,
+            sc.code_name btCity,
+            sp.code_name btProvince,
+            e.processid
+        FROM ess_apply_bt e,
+            hr_employee h,
+            sy_code s,
+            hr_employee hr,
+            sy_code sc,
+            sy_code sp
+        WHERE e.empid = h.empid(+)
+        AND e.bt_type_code = s.code_id(+)
+        AND e.bt_wa_empid = hr.empid(+)
+        AND e.bt_city = sc.code_id(+)
+        AND e.bt_province = sp.code_id(+)
+        AND e.empid = #empid#
+        ORDER BY e.bt_no DESC
+    </select>
+    <insert id="addCost" parameterClass="com.siping.hrm.bean.ApplyCost">
+        INSERT INTO ess_apply_exp(
+            exp_no,
+            empid,
+            exp_type_code,
+            exp_reason,
+            create_date,
+            created_by,
+            moneyamount,
+            processid
+        )VALUES(
+            ess_apply_exp_seq.nextval,
+            #empid#,
+            #expTypeCode#,
+            #expReason#,
+            SYSDATE,
+            #empid#,
+            #moneyAmount#,
+            #processId#
+        )
+    </insert>
+    <select id="selectCostListByEmp" parameterClass="java.lang.String" resultClass="com.siping.hrm.bean.ApplyCost">
+        SELECT e.exp_no expNo,
+            h.chinesename empid,
+            s.code_name expTypeCode,
+            e.exp_reason expReason,
+            TO_CHAR(e.create_date,'yyyy-mm-dd hh24:mi') createDate,
+            e.created_by createdBy,
+            e.moneyamount moneyAmount,
+            e.processid processId
+        FROM ess_apply_exp e,
+            hr_employee h,
+            sy_code s
+        WHERE e.empid = h.empid(+)
+        AND e.exp_type_code = s.code_id(+)
+        WHERE e.empid = #empid#
+        ORDER BY e.exp_no DESC
+    </select>
+</sqlMap>

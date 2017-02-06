@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="att.annualLeave">
+
+	<sql id="getAttAnnualLeaveInfoCondition">
+		<isNotEmpty prepend="AND" property="VACATION_NO">
+			<![CDATA[
+		 		  VACATION_NO = #VACATION_NO:NUMERIC# 
+		    ]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="AND" property="VAC_TP">
+			<![CDATA[
+		 		  VAC_TP = #VAC_TP:VARCHAR# 
+		    ]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="AND" property="EMPID">
+			<![CDATA[
+		 		  T.EMPID = #EMPID:VARCHAR# 
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="VAC_ID">
+			<![CDATA[
+		 		  VAC_ID = #VAC_ID:VARCHAR# 
+		    ]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+		 		  ( HR.EMPID LIKE TRIM(#keyWord:VARCHAR#) || '%' 
+		 		  OR HR.CHINESENAME LIKE '%' || TRIM(#keyWord:VARCHAR#) || '%' 
+		 		  OR HR.CHINESE_PINYIN LIKE '%' || TRIM(#keyWord:VARCHAR#) || '%'
+		 		  OR HR.ENGLISHNAME LIKE '%' || TRIM(#keyWord:VARCHAR#) || '%') 
+		    ]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="AND" property="DEPTID">
+			<![CDATA[
+		 		  EXISTS(
+		 		  	SELECT *
+					  FROM HR_DEPARTMENT
+				     WHERE HR_DEPARTMENT.DEPTID = HR.DEPTID
+					 START WITH HR_DEPARTMENT.DEPTID = #DEPTID:VARCHAR#
+					CONNECT BY PRIOR HR_DEPARTMENT.DEPTID = HR_DEPARTMENT.PARENT_DEPT_ID
+		 		  )
+		    ]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="AND" property="AR_ADMIN_ID">
+			<![CDATA[
+		 		  EXISTS(
+		 		  	SELECT *
+					  FROM AR_SUPERVISOR_INFO
+					 WHERE AR_SUPERVISOR_INFO.SUPERVISED_DEPTID = HR.DEPTID
+					   AND AR_SUPERVISOR_ID = #AR_ADMIN_ID:VARCHAR#
+		 		  )
+		    ]]>
+		</isNotEmpty>
+
+	</sql>
+
+	<select id="getAttAnnualLeaveInfo" parameterClass="linkMap"
+		resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT T.VACATION_NO,
+			       T.EMPID, 
+			       DECODE(#language#, 'en', HR.ENGLISHNAME, HR.CHINESENAME) CHINESENAME,
+       			   DECODE(#language#, 'en', HD.DEPT_EN_NAME, HD.DEPTNAME) DEPTNAME,
+			       T.VAC_TP,
+       			   DECODE(#language#, 'en', A.CODE_EN_NAME, A.CODE_NAME) VAC_TP_NAME,
+			       T.VAC_ID,
+			       HR.JOIN_DATE,
+			       T.STRT_DATE,
+			       T.END_DATE,
+			       T.TOT_VAC_CNT,
+			       T.DEL_VAC_CNT,
+			       T.CREATE_DATE,
+			       T.CREATED_BY,
+			       T.UPDATE_DATE,
+			       T.UPDATED_BY,
+			       T.ACTIVITY
+			  FROM AR_VAC_EMP T, HR_EMPLOYEE HR, HR_DEPARTMENT HD,SY_CODE A
+			 WHERE T.EMPID = HR.EMPID
+			   AND HR.DEPTID = HD.DEPTID
+			   AND T.VAC_TP = A.CODE_ID(+)
+		 ]]>
+
+		<include refid="getAttAnnualLeaveInfoCondition" />
+
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		  ORDER BY $sortname$ $sortorder$
+		    ]]>
+		</isNotEmpty>
+
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY T.VAC_ID, T.EMPID
+			]]>
+		</isEmpty>
+	</select>
+
+	<select id="getAttAnnualLeaveInfoCnt" parameterClass="linkMap"
+		resultClass="int">
+		<![CDATA[
+			SELECT COUNT(*)
+			  FROM AR_VAC_EMP T, HR_EMPLOYEE HR, HR_DEPARTMENT HD
+			 WHERE T.EMPID = HR.EMPID
+			   AND HR.DEPTID = HD.DEPTID
+		]]>
+
+		<include refid="getAttAnnualLeaveInfoCondition" />
+
+	</select>
+
+	<delete id="deleteAttAnnualLeave" parameterClass="linkMap">
+		<![CDATA[
+			DELETE AR_VAC_EMP T
+			 WHERE VACATION_NO = #VACATION_NO:NUMERIC#
+		]]>
+	</delete>
+
+	<update id="updateAttAnnualLeave" parameterClass="linkMap">
+		<![CDATA[
+			UPDATE AR_VAC_EMP T SET 
+				   TOT_VAC_CNT = #TOT_VAC_CNT:NUMERIC#,
+				   DEL_VAC_CNT = #DEL_VAC_CNT:NUMERIC#,
+				   STRT_DATE = TO_DATE(#STRT_DATE:VARCHAR#,'YYYY-MM-DD'),
+				   END_DATE = TO_DATE(#END_DATE:VARCHAR#,'YYYY-MM-DD'),
+				   UPDATE_DATE = SYSDATE,
+				   UPDATED_BY = #UPDATED_BY:VARCHAR# 
+			 WHERE VACATION_NO = #VACATION_NO:NUMERIC#
+		]]>
+	</update>
+
+	<select id="checkAddAttAnnualLeaveInfo" parameterClass="linkMap"
+		resultClass="int">
+		<![CDATA[
+			SELECT COUNT(*)
+			  FROM AR_VAC_EMP T
+			 WHERE T.EMPID = #EMPID:VARCHAR#
+			   AND T.VAC_ID = #VAC_ID:VARCHAR#
+		]]>
+	</select>
+
+	<insert id="addAttAnnualLeave" parameterClass="linkMap">
+		<![CDATA[
+			INSERT INTO AR_VAC_EMP
+				(
+					VACATION_NO,
+					EMPID,
+					VAC_TP,
+					VAC_ID,
+					STRT_DATE,
+					END_DATE,
+					TOT_VAC_CNT,
+					CREATE_DATE,
+					CREATED_BY,
+					ACTIVITY
+				)
+			VALUES
+				(
+					AR_VAC_EMP_SEQ.NEXTVAL,
+					#EMPID:VARCHAR#,
+					#VAC_TP:VARCHAR#,
+					#VAC_ID:VARCHAR#,
+					TO_DATE(#STRT_DATE:VARCHAR# ,'YYYY-MM-DD'),
+					TO_DATE(#END_DATE:VARCHAR# ,'YYYY-MM-DD'),
+					#TOT_VAC_CNT:NUMERIC#,
+					#DEL_VAC_CNT:NUMERIC#,
+					SYSDATE,
+					#CREATED_BY:VARCHAR#,
+					1
+				)
+		]]>
+	</insert>
+
+	<procedure id="createAttAnnualLeaveInfo" parameterClass="linkMap">
+		<![CDATA[
+			{call AR_CREATE_VACATIONEMP() }
+		]]>
+	</procedure>
+
+</sqlMap>

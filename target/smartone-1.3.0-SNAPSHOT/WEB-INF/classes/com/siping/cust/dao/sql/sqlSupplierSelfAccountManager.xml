@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap  PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="cust.supplierAccountSelf" >
+<sql id="supplierAccountSelfCondition">
+	<isNotEmpty prepend="AND" property="keyWord">
+		<![CDATA[
+			SY.USERNAME LIKE CONCAT('%',TRIM(#keyWord#),'%')
+			
+		]]>
+	</isNotEmpty>
+	
+	<isNotEmpty prepend="AND" property="STATUS">
+			SY.ACTIVITY LIKE CONCAT('%',TRIM(#STATUS#),'%')
+	</isNotEmpty>
+	
+	<isNotEmpty prepend="" property="sortname">
+		<![CDATA[
+			ORDER BY $sortname$  $sortorder$
+		]]>
+	</isNotEmpty>
+	
+	<isEmpty prepend="" property="sortname" >
+		<![CDATA[
+			ORDER BY SY.CREATE_DATE DESC
+		]]>
+	</isEmpty>
+</sql>
+	<select id="getSupplierAccountSelfList" resultClass="linkMap" parameterClass="linkMap">
+		<![CDATA[
+			SELECT 
+			SUP.SUPPLIER_ID,
+			SUP.SUPPLIER_NAME,
+			SY.ADMINNO,
+			SY.USERNAME,
+			SY.ACTIVITY
+			FROM PROSTOR_SUPPLIER SUP,SY_ADMIN SY 
+			WHERE 
+			SY.CPNY_ID=#CPNY_ID# 
+			AND ADMINLEVEL='2'
+			AND SY.CPNY_ID=SUP.SUPPLIER_ID
+		]]>
+		<include refid="supplierAccountSelfCondition"/>
+	</select>
+	
+	<select id="getSupplierAccountSelfCnt" resultClass="int" parameterClass="linkMap">
+		<![CDATA[
+			SELECT 
+				COUNT(*) FROM  PROSTOR_SUPPLIER SUP,SY_ADMIN SY 
+			WHERE 
+			SY.CPNY_ID=#CPNY_ID# 
+			AND ADMINLEVEL='2'
+			AND SY.CPNY_ID=SUP.SUPPLIER_ID
+	
+		]]>
+		<include refid="supplierAccountSelfCondition"/>
+	</select>
+	
+	<update id="updateSupplierAccountSelf"   parameterClass="linkMap">
+		<![CDATA[
+			UPDATE SY_ADMIN SET 
+				USERNAME=#USERNAME#,
+				PASSWORD=#PASSWORD#,
+				UPDATE_DATE=NOW(),
+				UPDATED_BY=#UPDATED_BY#
+				
+			WHERE
+				ADMINNO=#ADMINNO#
+				
+				]]>
+	</update>
+	
+	
+	<insert id="insertSupplierAccountSelf" parameterClass="linkMap">
+	<!--SY_ADMIN_NO.NEXTVAL 设置了自动递增  -->		
+		<![CDATA[
+			INSERT INTO SY_ADMIN(
+				 
+				ADMINID, 
+				ADMINLEVEL,
+				USERNAME, 
+				PASSWORD,
+				SCREEN_GRANT_ID,
+				CREATE_DATE,
+				CREATED_BY,
+				ACTIVITY,
+				SET_APP,
+				CPNY_ID
+			)VALUES(
+				
+				CONCAT('SUP',SY_ADMIN_NO.CURRVAL),
+				2,
+				#USERNAME#,
+				#PASSWORD#,
+				(SELECT SCREEN_GRANT_ID FROM SY_ADMIN WHERE CPNY_ID=#CPNY_ID# AND ADMINLEVEL=1),
+				NOW(),
+				#CREATED_BY#,
+				1,
+				'no',
+				 (SELECT CPNY_ID  FROM SY_ADMIN WHERE CPNY_ID=#CPNY_ID# AND ADMINLEVEL=1)
+			)
+		]]>
+		
+	</insert>
+	
+	<delete id="deleteSupplierAccountSelf" parameterClass="linkMap">
+		<![CDATA[
+			DELETE FROM SY_ADMIN 
+			WHERE
+				CPNY_ID=(SELECT SUPPLIER_ID FROM PROSTOR_SUPPLIER WHERE SUPPLIER_ID=#SUPPLIER_ID#)
+			AND
+			    USERNAME=#USERNAME#
+			
+		]]>
+	</delete>
+	
+	
+	<select id="checkUsernameExist" parameterClass="linkMap"   resultClass="int">
+		<![CDATA[
+			SELECT COUNT(*) FROM SY_ADMIN 
+			  WHERE
+			    USERNAME=#USERNAME#
+		]]>
+	</select>
+	<select id="getSupplierByPassword" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+			SELECT COUNT(*) FROM SY_ADMIN
+			   WHERE
+			     USERNAME=#USERNAME# 
+			     AND
+			     PASSWORD=#OLDPASSWORD#
+		]]>
+	</select>
+	 <update id="updateSupplierPassword">
+	 	<![CDATA[
+	 	
+	 		UPDATE SY_ADMIN
+	 		  SET 
+	 		  	PASSWORD=#ENTERNEWPASSWORD#
+	 		  WHERE
+	 		  	USERNAME=#USERNAME#	
+	 	]]>
+	 </update>
+	 
+	 <update id="toggleSupplierActivity" parameterClass="linkMap"  >
+	 	<![CDATA[
+	 		UPDATE SY_ADMIN
+	 		  SET 
+	 		  	ACTIVITY=#ACTIVITY#
+	 		  	WHERE
+	 		  	 ADMINNO=#ADMINNO#
+	 	]]>
+	 </update>
+</sqlMap>

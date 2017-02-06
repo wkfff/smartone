@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="system.systemPageStructure">
+
+	<select id="getPageStructure" parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[
+			SELECT A.MENU_CODE,
+			       (CASE WHEN #language#='en' THEN A.MENU_INTRO ELSE A.MENU_INTRO END) MENU_INTRO
+			  FROM SY_MENU A
+			 WHERE A.BUILD_FLAG = 'yes'
+			   AND A.ACTIVITY = 1
+			   AND A.CPNY_ID = #CPNY_ID# 
+         ORDER BY A.MENU_CODE		
+		]]> 
+	</select>
+	
+    <select id="getPageStructureDetailItemInfo" parameterClass="linkMap"  resultClass="linkMap" remapResults="true">
+		<![CDATA[
+				SELECT T.*, ROWNUM ITEM_NO
+				  FROM REPORT_ITEM_REFERENCE T
+				 WHERE TYPE_ID = UPPER(SUBSTR(#MENU_CODE#,1,2))
+				   AND ITEM_ID NOT IN
+				       (SELECT RI.ITEM_ID
+						  FROM REPORT_ITEM RI, REPORT_TABLE RT
+						 WHERE RI.RT_NO = RT.RT_NO(+)
+						   AND RT.MENU_CODE = #MENU_CODE#)
+				  
+		]]>
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+		 		  (UPPER(replace(T.ITEM_NAME,' ','')) LIKE CONCAT('%' , UPPER(replace(#keyWord:VARCHAR#,' ','')) , '%') 
+		 		  OR UPPER(replace(T.ITEM_EN_NAME,' ','')) LIKE CONCAT('%',UPPER(replace(#keyWord:VARCHAR#,' ','')) , '%') 
+		 		  OR UPPER(replace(T.ITEM_ID,' ','')) LIKE CONCAT('%', UPPER(replace(#keyWord:VARCHAR#,' ','')) , '%'))
+		    ]]>
+		</isNotEmpty> 
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		  ORDER BY $sortname$ $sortorder$
+		    ]]>
+		</isNotEmpty>
+		
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+            	ORDER BY ORDER_NO
+			]]>
+		</isEmpty>
+	</select>
+	 <select id="getPageStructureDetailItemInfoCnt" parameterClass="linkMap"  resultClass="int">
+		<![CDATA[
+				SELECT COUNT(*)
+				  FROM REPORT_ITEM_REFERENCE T
+				 WHERE TYPE_ID = UPPER(SUBSTR(#MENU_CODE#,1,2))
+				   AND ITEM_ID NOT IN
+				       (SELECT RI.ITEM_ID
+						  FROM REPORT_ITEM RI, REPORT_TABLE RT
+						 WHERE RI.RT_NO = RT.RT_NO(+)
+						   AND RT.MENU_CODE = #MENU_CODE#)
+				  
+		]]>
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+		 		  (UPPER(replace(T.ITEM_NAME,' ','')) LIKE CONCAT('%',UPPER(replace(#keyWord:VARCHAR#,' ','')), '%' )
+		 		  OR UPPER(replace(T.ITEM_EN_NAME,' ','')) LIKE CONCAT('%', UPPER(replace(#keyWord:VARCHAR#,' ','')),'%') 
+		 		  OR UPPER(replace(T.ITEM_ID,' ','')) LIKE CONCAT('%',UPPER(replace(#keyWord:VARCHAR#,' ','')),'%'))
+		    ]]>
+		</isNotEmpty>
+	</select>
+	 
+	<insert id="addPageStructureInfo" parameterClass="linkMap"  >
+		<selectKey resultClass="int" keyProperty="RT_NO">
+			SELECT REPORT_TABLE_SEQ.NEXTVAL AS RT_NO FROM DUAL    
+		</selectKey>
+		<![CDATA[ 
+			 INSERT INTO REPORT_TABLE
+				(
+				  RT_NO,
+				  MENU_CODE,
+				  TABLE_NAME,
+				  TABLE_EN_NAME,  
+				  CREATE_BY ,
+				  CREATE_DATE,
+				  CPNY_ID,
+				  ACTIVITY   
+				)VALUES
+				(
+				  #RT_NO#,
+				  #MENU_CODE#,
+				  (SELECT A.MENU_INTRO FROM SY_MENU A WHERE A.MENU_CODE = #MENU_CODE#),
+				  (SELECT A.MENU_EN_INTRO FROM SY_MENU A WHERE A.MENU_CODE = #MENU_CODE#),  
+				  #CREATE_BY#,
+				  SYSDATE,
+				  #CPNY_ID#,
+				  1
+				)
+		]]>
+	</insert>
+	
+	<insert id="addPageStructureDetailInfo" parameterClass="linkMap">
+		<![CDATA[
+		  INSERT INTO REPORT_ITEM  
+				( 
+				 RI_NO,
+				 RT_NO,
+				 TABLE_NAME,
+				 ITEM_NO,
+				 ITEM_ID,
+				 ORDERNO,
+				 CREATE_BY,
+				 CREATE_DATE
+			 )VALUES
+				(
+				REPORT_ITEM_SEQ.NEXTVAL,
+				#RT_NO#,
+				#TABLE_NAME#,
+				#ITEM_NO#,
+				#ITEM_ID#,
+				REPORT_ITEM_SEQ.CURRVAL,
+				#CREATE_BY#,
+				SYSDATE
+				 )
+	
+	     ]]>
+	</insert>
+	
+	 <select id="getPageStructureDetailInfo" parameterClass="linkMap"  resultClass="linkMap">
+		<![CDATA[
+		SELECT RI.RI_NO,
+		       RI.RT_NO,
+		       RI.TABLE_NAME,
+		       RI.ITEM_NO,
+		       RI.ITEM_ID,
+		       RIR.ITEM_NAME,
+		       RIR.ITEM_EN_NAME,
+		       RIR.DATA_TYPE,
+		       RI.ORDERNO,
+		       (SELECT COUNT(A.ORDERNO) 
+		          FROM REPORT_ITEM A,REPORT_TABLE B 
+		         WHERE A.RT_NO = B.RT_NO 
+		           AND B.CPNY_ID = #CPNY_ID# 
+		           AND B.MENU_CODE = #MENU_CODE#) MAX_INDEX,
+		       RT.MENU_CODE,
+			   (CASE WHEN #language#='en' THEN RT.TABLE_EN_NAME ELSE RT.TABLE_NAME END) MENU_INTRO
+		  FROM (REPORT_ITEM RI LEFT JOIN REPORT_TABLE RT ON RI.RT_NO = RT.RT_NO )LEFT JOIN 
+		       REPORT_ITEM_REFERENCE RIR ON RI.ITEM_ID = RIR.ITEM_ID
+		 WHERE RT.CPNY_ID = #CPNY_ID#
+		   AND RT.MENU_CODE = #MENU_CODE#
+	]]> 
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		  ORDER BY $sortname$ $sortorder$
+		    ]]>
+		</isNotEmpty>
+		
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+            	ORDER BY RI.ORDERNO
+			]]>
+		</isEmpty>
+	</select>
+	
+	 <select id="getPageStructureDetailInfoCnt" parameterClass="linkMap"  resultClass="int">
+		<![CDATA[
+	          SELECT COUNT(*)
+		        FROM (REPORT_ITEM RI LEFT JOIN REPORT_TABLE RT ON RI.RT_NO = RT.RT_NO)LEFT JOIN REPORT_ITEM_REFERENCE RIR ON RI.ITEM_ID = RIR.ITEM_ID
+		 WHERE RT.MENU_CODE = #MENU_CODE#
+		]]>
+		
+	</select>
+	
+	<delete id="deletePageStructureDetailInfo" parameterClass="linkMap"   >
+		<![CDATA[ 
+		  DELETE FROM REPORT_ITEM T WHERE   T.RI_NO = #RI_NO# 
+		]]> 
+	</delete> 
+	  
+	<update id="updatePageStructureDetailInfoOrder" parameterClass="linkMap" >
+		<![CDATA[
+			 UPDATE REPORT_ITEM SET
+					ORDERNO = #ORDERNO#,
+					UPDATE_DATE = SYSDATE,
+					UPDATE_BY = #UPDATED_BY#
+			 WHERE RI_NO = #RI_NO#
+		]]>
+	</update>
+</sqlMap>

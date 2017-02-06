@@ -1,0 +1,1186 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap
+    PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+    "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="hrm.transferOrder">
+    <sql id="seachCondition">
+        <isNotEmpty prepend="AND" property="OFF_PROBATION">
+            <![CDATA[
+                (HRE.STATUS_CODE='EmpStatus1' OR HRE.STATUS_CODE='EmpStatus2')
+                   AND NOT EXISTS (
+                            SELECT T.EMPID
+                            FROM HR_EXPERIENCE_INSIDE T
+                            WHERE (T.TRANS_CODE ='TurnType0010'
+                                OR T.TRANS_CODE = 'TurnType0020')
+                                AND T.EMPID=HRE.EMPID
+                        )
+            ]]>
+        </isNotEmpty>
+        <isEqual prepend="AND" property="BANDH_TYPE_CODE" compareValue="BandhType0010">
+            <![CDATA[
+                HRE.STATUS_CODE IN('EmpStatus6','EmpStatus7','EmpStatus2','EmpStatus1')
+            ]]>
+        </isEqual>
+        <isEqual prepend="AND" property="BANDH_TYPE_CODE" compareValue="BandhType0020">
+            <![CDATA[
+                HRE.STATUS_CODE='EmpStatus5'
+            ]]>
+        </isEqual>
+        <isEqual prepend="AND" property="TURN_TYPE_CODE" compareValue="TurnType0010">
+            <![CDATA[
+                HRE.STATUS_CODE='EmpStatus2'
+            ]]>
+        </isEqual>
+        <isEqual prepend="AND" property="TURN_TYPE_CODE" compareValue="TurnType0020">
+            <![CDATA[
+                HRE.STATUS_CODE='EmpStatus1'
+            ]]>
+        </isEqual>
+        <isEqual prepend="AND" property="TURN_TYPE_CODE" compareValue="TurnType0030">
+            <![CDATA[
+                HRE.STATUS_CODE='EmpStatus1'
+            ]]>
+        </isEqual>
+        <isNotEmpty prepend="AND" property="dispatch">
+            <![CDATA[
+                HRE.EMPID NOT IN (SELECT T.EMPID
+                    FROM HR_DISPATCH T
+                WHERE T.TRANS_CODE = 'TransDispatchType01'
+                    AND T.STATE=0
+                    AND T.ACTIVITY IN(0,1)
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="dispatchend">
+            <![CDATA[
+                ( HRE.EMPID IN (
+                    SELECT T.EMPID
+                        FROM HR_DISPATCH T
+                    WHERE T.TRANS_CODE = 'TransDispatchType01'
+                        AND T.STATE=0
+                        AND T.ACTIVITY=1
+                )
+                    OR HRE.STATUS_CODE = 'EmpStatus7'
+                )
+                AND HRE.EMPID NOT IN (
+                   SELECT T.EMPID
+                     FROM HR_DISPATCH T
+                    WHERE T.TRANS_CODE = 'TransDispatchType02'
+                      AND T.ACTIVITY = 0
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="suspension">
+            <![CDATA[
+                HRE.EMPID NOT IN (
+                    SELECT T.EMPID
+                     FROM HR_EXPERIENCE_INSIDE T
+                    WHERE T.TRANS_CODE = 'BandhType0010'
+                      AND (T.ACTIVITY = 1 OR T.ACTIVITY = 0)
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="suspendf">
+            <![CDATA[
+                ( HRE.EMPID IN (
+                    SELECT T.EMPID
+                    FROM HR_EXPERIENCE_INSIDE T
+                    WHERE T.TRANS_CODE = 'BandhType0010'
+                     AND T.ACTIVITY=1
+                     AND T.YN=0)
+                  OR HRE.STATUS_CODE = 'EmpStatus5'
+                )
+                AND HRE.EMPID NOT IN (
+                    SELECT T.EMPID
+                      FROM HR_EXPERIENCE_INSIDE T
+                     WHERE T.TRANS_CODE = 'BandhType0020'
+                       AND T.ACTIVITY = 0
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="suspendd">
+            <![CDATA[
+                HRE.EMPID NOT IN (
+                    SELECT T.EMPID
+                      FROM HR_EXPERIENCE_INSIDE T
+                     WHERE T.TRANS_CODE = 'BandhType0030'
+                       AND T.ACTIVITY IN(0,1)
+                       AND T.YN=0
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="suspendz">
+            <![CDATA[
+                ( HRE.EMPID IN (
+                    SELECT T.EMPID
+                    FROM HR_EXPERIENCE_INSIDE T
+                    WHERE T.TRANS_CODE = 'BandhType0030'
+                     AND T.ACTIVITY=1
+                     AND T.YN=0
+                     )
+                  OR HRE.STATUS_CODE = 'EmpStatus4'
+                )
+                AND HRE.EMPID NOT IN (
+                   SELECT T.EMPID
+                     FROM HR_EXPERIENCE_INSIDE T
+                    WHERE T.TRANS_CODE = 'BandhType0040'
+                      AND T.ACTIVITY = 0
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="resign">
+            <![CDATA[
+                HRE.EMPID NOT IN (SELECT EMPID FROM HR_RESIGNATION
+                    WHERE ACTIVITY = 0
+                     AND EMPID = HRE.EMPID)
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="plurality">
+            <![CDATA[
+                HRE.STATUS_CODE<>'EmpStatus5'
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="business">
+            <![CDATA[
+                HRE.EMPID NOT IN (
+                   SELECT T.EMPID
+                     FROM HR_ACT_BUSINESS T
+                    WHERE T.ACTIVITY = 0
+                    AND EMPID = HRE.EMPID
+                )
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="AND" property="joinAgain">
+            <![CDATA[
+                (HRE.LEFT_DATE IS NULL OR HRE.LEFT_DATE > now())
+             ]]>
+        </isEmpty>
+        <isNotEmpty prepend="AND" property="joinAgain">
+            <![CDATA[
+                HRE.LEFT_DATE IS NOT NULL
+                AND HRE.LEFT_DATE <= now()
+                AND HRE.EMPID NOT IN (
+                    SELECT T.EMPID
+                    FROM HR_EXPERIENCE_INSIDE T
+                    WHERE T.TRANS_CODE = 'TransCode_210'
+                     AND T.ACTIVITY != 2
+                )
+             ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+                (
+                    HRE.CHINESENAME         LIKE '%'||TRIM(#keyWord#)||'%'
+                    OR HRE.EMPID            LIKE '%'||TRIM(#keyWord#)||'%'
+                    OR upper(HRE.CHINESE_PINYIN) LIKE '%'||TRIM(upper(#keyWord#))||'%'
+                    OR upper(HRE.ENGLISHNAME) LIKE '%'||TRIM(upper(#keyWord#))||'%'
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="EMPID">
+            <![CDATA[
+                HRE.EMPID = #EMPID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="DEPTID">
+            <![CDATA[
+                EXISTS (
+                    SELECT * FROM HR_DEPARTMENT B1
+                    WHERE B1.DEPTID=HRE.DEPTID
+                        START WITH B1.DEPTID = #DEPTID#
+                        CONNECT BY PRIOR B1.DEPTID = B1.PARENT_DEPT_ID
+                    )
+             ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="HR_ADMIN_ID">
+            <![CDATA[
+               EXISTS (
+                    SELECT EMPID FROM
+                        (
+                        SELECT EMPID FROM HR_EMPLOYEE H2
+                            WHERE EXISTS
+                            (
+                            SELECT S2.ADMINID AS EMPID
+                                FROM SY_ADMIN_DEPTID S1, SY_ADMIN S2
+                                WHERE S2.ADMINNO = S1.ADMIN_NO
+                                AND S2.ADMINID = #HR_ADMIN_ID#
+                                AND H2.DEPTID=S1.ADMIN_DEPTID
+                            )
+                        UNION
+                        SELECT #HR_ADMIN_ID# AS EMPID FROM DUAL
+                     ) S3
+                     WHERE S3.EMPID = HRE.EMPID
+               )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="S_JOIN_DATE">
+            <![CDATA[
+              str_to_date(#S_JOIN_DATE#,'%Y-%m-%d') >= HRE.JOIN_DATE
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="E_JOIN_DATE">
+            <![CDATA[
+              str_to_date(#E_JOIN_DATE#,'%Y-%m-%d') <= HRE.JOIN_DATE
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="S_LEFT_DATE">
+            <![CDATA[
+              str_to_date(#S_LEFT_DATE#,'%Y-%m-%d') <= HRE.LEFT_DATE
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="E_LEFT_DATE">
+            <![CDATA[
+              str_to_date(#E_LEFT_DATE#,'%Y-%m-%d') >= HRE.LEFT_DATE
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="S_END_PROBATION_DATE">
+            <![CDATA[
+              date_format(HRE.END_PROBATION_DATE,'%Y-%m-%d') >= #S_END_PROBATION_DATE#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="E_END_PROBATION_DATE">
+            <![CDATA[
+              date_format(HRE.END_PROBATION_DATE,'%Y-%m-%d') <= #E_END_PROBATION_DATE#
+            ]]>
+        </isNotEmpty>
+    </sql>
+
+    <select id="getNewestEmpIDInfo" remapResults="true" resultClass="string" parameterClass="linkMap">
+        <![CDATA[
+            SELECT MAX(T.EMPID) + 1 EMPID
+            FROM HR_EMPLOYEE T
+            WHERE CPNY_ID = #CPNY_ID#
+        ]]>
+    </select>
+
+    <select id="getEmpInfo" remapResults="true" resultClass="linkMap" parameterClass="linkMap">
+        <![CDATA[
+            SELECT HRE.EMPID,
+               DECODE(#language#, 'en', HRE.ENGLISHNAME, HRE.CHINESENAME) CHINESENAME,
+               HRPI.PHOTOPATH,
+               HRE.DEPTID,
+               DECODE(#language#, 'en', HRD.DEPT_EN_NAME, HRD.DEPTNAME) DEPTNAME,
+               HRPO.POSITION_ID POSITION_ID,
+               DECODE(#language#, 'en', HRPO.POSITION_EN_NAME, HRPO.POSITION_NAME) POSITION_NAME,
+               HRE.POST_ID POST_ID,
+               DECODE(#language#, 'en', HRP.POST_EN_NAME, HRP.POST_NAME) POST_NAME,
+               HRPGR.POST_GRADE_ID POST_GRADE_ID,
+               DECODE(#language#,'en',
+                      HRPGR.POST_GRADE_EN_NAME,
+                      HRPGR.POST_GRADE_NAME) POST_GRADE_NAME,
+               HRPG.POST_GROUP_ID POST_GROUP_ID,
+               DECODE(#language#,
+                      'en',
+                      HRPG.POST_GROUP_EN_NAME,
+                      HRPG.POST_GROUP_NAME) POST_GROUP_NAME,
+               HRE.STATUS_CODE,
+               DECODE(#language#, 'en', M.CODE_EN_NAME, M.CODE_NAME) STATUS_NAME,
+               HRE.JOIN_TYPE_CODE,
+               DECODE(#language#, 'en', N.CODE_EN_NAME, N.CODE_NAME) JOIN_TYPE_NAME,
+               HRPI.DEGREE_CODE,
+               DECODE(#language#, 'en', O.CODE_EN_NAME, O.CODE_NAME) DEGREE_NAME,
+               date_format(HRE.JOIN_DATE, '%Y-%m-%d') JOIN_DATE,
+               date_format(HRE.HIRE_DATE, '%Y-%m-%d') HIRE_DATE,
+               date_format(HRE.END_PROBATION_DATE, '%Y-%m-%d') END_PROBATION_DATE,
+               date_format(HRE.LEFT_DATE, '%Y-%m-%d') LEFT_DATE,
+               date_format(HRPI.BIRTHDAY, '%Y-%m-%d') BIRTHDAY,
+               date_format(now(), '%Y-%m-%d') START_DATE,
+               date_format(now()+30, '%Y-%m-%d') END_DATE,
+               HRPI.IDCARD_TYPE_CODE,
+               DECODE(#language#, 'en', Q.CODE_EN_NAME, Q.CODE_NAME) IDCARD_TYPE_NAME,
+               FLOOR(MONTHS_BETWEEN(now(), HRPI.BIRTHDAY) / 12) AGE,
+               HRE.COSTCENTER,
+               HRE.EMP_TYPE_CODE,
+               DECODE(#language#, 'en', A.CODE_EN_NAME, A.CODE_NAME) EMP_TYPE_NAME,
+               HRPI.NATION_CODE,
+               DECODE(#language#, 'en', H.CODE_EN_NAME, H.CODE_NAME) NATION_NAME,
+               HRPI.IDCARD_NO,
+               HR_GET_BUSINESS(HRE.EMPID) BUSINESS,
+               HRE.CREATE_DATE,
+               HRE.CREATED_BY,
+               HRE.UPDATED_BY,
+               HRE.UPDATE_DATE,
+               HRE.ORDERNO
+        FROM HR_EMPLOYEE           HRE,
+               HR_PERSONAL_INFO    HRPI,
+               HR_DEPARTMENT       HRD,
+               HR_POSITION         HRPO,
+               HR_POST             HRP,
+               HR_POST_GROUP       HRPG,
+               HR_POST_GRADE       HRPGR,
+               SY_CODE             H,
+               SY_CODE             J,
+               SY_CODE             M,
+               SY_CODE             N,
+               SY_CODE             A,
+               SY_CODE             O,
+               SY_CODE             Q
+        WHERE HRE.EMPID = HRPI.EMPID(+)
+            AND HRE.DEPTID = HRD.DEPTID(+)
+            AND HRE.POST_ID = HRP.POST_ID(+)
+            AND HRP.POST_GROUP_ID = HRPG.POST_GROUP_ID(+)
+            AND HRP.POSITION_ID = HRPO.POSITION_ID(+)
+            AND HRPO.POST_GRADE_ID = HRPGR.POST_GRADE_ID(+)
+            AND HRE.DUTY_CODE = J.CODE_ID(+)
+            AND HRE.STATUS_CODE = M.CODE_ID(+)
+            AND HRE.JOIN_TYPE_CODE = N.CODE_ID(+)
+            AND HRE.EMP_TYPE_CODE = A.CODE_ID(+)
+            AND HRPI.NATION_CODE = H.CODE_ID(+)
+            AND HRPI.DEGREE_CODE = O.CODE_ID(+)
+            AND HRPI.IDCARD_TYPE_CODE = Q.CODE_ID(+)
+        ]]>
+        <include refid="seachCondition"/>
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY  HRE.deptID,HRE.JOIN_DATE,HRE.EMPID
+            ]]>
+        </isEmpty>
+    </select>
+
+    <select id="getEmpInfoCnt" remapResults="true" resultClass="int" parameterClass="linkMap">
+        <![CDATA[
+            SELECT COUNT(*)
+            FROM HR_EMPLOYEE         HRE,
+                HR_PERSONAL_INFO    HRPI,
+                HR_DEPARTMENT       HRD,
+                HR_POSITION         HRPO,
+                HR_POST             HRP,
+                HR_POST_GROUP       HRPG,
+                HR_POST_GRADE       HRPGR,
+                SY_CODE             H,
+                SY_CODE             J,
+                SY_CODE             M,
+                SY_CODE             N,
+                SY_CODE             A,
+                SY_CODE             O,
+                SY_CODE             Q
+            WHERE HRE.EMPID = HRPI.EMPID(+)
+                AND HRE.DEPTID = HRD.DEPTID(+)
+                AND HRE.POST_ID = HRP.POST_ID(+)
+                AND HRP.POST_GROUP_ID = HRPG.POST_GROUP_ID(+)
+                AND HRP.POSITION_ID = HRPO.POSITION_ID(+)
+                AND HRPO.POST_GRADE_ID = HRPGR.POST_GRADE_ID(+)
+                AND HRE.DUTY_CODE = J.CODE_ID(+)
+                AND HRE.STATUS_CODE = M.CODE_ID(+)
+                AND HRE.JOIN_TYPE_CODE = N.CODE_ID(+)
+                AND HRE.EMP_TYPE_CODE = A.CODE_ID(+)
+                AND HRPI.NATION_CODE = H.CODE_ID(+)
+                AND HRPI.DEGREE_CODE = O.CODE_ID(+)
+                AND HRPI.IDCARD_TYPE_CODE = Q.CODE_ID(+)
+        ]]>
+        <include refid="seachCondition"/>
+    </select>
+
+    <select id="getActBusinessInfo" remapResults="true" resultClass="linkMap" parameterClass="linkMap">
+        <![CDATA[
+            SELECT HRE.EMPID,
+                   DECODE(#language#, 'en', HRE.ENGLISHNAME, HRE.CHINESENAME) CHINESENAME,
+                   DECODE(#language#, 'en', A.CODE_EN_NAME, A.CODE_NAME) BIZ_NAME,
+                   date_format(HRAB.START_DATE, '%Y-%m-%d') START_DATE,
+                   date_format(HRAB.END_DATE, '%Y-%m-%d') END_DATE,
+                   HRAB.REMARK
+            FROM HR_EMPLOYEE         HRE,
+                   HR_ACT_BUSINESS    HRAB,
+                   SY_CODE            A
+            WHERE HRE.EMPID = HRAB.EMPID(+)
+               AND HRAB.EMPID = #EMPID#
+               AND HRAB.BIZ_CODE = A.CODE_ID(+)
+        ]]>
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY  HRAB.START_DATE DESC
+            ]]>
+        </isEmpty>
+    </select>
+
+    <select id="getActBusinessInfoCnt" remapResults="true" resultClass="int" parameterClass="linkMap">
+        <![CDATA[
+            SELECT COUNT(HRE.EMPID)  CNT
+            FROM HR_EMPLOYEE         HRE,
+                HR_ACT_BUSINESS    HRAB,
+                SY_CODE            A
+            WHERE HRE.EMPID = HRAB.EMPID(+)
+                AND HRAB.EMPID = #EMPID#
+                AND HRAB.BIZ_CODE = A.CODE_ID(+)
+        ]]>
+    </select>
+
+    <!-- comment : 添加离职信息 -->
+    <insert id="saveResign" parameterClass="linkMap">
+        <![CDATA[
+           INSERT INTO  HR_RESIGNATION(
+                
+                TRANS_NO,
+                TRANS_CODE,
+                EMPID,
+                RESIGN_DATE,
+                RESIGN_TYPE_CODE,
+                RESIGN_REASON,
+                REMARK,
+                ACTIVITY,
+                AFFIRM_FLAG,
+                CREATE_DATE,
+                CREATED_BY,
+                CPNY_ID,
+                EXECUTED,
+                PROCESSID
+                )
+            SELECT
+                
+                #TRANS_NO#,
+                #TRANS_CODE#,
+                #EMPID#,
+                str_to_date(#RESIGN_DATE#,'%Y-%m-%d'),
+                #RESIGN_TYPE_CODE#,
+                #RESIGN_REASON#,
+                #REMARK#,
+                1,
+                1,
+                now(),
+                #CREATED_BY#,
+                #CPNY_ID#,
+                0,
+                #PROCESSID#
+            FROM HR_EMPLOYEE
+            WHERE EMPID = #EMPID#
+            AND EMPID NOT IN (SELECT EMPID FROM HR_RESIGNATION
+                WHERE AFFIRM_FLAG <> 2
+                AND EMPID = #EMPID#)
+        ]]>
+    </insert>
+
+    <!-- comment : 添加调令信息 -->
+    <insert id="saveExperience" parameterClass="linkMap">
+        <![CDATA[
+            INSERT INTO HR_EXPERIENCE_INSIDE
+                (
+                TRANS_NO,
+                TRANS_CODE,
+                EMPID,
+                DEPTID,
+                POSITION_ID,
+                DUTY_CODE,
+                POST_ID,
+                POST_GRADE_ID,
+                POST_COEF,
+                POST_GRADE_LEVEL_CODE,
+                POST_GROUP_ID,
+                STATUS_CODE,
+                START_DATE,
+                END_PROBATION_DATE,
+                JOIN_TYPE_CODE,
+                EMP_TYPE_CODE,
+                REMARK,
+                PRE_DEPTID,
+                PRE_DUTY_CODE,
+                PRE_POSITION_ID,
+                PRE_POST_ID,
+                PRE_POST_GRADE_ID,
+                PRE_POST_COEF,
+                PRE_POST_GRADE_LEVEL_CODE,
+                PRE_POST_GROUP_ID,
+                PRE_STATUS_CODE,
+                PRE_JOIN_TYPE_CODE,
+                PRE_EMP_TYPE_CODE,
+                CREATE_DATE,
+                CREATED_BY,
+                CPNY_ID,
+                ACTIVITY,
+                AFFIRM_FLAG,
+                EXECUTED,
+                PROCESSID,
+                POST_LEVEL_ID,
+                PRE_POST_LEVEL_ID,
+                CON_PER
+            )
+            SELECT 
+                 #TRANS_NO#,
+                 #TRANS_CODE#,
+                 #EMPID#,
+                 ifnull(#DEPTID#, HRE.DEPTID),
+                 ifnull(#POSITION_ID#, HRE.POSITION_ID),
+                 ifnull(#DUTY_ID#, HRE.DUTY_CODE),
+                 ifnull(#POST_ID#, HRE.POST_ID),
+                 ifnull(#POST_GRADE_ID#, HRE.POST_GRADE_ID),
+                 ifnull(#POST_COEF#, HRE.POST_COEF),
+                 ifnull(#POST_GRADE_LEVEL_ID#, HRE.POST_GRADE_LEVEL_CODE),
+                 ifnull(#POST_GROUP_ID#, HRE.POST_GROUP_ID),
+                 ifnull(#STATUS_CODE#, HRE.STATUS_CODE),
+                 str_to_date(#START_DATE#, '%Y-%m-%d'),
+                 str_to_date(ifnull(#END_PROBATION_DATE#,
+                             date_format(HRE.END_PROBATION_DATE, '%Y-%m-%d')),
+                         '%Y-%m-%d'),
+                 ifnull(#JOIN_TYPE_CODE#, HRE.JOIN_TYPE_CODE),
+                 ifnull(#EMP_TYPE_CODE#, HRE.EMP_TYPE_CODE),
+                 #REMARK#,
+                 HRE.DEPTID,
+                 HRE.POSITION_ID,
+                 HRE.DUTY_CODE,
+                 HRE.POST_ID,
+                 HRE.POST_GRADE_ID,
+                 HRE.POST_COEF,
+                 HRE.POST_GRADE_LEVEL_CODE,
+                 HRE.POST_GROUP_ID,
+                 HRE.STATUS_CODE,
+                 HRE.JOIN_TYPE_CODE,
+                 HRE.EMP_TYPE_CODE,
+                 now(),
+                 #CREATED_BY#,
+                 #CPNY_ID#,
+                 1,
+                 0,
+                 0,
+                 #PROCESSID#,
+                 #POST_LEVEL_ID#,
+                 HRE.POST_LEVEL_ID,
+                 #CON_PER#
+            FROM HR_EMPLOYEE HRE
+            WHERE HRE.EMPID = #EMPID#
+            AND NOT EXISTS
+            (SELECT EMPID
+                FROM HR_EXPERIENCE_INSIDE A
+                WHERE A.EMPID = HRE.EMPID
+                    AND AFFIRM_FLAG <> 2
+                    AND ACTIVITY <> 0
+                    AND START_DATE = str_to_date(#START_DATE#, '%Y-%m-%d')
+                    AND TRANS_CODE = #TRANS_CODE#)
+        ]]>
+    </insert>
+
+    <!-- comment : 添加奖励信息 -->
+    <insert id="saveReward" parameterClass="linkMap">
+        <![CDATA[
+            INSERT INTO HR_REWARD
+              (  
+                 TRANS_NO,
+                 TRANS_CODE,
+                 EMPID,
+                 REWARD_TYPE_CODE,
+                 REWARD_GRADE_CODE,
+                 REWARD_DATE,
+                 ACHIEVEMENT_TYPE_CODE,
+                 REWARD_CONTENTS,
+                 REWARD_REASON,
+                 REWARD_AMOUNT,
+                 REMARK,
+                 CREATE_DATE,
+                 CREATED_BY,
+                 ACTIVITY,
+                 EXECUTED,
+                 AFFIRM_FLAG,
+                 CPNY_ID
+              )
+                SELECT
+                
+                 #TRANS_NO#,
+                 #TRANS_CODE#,
+                 #EMPID#,
+                 #REWARD_TYPE_CODE#,
+                 #REWARD_GRADE_CODE#,
+                 str_to_date(#REWARD_DATE#,'%Y-%m-%d'),
+                 #ACHIEVEMENT_TYPE_CODE#,
+                 #REWARD_CONTENTS#,
+                 #REWARD_REASON#,
+                 convert(#REWARD_AMOUNT#,signed),
+                 #REMARK#,
+                 now(),
+                 #CREATED_BY#,
+                 1,
+                 0,
+                 0,
+                 #CPNY_ID#
+              FROM HR_EMPLOYEE HE
+              WHERE EMPID = #EMPID#
+        ]]>
+    </insert>
+
+    <!-- comment : 添加惩戒信息 -->
+    <insert id="savePunishment" parameterClass="linkMap">
+        <![CDATA[
+            INSERT INTO  HR_PUNISHMENT
+            (
+               
+                EMPID,
+                TRANS_NO,
+                TRANS_CODE,
+                PUN_TYPE_CODE,
+                PUNISHED_DATE,
+                PUN_REASON,
+                PUN_AMOUNT,
+                ACTIVITY,
+                AFFIRM_FLAG,
+                EXECUTED,
+                REMARK,
+                CREATED_BY,
+                CREATE_DATE,
+                CPNY_ID
+            )
+                SELECT
+                 
+                 #EMPID#,
+                 #TRANS_NO#,
+                 #TRANS_CODE#,
+                 #PUN_TYPE_CODE#,
+                 str_to_date(#PUNISHED_DATE#,'%Y-%m-%d'),
+                 #PUN_REASON#,
+                 ]]>
+                 <isNotEmpty property="PUN_AMOUNT" >
+                    <![CDATA[
+                        convert(#PUN_AMOUNT#,decimal),
+                    ]]>
+                </isNotEmpty>
+                 <isEmpty property="PUN_AMOUNT" >
+                 <![CDATA[
+                        null,
+                    ]]>
+                 </isEmpty>
+                 <![CDATA[
+                 1,
+                 0,
+                 0,
+                 #REMARK#,
+                 #CREATED_BY#,
+                 now(),
+                 #CPNY_ID#
+              FROM HR_EMPLOYEE HE
+              WHERE EMPID = #EMPID#
+         ]]>
+    </insert>
+
+    <!-- comment : 添加派遣开始信息 -->
+    <insert id="saveDispath" parameterClass="linkMap">
+        <![CDATA[
+            INSERT INTO  HR_DISPATCH
+            (
+                
+                TRANS_NO,
+                TRANS_CODE,
+                EMPID,
+                DEPTID,
+                START_DATE,
+                END_DATE,
+                DIS_TYPE_CODE,
+                CONTENTS,
+                DIS_TARGET,
+                STATUS_CODE,
+                REMARK,
+                ACTIVITY,
+                AFFIRM_FLAG,
+                EXECUTED,
+                CREATE_DATE,
+                CREATED_BY,
+                CPNY_ID
+            )
+                 SELECT
+                 
+                 #TRANS_NO#,
+                 #TRANS_CODE#,
+                 #EMPID#,
+                 DEPTID,
+                 str_to_date(#START_DATE#,'%Y-%m-%d'),
+                 str_to_date(#END_DATE#,'%Y-%m-%d'),
+                 #DIS_TYPE_CODE#,
+                 #CONTENTS#,
+                 #DIS_TARGET#,
+                 HE.STATUS_CODE,
+                 #REMARK#,
+                 1,
+                 0,
+                 0,
+                 now(),
+                 #CREATED_BY#,
+                 #CPNY_ID#
+              FROM HR_EMPLOYEE HE
+              WHERE EMPID = #EMPID#
+        ]]>
+    </insert>
+
+    <!-- comment : 添加派遣结束信息 -->
+    <insert id="saveDispathEnd" parameterClass="linkMap">
+        <![CDATA[
+            INSERT INTO  HR_DISPATCH
+              (
+                
+                EMPID,
+                START_DATE,
+                PROPOSE_END_DATE,
+                END_DATE,
+                DIS_DIFFENT,
+                CONTENTS,
+                DIS_TARGET,
+                STATUSCODE,
+                REMARK,
+                ACTIVITY,
+                STATE,
+                CREATE_DATE,
+                CREATED_BY,
+                TRANS_NO,
+                TRANS_CODE,
+                DEPTID,
+                POSITION_ID,
+                POST_GRADE_ID,
+                PREV_STATUS
+            )
+                SELECT
+                 
+                 EMPID,
+                 START_DATE,
+                 PROPOSE_END_DATE,
+                 str_to_date(#ENDDATE#,'%Y-%m-%d'),
+                 DIS_DIFFENT,
+                 CONTENTS,
+                 DIS_TARGET,
+                 #STATUS#,
+                 #REMARK#,
+                 0,
+                 1,
+                 now(),
+                 #CREATEDBY#,
+                 TRANS_NO,
+                 #TRANSCODE#,
+                 DEPTID,
+                 POSITION_ID,
+                 POST_GRADE_ID,
+                 'EmpStatus7'
+              FROM HR_DISPATCH
+              WHERE DISP_NO = #DISPATCHNO#
+               AND EMPID NOT IN (select t.empid from hr_dispatch t
+                    where t.trans_code=#TRANSCODE#
+                    and t.activity=0
+                )
+        ]]>
+    </insert>
+
+    <!-- comment : 添加兼职开始信息 -->
+    <insert id="savePlurality" parameterClass="linkMap">
+        <![CDATA[
+            INSERT INTO  HR_PLURALITY
+            (
+                
+                EMPID,
+                TRANS_NO,
+                TRANS_CODE,
+                START_DATE,
+                END_DATE,
+                DEPTID,
+                POST_ID,
+                REASON,
+                WORK_CONTENTS,
+                REMARK,
+                ACTIVITY,
+                AFFIRM_FLAG,
+                EXECUTED,
+                CREATE_DATE,
+                CREATED_BY,
+                CPNY_ID
+            )
+            SELECT 
+                 #EMPID#,
+                 #TRANS_NO#,
+                 #TRANS_CODE#,
+                 str_to_date(#START_DATE#,'%Y-%m-%d'),
+                 str_to_date(#END_DATE#,'%Y-%m-%d'),
+                 #DEPTID#,
+                 #POST_ID#,
+                 #REASON#,
+                 #WORK_CONTENTS#,
+                 #REMARK#,
+                 1,
+                 0,
+                 0,
+                 now(),
+                 #CREATED_BY#,
+                 #CPNY_ID#
+            FROM HR_EMPLOYEE
+            WHERE EMPID = #EMPID#
+                AND EMPID NOT IN (SELECT T.EMPID FROM HR_PLURALITY T
+                    WHERE T.TRANS_CODE=#TRANS_CODE#
+                    AND T.START_DATE=str_to_date(#START_DATE#,'%Y-%m-%d')
+                )
+        ]]>
+    </insert>
+
+    <!-- comment : 添加兼职结束信息 -->
+    <insert id="savePluralityEnd" parameterClass="linkMap">
+        <![CDATA[
+            INSERT INTO HR_PLURALITY (
+                
+                EMPID,
+                START_DATE,
+                END_DATE,
+                PLUDEPTID,
+                PLUPOSITIONID,
+                PLU_CONTENTS,
+                ACTIVITY,
+                CREATE_DATE,
+                CREATED_BY,
+                TRANS_NO,
+                TRANS_CODE,
+                DEPTID,
+                POSITION_ID,
+                POST_GRADE_ID
+            )
+                SELECT
+                 
+                 EMPID,
+                 START_DATE,
+                 str_to_date(#ENDDATE#,'%Y-%m-%d'),
+                 PLUDEPTID,
+                 PLUPOSITIONID,
+                 #CONTENTS#,
+                 0,
+                 now(),
+                 #CREATEDBY#,
+                 TRANS_NO,
+                 #TRANSCODE#,
+                 DEPTID,
+                 POSITION_ID,
+                 POST_GRADE_ID
+            FROM HR_PLURALITY
+            WHERE PLU_NO = #PLUNO#
+                AND EMPID NOT IN (select t.empid from HR_PLURALITY t
+                    where t.trans_code=#TRANSCODE#
+                    AND T.END_DATE=str_to_date(#ENDDATE#,'%Y-%m-%d')
+                    and t.activity in(0,1)
+                )
+        ]]>
+    </insert>
+
+    <!-- comment : 添加担当业务变更信息 -->
+    <insert id="saveBusiness" parameterClass="linkMap">
+        <![CDATA[
+            INSERT INTO  HR_ACT_BUSINESS (
+                    
+                    EMPID,
+                    TRANS_NO,
+                    TRANS_CODE,
+                    BIZ_CODE,
+                    START_DATE,
+                    END_DATE,
+                    REMARK,
+                    DEPTID,
+                    POSITION_ID,
+                    DUTY_CODE,
+                    POST_ID,
+                    POST_GRADE_ID,
+                    POST_COEF,
+                    POST_COLUMN_CODE,
+                    POST_GRADE_LEVEL_CODE,
+                    POST_GROUP_ID,
+                    STATUS_CODE,
+                    JOIN_TYPE_CODE,
+                    EMP_TYPE_CODE,
+                    CREATE_DATE,
+                    CREATED_BY,
+                    AFFIRM_FLAG,
+                    ACTIVITY
+                )
+                SELECT
+                    
+                    #EMPID#,
+                    #TRANS_NO#,
+                    #TRANS_CODE#,
+                    #BIZ_CODE#,
+                    str_to_date(#START_DATE#,'%Y-%m-%d'),
+                    str_to_date(#END_DATE#,'%Y-%m-%d'),
+                    #REMARK#,
+                    DEPTID,
+                    POSITION_ID,
+                    DUTY_CODE,
+                    POST_ID,
+                    POST_GRADE_ID,
+                    POST_COEF,
+                    POST_COLUMN_CODE,
+                    POST_GRADE_LEVEL_CODE,
+                    POST_GROUP_ID,
+                    STATUS_CODE,
+                    JOIN_TYPE_CODE,
+                    EMP_TYPE_CODE,
+                    now(),
+                    #CREATED_BY#,
+                    1,
+                    0
+              FROM HR_EMPLOYEE
+              WHERE EMPID = #EMPID#
+        ]]>
+    </insert>
+
+    <select id="getNextTransNo" resultClass="linkMap" parameterClass="linkMap">
+        <![CDATA[
+            SELECT HR_TRANS_NO_SEQ.NEXTVAL TRANSNO FROM DUAL
+            
+        ]]>
+    </select>
+
+    <select id="checkEmpID" resultClass="int" parameterClass="linkMap">
+        <![CDATA[
+            SELECT COUNT(0) FROM HR_EMPLOYEE
+            WHERE  EMPID = #ADMINID#
+                AND   CPNY_ID = #CPNY_ID#
+        ]]>
+    </select>
+
+    <select id="checkArrayListMember" resultClass="int" parameterClass="linkMap">
+        <![CDATA[
+            SELECT COUNT(0)
+            FROM HR_EMPLOYEE HRE
+            WHERE HRE.EMPID = #EMPID#
+        ]]>
+        <isNotEmpty prepend="" property="TYPE" >
+            <isEqual prepend="" property="TYPE" compareValue="upgrade">
+                <isNotEmpty prepend="AND" property="DEPTID" >
+                    <![CDATA[
+                        HRE.DEPTID = #DEPTID#
+                    ]]>
+                </isNotEmpty>
+                <isNotEmpty prepend="AND" property="POST_ID" >
+                    <![CDATA[
+                        HRE.POST_ID = #POST_ID#
+                    ]]>
+                </isNotEmpty>
+                <isNotEmpty prepend="AND" property="STATUS_CODE" >
+                    <![CDATA[
+                        HRE.STATUS_CODE = #STATUS_CODE#
+                    ]]>
+                </isNotEmpty>
+            </isEqual>
+            <isEqual prepend="" property="TYPE" compareValue="joinAgain">
+                <isNotEmpty prepend="AND" property="DEPTID" >
+                    <![CDATA[
+                        HRE.DEPTID = #DEPTID#
+                    ]]>
+                </isNotEmpty>
+                <isNotEmpty prepend="AND" property="POST_ID" >
+                    <![CDATA[
+                        HRE.POST_ID = #POST_ID#
+                    ]]>
+                </isNotEmpty>
+                <isNotEmpty prepend="AND" property="STATUS_CODE" >
+                    <![CDATA[
+                        HRE.STATUS_CODE = #STATUS_CODE#
+                    ]]>
+                </isNotEmpty>
+            </isEqual>
+        </isNotEmpty>
+        <isEmpty prepend="AND" property="TYPE" >
+            <![CDATA[
+                1 = 2
+            ]]>
+        </isEmpty>
+    </select>
+
+    <!-- comment : 员工录入 -->
+    <insert id="saveHire" parameterClass="linkMap">
+        <![CDATA[
+                INSERT INTO HR_EMPLOYEE
+                   (EMPID,
+                    DEPTID,
+                    CHINESENAME,
+                    CHINESE_PINYIN,
+                    ENGLISHNAME,
+                    POSITION_ID,
+                    DUTY_CODE,
+                    POST_ID,
+                    POST_GRADE_ID,
+                    POST_COEF,
+                    POST_GRADE_LEVEL_CODE,
+                    POST_GROUP_ID,
+                    STATUS_CODE,
+                    JOIN_DATE,
+                    HIRE_DATE,
+                    END_PROBATION_DATE,
+                    JOIN_TYPE_CODE,
+                    EMP_TYPE_CODE,
+                    COSTCENTER,
+                    CREATE_DATE,
+                    CREATED_BY,
+                    ACTIVITY,
+                    ORDERNO,
+                    CPNY_ID,
+                    POST_LEVEL_ID)
+                 VALUES
+                   (#EMPID#,
+                    #DEPTID#,
+                    #CHINESENAME#,
+                    #CHINESE_PINYIN#,
+                    #ENGLISHNAME#,
+                    #POSITION_ID#,
+                    #DUTY_CODE#,
+                    #POST_ID#,
+                    #POST_GRADE_ID#,
+                    #POST_COEF#,
+                    #POST_GRADE_LEVEL_CODE#,
+                    #POST_GROUP_ID#,
+                    #STATUS_CODE#,
+                    str_to_date(#JOIN_DATE#,'%Y-%m-%d'),
+                    str_to_date(#JOIN_DATE#,'%Y-%m-%d'),
+                    str_to_date(#END_PROBATION_DATE#,'%Y-%m-%d'),
+                    #JOIN_TYPE_CODE#,
+                    #EMP_TYPE_CODE#,
+                    #COSTCENTER#,
+                    now(),
+                    #CREATED_BY#,
+                    1,
+                    #ORDERNO#,
+                    #CPNY_ID#,
+                    #POST_LEVEL_ID#);
+             INSERT INTO HR_PERSONAL_INFO(
+                 EMPID,
+                 DEGREE_CODE,
+                 EDU_HIS_CODE,
+                 MAJOR_CODE,
+                 GENDER_CODE,
+                 BIRTHDAY,
+                 RELIGION_CODE,
+                 NATION_CODE,
+                 NATIONALITY_CODE,
+                 BORNPLACE_CODE,
+                 POLITY_CODE,
+                 MEMBERSHIP,
+                 MARITAL_STATUS_CODE,
+                 WEDDING_DATE,
+                 IDCARD_TYPE_CODE,
+                 IDCARD_NO,
+                 IDCARD_PROVINCE,
+                 IDCARD_CITY,
+                 IDCARD_AREA,
+                 IDCARD_ADDRESS,
+                 HOME_PROVINCE,
+                 HOME_CITY,
+                 HOME_AREA,
+                 HOME_ADDRESS,
+                 IDCARD_POSTALCODE,
+                 HOME_POSTALCODE,
+                 P_EMAIL,
+                 C_EMAIL,
+                 OFFICE_PHONE,
+                 HOME_PHONE,
+                 CELLPHONE,
+                 FAX,
+                 FILE_RELATION_CODE,
+                 FILE_RELATION_ADDRESS,
+                 WORKAGE,
+                 PHOTOPATH,
+                 ORDERNO,
+                 CREATE_DATE,
+                 CREATED_BY,
+                 ACTIVITY,
+                 CPNY_ID
+             )VALUES(
+                 #EMPID#,
+                 #DEGREE_CODE#,
+                 #EDU_HIS_CODE#,
+                 #MAJOR_CODE#,
+                 #GENDER_CODE#,
+                 str_to_date(#BIRTHDAY#,'%Y-%m-%d'),
+                 #RELIGION_CODE#,
+                 #NATION_CODE#,
+                 #NATIONALITY_CODE#,
+                 #BORNPLACE_CODE#,
+                 #POLITY_CODE#,
+                 #MEMBERSHIP#,
+                 #MARITAL_STATUS_CODE#,
+                 str_to_date(#WEDDING_DATE#,'%Y-%m-%d'),
+                 #IDCARD_TYPE_CODE#,
+                 #IDCARD_NO#,
+                 #IDCARD_PROVINCE#,
+                 #IDCARD_CITY#,
+                 #IDCARD_AREA#,
+                 #IDCARD_ADDRESS#,
+                 #HOME_PROVINCE#,
+                 #HOME_CITY#,
+                 #HOME_AREA#,
+                 #HOME_ADDRESS#,
+                 #IDCARD_POSTALCODE#,
+                 #HOME_POSTALCODE#,
+                 #P_EMAIL#,
+                 #C_EMAIL#,
+                 #OFFICE_PHONE#,
+                 #HOME_PHONE#,
+                 #CELLPHONE#,
+                 #FAX#,
+                 #FILE_RELATION_CODE#,
+                 #FILE_RELATION_ADDRESS#,
+                 #WORKAGE#,
+                 #PHOTOPATH#,
+                 #ORDERNO#,
+                 now(),
+                 #CREATED_BY#,
+                 1,
+                 #CPNY_ID#
+             );
+
+             INSERT INTO HR_EMP_INFO(
+                 EMPID,SSN,HAFN,SHIFT_CODE,SUPPLIER_CODE,CREATE_DATE,CREATED_BY,ORDERNO,ACTIVITY
+             )VALUES(
+                 #EMPID#,#SSN#,#HAFN#,#SHIFT_CODE#,#SUPPLIER_CODE#,now(),#CREATED_BY#,#ORDERNO#,1
+             );
+
+             INSERT INTO  HR_EXPERIENCE_INSIDE (
+                    TRANS_NO,
+                    TRANS_CODE,
+                    EMPID,
+                    DEPTID,
+                    POSITION_ID,
+                    DUTY_CODE,
+                    POST_ID,
+                    POST_GRADE_ID,
+                    POST_COEF,
+                    POST_GRADE_LEVEL_CODE,
+                    POST_GROUP_ID,
+                    STATUS_CODE,
+                    START_DATE,
+                    END_PROBATION_DATE,
+                    JOIN_TYPE_CODE,
+                    EMP_TYPE_CODE,
+                    REMARK,
+                    CREATE_DATE,
+                    CREATED_BY,
+                    AFFIRM_FLAG,
+                    ACTIVITY,
+                    CPNY_ID,
+                    POST_LEVEL_ID)
+             VALUES(
+                    #TRANS_NO#,
+                    ifnull(#TRANS_CODE#,'TransCode_100'),
+                    #EMPID#,
+                    #DEPTID#,
+                    #POSITION_ID#,
+                    #DUTY_CODE#,
+                    #POST_ID#,
+                    #POST_GRADE_ID#,
+                    #POST_COEF#,
+                    #POST_GRADE_LEVEL_CODE#,
+                    #POST_GROUP_ID#,
+                    #STATUS_CODE#,
+                    str_to_date(#JOIN_DATE#,'%Y-%m-%d'),
+                    str_to_date(#END_PROBATION_DATE#,'%Y-%m-%d'),
+                    #JOIN_TYPE_CODE#,
+                    #EMP_TYPE_CODE#,
+                    #REMARK#,
+                    now(),
+                    #CREATED_BY#,
+                    1,
+                    1,
+                    #CPNY_ID#,
+                    #POST_LEVEL_ID#
+                 );
+ 
+        ]]>
+    </insert>
+
+    <!-- comment : 执行发令  -->
+    <procedure id="hrUpdateAuto">
+        {call HR_UPDATE_AUTO()}
+    </procedure>
+</sqlMap>

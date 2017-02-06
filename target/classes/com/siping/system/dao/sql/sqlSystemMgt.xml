@@ -1,0 +1,899 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="system.mgt">
+
+	
+	<select id="checkPostGroupInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT T.POST_GROUP_NO
+			  FROM HR_POST_GROUP T 
+			  WHERE T.POST_GROUP_ID = #POST_GROUP_ID:VARCHAR# 
+			   
+		]]>	  
+	</select>
+	 
+	<delete id="deletePostGroupInfo" parameterClass="linkMap" >
+		<![CDATA[
+			DELETE HR_POST_GROUP 
+				WHERE POST_GROUP_NO = #POST_GROUP_NO:NUMERIC# 
+					AND POST_GROUP_ID = #POST_GROUP_ID:VARCHAR#
+		]]>
+	</delete>
+	
+	<insert id="addPostGroupInfo" parameterClass="linkMap" >
+		<![CDATA[
+			INSERT INTO HR_POST_GROUP (
+					POST_GROUP_NO,
+					POST_GROUP_ID,
+					POST_GROUP_NAME,
+					POST_GROUP_EN_NAME, 
+					DESCRIPTION, 
+					CREATE_DATE,
+					CREATED_BY,
+					CPNY_ID,
+					ACTIVITY)
+				VALUES( 
+					HR_POST_GROUP_SEQ.NEXTVAL ,
+					#POST_GROUP_ID:VARCHAR# ,
+					#POST_GROUP_NAME:VARCHAR# , 
+					#POST_GROUP_EN_NAME:VARCHAR# ,
+					#DESCRIPTION:VARCHAR# , 
+					SYSDATE ,
+					#CREATED_BY:VARCHAR# ,
+					#CPNY_ID:VARCHAR# ,
+					#ACTIVITY:NUMERIC#
+				)
+		]]>
+	</insert>
+	
+	<select id="getPostGroupInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT T.POST_GROUP_NO,
+			       T.POST_GROUP_ID,
+			       T.POST_GROUP_NAME,
+			       T.POST_GROUP_EN_NAME,
+			       T.DESCRIPTION,
+			       T.CPNY_ID,
+			       DECODE(#language#, 'en', A.CPNY_EN_NAME, A.CPNY_NAME) CPNY_NAME,
+			       T.ACTIVITY STATUS_ID,
+			       DECODE(T.ACTIVITY,
+			              '1',
+			              DECODE(#language#, 'en', 'Available', '可用'),
+			              DECODE(#language#, 'en', 'Unavailable', '不可用')) STATUS
+			  FROM HR_POST_GROUP T,HR_COMPANY A
+  				WHERE T.CPNY_ID = A.CPNY_ID(+)
+		]]>	   
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+		 		  T.CPNY_ID = #CPNY_ID#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="ACTIVITY">
+			<![CDATA[
+		 		  T.ACTIVITY = #ACTIVITY#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		  ORDER BY $sortname$ $sortorder$
+		    ]]>
+		</isNotEmpty>
+		
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		  ORDER BY T.POST_GROUP_NO
+			]]>
+		</isEmpty> 
+	</select>
+	 
+	<select id="getPostGroupInfoCnt" parameterClass="linkMap" resultClass="int" >
+		<![CDATA[
+			SELECT COUNT(*)
+			  FROM HR_POST_GROUP T,HR_COMPANY A
+  				WHERE T.CPNY_ID = A.CPNY_ID(+)
+		]]>	  
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+		 		  T.CPNY_ID = #CPNY_ID#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="ACTIVITY">
+			<![CDATA[
+		 		  T.ACTIVITY = #ACTIVITY#
+		    ]]>
+		</isNotEmpty>
+	</select>
+	 
+	  
+	<update id="updatePostGroupInfo" parameterClass="linkMap" >
+		<![CDATA[
+			UPDATE HR_POST_GROUP T
+				SET 
+					T.POST_GROUP_NAME = #POST_GROUP_NAME:VARCHAR# ,
+					T.POST_GROUP_EN_NAME = #POST_GROUP_EN_NAME:VARCHAR# , 
+					T.DESCRIPTION = #DESCRIPTION:VARCHAR# ,
+					T.ACTIVITY = #STATUS_ID:NUMERIC# ,
+					T.CPNY_ID = #CPNY_ID:VARCHAR# ,
+					UPDATE_DATE = SYSDATE ,
+					UPDATED_BY = #UPDATED_BY:VARCHAR# 
+				WHERE T.POST_GROUP_NO = #POST_GROUP_NO# AND POST_GROUP_ID = #POST_GROUP_ID#
+		]]>
+	</update>
+	
+	<select id="checkPostColumnInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT T.POST_COLUMN_NO
+			  FROM HR_POST_COLUMN T 
+			  WHERE T.POST_COLUMN_ID = #POST_COLUMN_ID:VARCHAR# 
+			   
+		]]>	  
+	</select>
+	 
+	<delete id="deletePostColumnInfo" parameterClass="linkMap" >
+		<![CDATA[
+			DELETE HR_POST_COLUMN 
+				WHERE POST_COLUMN_NO = #POST_COLUMN_NO:NUMERIC# 
+					AND POST_COLUMN_ID = #POST_COLUMN_ID:VARCHAR#
+		]]>
+	</delete>
+	
+	<insert id="addPostColumnInfo" parameterClass="linkMap" >
+		<![CDATA[
+			INSERT INTO HR_POST_COLUMN (
+					POST_COLUMN_NO,
+					POST_COLUMN_ID,
+					POST_COLUMN_NAME,
+					POST_COLUMN_EN_NAME, 
+					DESCRIPTION,
+					POST_GROUP_ID, 
+					CREATE_DATE,
+					CREATED_BY,
+					CPNY_ID,
+					ACTIVITY)
+				VALUES( 
+					HR_POST_COLUMN_SEQ.NEXTVAL ,
+					#POST_COLUMN_ID:VARCHAR# ,
+					#POST_COLUMN_NAME:VARCHAR# , 
+					#POST_COLUMN_EN_NAME:VARCHAR# ,
+					#DESCRIPTION:VARCHAR# , 
+					#POST_GROUP_ID:VARCHAR# , 
+					SYSDATE ,
+					#CREATED_BY:VARCHAR# ,
+					#CPNY_ID:VARCHAR# ,
+					#ACTIVITY:NUMERIC#
+				)
+		]]>
+	</insert>
+	
+	<select id="getPostColumnInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT T.POST_COLUMN_NO,
+			       T.POST_COLUMN_ID,
+			       T.POST_COLUMN_NAME,
+			       T.POST_COLUMN_EN_NAME,
+			       T.DESCRIPTION,
+			       T.POST_GROUP_ID,
+			       DECODE(#language#, 'en', B.POST_GROUP_EN_NAME, B.POST_GROUP_NAME) POST_GROUP_NAME,
+			       T.CPNY_ID,
+			       DECODE(#language#, 'en', A.CPNY_EN_NAME, A.CPNY_NAME) CPNY_NAME,
+			       T.ACTIVITY STATUS_ID,
+			       DECODE(T.ACTIVITY,
+			              '1',
+			              DECODE(#language#, 'en', 'Available', '可用'),
+			              DECODE(#language#, 'en', 'Unavailable', '不可用')) STATUS
+			  FROM HR_POST_COLUMN T,HR_COMPANY A,HR_POST_GROUP B
+  				WHERE T.CPNY_ID = A.CPNY_ID(+)
+  				  AND T.POST_GROUP_ID = B.POST_GROUP_ID(+)
+		]]>	   
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+		 		  T.CPNY_ID = #CPNY_ID#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="ACTIVITY">
+			<![CDATA[
+		 		  T.ACTIVITY = #ACTIVITY#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="POST_GROUP_ID">
+			<![CDATA[
+		 		  T.POST_GROUP_ID = #POST_GROUP_ID#
+		    ]]>
+		</isNotEmpty>
+		 
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		  ORDER BY $sortname$ $sortorder$
+		    ]]>
+		</isNotEmpty>
+		
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		  ORDER BY T.POST_COLUMN_NO
+			]]>
+		</isEmpty> 
+	</select>
+	 
+	<select id="getPostColumnInfoCnt" parameterClass="linkMap" resultClass="int" >
+		<![CDATA[
+			SELECT COUNT(*)
+			  FROM HR_POST_COLUMN T,HR_COMPANY A,HR_POST_GROUP B
+  				WHERE T.CPNY_ID = A.CPNY_ID(+)
+  				  AND T.POST_GROUP_ID = B.POST_GROUP_ID(+)
+		]]>	  
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+		 		  T.CPNY_ID = #CPNY_ID#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="ACTIVITY">
+			<![CDATA[
+		 		  T.ACTIVITY = #ACTIVITY#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="POST_GROUP_ID">
+			<![CDATA[
+		 		  T.POST_GROUP_ID = #POST_GROUP_ID#
+		    ]]>
+		</isNotEmpty>
+	</select>
+	 
+	  
+	<update id="updatePostColumnInfo" parameterClass="linkMap" >
+		<![CDATA[
+			UPDATE HR_POST_COLUMN T
+				SET 
+					T.POST_COLUMN_NAME = #POST_COLUMN_NAME:VARCHAR# ,
+					T.POST_COLUMN_EN_NAME = #POST_COLUMN_EN_NAME:VARCHAR# , 
+					T.DESCRIPTION = #DESCRIPTION:VARCHAR# ,
+					T.POST_GROUP_ID = #POST_GROUP_ID:VARCHAR# ,
+					T.ACTIVITY = #STATUS_ID:NUMERIC# ,
+					T.CPNY_ID = #CPNY_ID:VARCHAR# ,
+					UPDATE_DATE = SYSDATE ,
+					UPDATED_BY = #UPDATED_BY:VARCHAR# 
+				WHERE T.POST_COLUMN_NO = #POST_COLUMN_NO# AND POST_COLUMN_ID = #POST_COLUMN_ID#
+		]]>
+	</update>
+	
+	<select id="checkPostGradeInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT T.POST_GRADE_NO
+			  FROM HR_POST_GRADE T 
+			  WHERE T.POST_GRADE_ID = #POST_GRADE_ID:VARCHAR# 
+			   
+		]]>	  
+	</select>
+	 
+	<delete id="deletePostGradeInfo" parameterClass="linkMap" >
+		<![CDATA[
+			DELETE HR_POST_GRADE 
+				WHERE POST_GRADE_NO = #POST_GRADE_NO:NUMERIC# 
+					AND POST_GRADE_ID = #POST_GRADE_ID:VARCHAR#
+		]]>
+	</delete>
+	
+	<insert id="addPostGradeInfo" parameterClass="linkMap" >
+		<![CDATA[
+			INSERT INTO HR_POST_GRADE (
+					POST_GRADE_NO,
+					POST_GRADE_ID,
+					POST_GRADE_NAME,
+					POST_GRADE_EN_NAME, 
+					DESCRIPTION,
+					POST_GROUP_ID, 
+					POST_COLUMN_ID, 
+					CREATE_DATE,
+					CREATED_BY,
+					CPNY_ID,
+					ACTIVITY)
+				VALUES( 
+					HR_POST_GRADE_SEQ.NEXTVAL ,
+					#POST_GRADE_ID:VARCHAR# ,
+					#POST_GRADE_NAME:VARCHAR# , 
+					#POST_GRADE_EN_NAME:VARCHAR# ,
+					#DESCRIPTION:VARCHAR# , 
+					#POST_GROUP_ID:VARCHAR# , 
+					#POST_COLUMN_ID:VARCHAR# , 
+					SYSDATE ,
+					#CREATED_BY:VARCHAR# ,
+					#CPNY_ID:VARCHAR# ,
+					#ACTIVITY:NUMERIC#
+				)
+		]]>
+	</insert>
+	
+	<select id="getPostGradeInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT T.POST_GRADE_NO,
+			       T.POST_GRADE_ID,
+			       T.POST_GRADE_NAME,
+			       T.POST_GRADE_EN_NAME,
+			       T.DESCRIPTION,
+			       T.POST_GROUP_ID,
+			       DECODE(#language#, 'en', B.POST_GROUP_EN_NAME, B.POST_GROUP_NAME) POST_GROUP_NAME,
+			       T.POST_COLUMN_ID,
+			       DECODE(#language#, 'en', C.POST_COLUMN_EN_NAME, C.POST_COLUMN_NAME) POST_COLUMN_NAME,
+			       T.CPNY_ID,
+			       DECODE(#language#, 'en', A.CPNY_EN_NAME, A.CPNY_NAME) CPNY_NAME,
+			       T.ACTIVITY STATUS_ID,
+			       DECODE(T.ACTIVITY,
+			              '1',
+			              DECODE(#language#, 'en', 'Available', '可用'),
+			              DECODE(#language#, 'en', 'Unavailable', '不可用')) STATUS
+			  FROM HR_POST_GRADE T,HR_COMPANY A,HR_POST_GROUP B,HR_POST_COLUMN C
+  				WHERE T.CPNY_ID = A.CPNY_ID(+)
+  				  AND T.POST_GROUP_ID = B.POST_GROUP_ID(+)
+  				  AND T.POST_COLUMN_ID = C.POST_COLUMN_ID(+)
+		]]>	   
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+		 		  T.CPNY_ID = #CPNY_ID#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="ACTIVITY">
+			<![CDATA[
+		 		  T.ACTIVITY = #ACTIVITY#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="POST_GROUP_ID">
+			<![CDATA[
+		 		  T.POST_GROUP_ID = #POST_GROUP_ID#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="POST_COLUMN_ID">
+			<![CDATA[
+		 		  T.POST_COLUMN_ID = #POST_COLUMN_ID#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		  ORDER BY $sortname$ $sortorder$
+		    ]]>
+		</isNotEmpty>
+		
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		  ORDER BY T.POST_GRADE_NO
+			]]>
+		</isEmpty> 
+	</select>
+	 
+	<select id="getPostGradeInfoCnt" parameterClass="linkMap" resultClass="int" >
+		<![CDATA[
+			SELECT COUNT(*)
+			  FROM HR_POST_GRADE T,HR_COMPANY A,HR_POST_GROUP B,HR_POST_COLUMN C
+  				WHERE T.CPNY_ID = A.CPNY_ID(+)
+  				  AND T.POST_GROUP_ID = B.POST_GROUP_ID(+)
+  				  AND T.POST_COLUMN_ID = C.POST_COLUMN_ID(+)
+		]]>	  
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+		 		  T.CPNY_ID = #CPNY_ID#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="ACTIVITY">
+			<![CDATA[
+		 		  T.ACTIVITY = #ACTIVITY#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="POST_GROUP_ID">
+			<![CDATA[
+		 		  T.POST_GROUP_ID = #POST_GROUP_ID#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="POST_COLUMN_ID">
+			<![CDATA[
+		 		  T.POST_COLUMN_ID = #POST_COLUMN_ID#
+		    ]]>
+		</isNotEmpty>
+	</select>
+	  
+	<update id="updatePostGradeInfo" parameterClass="linkMap" >
+		<![CDATA[
+			UPDATE HR_POST_GRADE T
+				SET 
+					T.POST_GRADE_NAME = #POST_GRADE_NAME:VARCHAR# ,
+					T.POST_GRADE_EN_NAME = #POST_GRADE_EN_NAME:VARCHAR# , 
+					T.DESCRIPTION = #DESCRIPTION:VARCHAR# ,
+					T.POST_GROUP_ID = #POST_GROUP_ID:VARCHAR# ,
+					T.POST_COLUMN_ID = #POST_COLUMN_ID:VARCHAR# ,
+					T.ACTIVITY = #STATUS_ID:NUMERIC# ,
+					T.CPNY_ID = #CPNY_ID:VARCHAR# ,
+					UPDATE_DATE = SYSDATE ,
+					UPDATED_BY = #UPDATED_BY:VARCHAR# 
+				WHERE T.POST_GRADE_NO = #POST_GRADE_NO# AND POST_GRADE_ID = #POST_GRADE_ID#
+		]]>
+	</update>
+	 
+	 <select id="checkPostInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT T.POST_NO
+			  FROM HR_POST T 
+			  WHERE T.POST_ID = #POST_ID:VARCHAR# 
+			   
+		]]>	  
+	</select>
+	 
+	<delete id="deletePostInfo" parameterClass="linkMap" >
+		<![CDATA[
+			DELETE HR_POST 
+				WHERE POST_NO = #POST_NO:NUMERIC# 
+					AND POST_ID = #POST_ID:VARCHAR#
+		]]>
+	</delete>
+	
+	<insert id="addPostInfo" parameterClass="linkMap" >
+		<![CDATA[
+			INSERT INTO HR_POST (
+					POST_NO,
+					POST_ID,
+					POST_NAME,
+					POST_EN_NAME, 
+					DESCRIPTION,
+					POST_GROUP_ID, 
+					POST_COLUMN_ID, 
+					POST_GRADE_ID,
+					CREATE_DATE,
+					CREATED_BY,
+					CPNY_ID,
+					ACTIVITY)
+				VALUES( 
+					HR_POST_SEQ.NEXTVAL ,
+					#POST_ID:VARCHAR# ,
+					#POST_NAME:VARCHAR# , 
+					#POST_EN_NAME:VARCHAR# ,
+					#DESCRIPTION:VARCHAR# , 
+					#POST_GROUP_ID:VARCHAR# , 
+					#POST_COLUMN_ID:VARCHAR# , 
+					#POST_GRADE_ID:VARCHAR# , 
+					SYSDATE ,
+					#CREATED_BY:VARCHAR# ,
+					#CPNY_ID:VARCHAR# ,
+					#ACTIVITY:NUMERIC#
+				)
+		]]>
+	</insert>
+	
+	<select id="getPostInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT T.POST_NO,
+			       T.POST_ID,
+			       T.POST_NAME,
+			       T.POST_EN_NAME,
+			       T.DESCRIPTION,
+			       T.POST_GROUP_ID,
+			       DECODE(#language#, 'en', B.POST_GROUP_EN_NAME, B.POST_GROUP_NAME) POST_GROUP_NAME,
+			       T.POST_COLUMN_ID,
+			       DECODE(#language#, 'en', C.POST_COLUMN_EN_NAME, C.POST_COLUMN_NAME) POST_COLUMN_NAME,
+			       T.POST_GRADE_ID,
+			       DECODE(#language#, 'en', D.POST_GRADE_EN_NAME, D.POST_GRADE_NAME) POST_GRADE_NAME,
+			       T.CPNY_ID,
+			       DECODE(#language#, 'en', A.CPNY_EN_NAME, A.CPNY_NAME) CPNY_NAME,
+			       T.ACTIVITY STATUS_ID,
+			       DECODE(T.ACTIVITY,
+			              '1',
+			              DECODE(#language#, 'en', 'Available', '可用'),
+			              DECODE(#language#, 'en', 'Unavailable', '不可用')) STATUS
+			  FROM HR_POST T,HR_COMPANY A,HR_POST_GROUP B,HR_POST_COLUMN C,HR_POST_GRADE D
+  				WHERE T.CPNY_ID = A.CPNY_ID(+)
+  				  AND T.POST_GROUP_ID = B.POST_GROUP_ID(+)
+  				  AND T.POST_COLUMN_ID = C.POST_COLUMN_ID(+)
+  				  AND T.POST_GRADE_ID = D.POST_GRADE_ID(+)
+		]]>	   
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+		 		  T.CPNY_ID = #CPNY_ID#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="ACTIVITY">
+			<![CDATA[
+		 		  T.ACTIVITY = #ACTIVITY#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="POST_GROUP_ID">
+			<![CDATA[
+		 		  T.POST_GROUP_ID = #POST_GROUP_ID#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="POST_COLUMN_ID">
+			<![CDATA[
+		 		  T.POST_COLUMN_ID = #POST_COLUMN_ID#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="POST_GRADE_ID">
+			<![CDATA[
+		 		  T.POST_GRADE_ID = #POST_GRADE_ID#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		  ORDER BY $sortname$ $sortorder$
+		    ]]>
+		</isNotEmpty>
+		
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		  ORDER BY T.POST_NO
+			]]>
+		</isEmpty> 
+	</select>
+	 
+	<select id="getPostInfoCnt" parameterClass="linkMap" resultClass="int" >
+		<![CDATA[
+			SELECT COUNT(*)
+			  FROM HR_POST T,HR_COMPANY A,HR_POST_GROUP B,HR_POST_COLUMN C,HR_POST_GRADE D
+  				WHERE T.CPNY_ID = A.CPNY_ID(+)
+  				  AND T.POST_GROUP_ID = B.POST_GROUP_ID(+)
+  				  AND T.POST_COLUMN_ID = C.POST_COLUMN_ID(+)
+  				  AND T.POST_GRADE_ID = D.POST_GRADE_ID(+)
+		]]>	  
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+		 		  T.CPNY_ID = #CPNY_ID#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="ACTIVITY">
+			<![CDATA[
+		 		  T.ACTIVITY = #ACTIVITY#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="POST_GROUP_ID">
+			<![CDATA[
+		 		  T.POST_GROUP_ID = #POST_GROUP_ID#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="POST_COLUMN_ID">
+			<![CDATA[
+		 		  T.POST_COLUMN_ID = #POST_COLUMN_ID#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="POST_GRADE_ID">
+			<![CDATA[
+		 		  T.POST_GRADE_ID = #POST_GRADE_ID#
+		    ]]>
+		</isNotEmpty>
+	</select>
+	  
+	<update id="updatePostInfo" parameterClass="linkMap" >
+		<![CDATA[
+			UPDATE HR_POST T
+				SET 
+					T.POST_NAME = #POST_NAME:VARCHAR# ,
+					T.POST_EN_NAME = #POST_EN_NAME:VARCHAR# , 
+					T.DESCRIPTION = #DESCRIPTION:VARCHAR# ,
+					T.POST_GROUP_ID = #POST_GROUP_ID:VARCHAR# ,
+					T.POST_COLUMN_ID = #POST_COLUMN_ID:VARCHAR# ,
+					T.POST_GRADE_ID = #POST_GRADE_ID:VARCHAR# ,
+					T.ACTIVITY = #STATUS_ID:NUMERIC# ,
+					T.CPNY_ID = #CPNY_ID:VARCHAR# ,
+					UPDATE_DATE = SYSDATE ,
+					UPDATED_BY = #UPDATED_BY:VARCHAR# 
+				WHERE T.POST_NO = #POST_NO# AND POST_ID = #POST_ID#
+		]]>
+	</update>
+	 
+	  <select id="checkPositionInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT T.POSITION_NO
+			  FROM HR_POSITION T 
+			  WHERE T.POSITION_ID = #POSITION_ID:VARCHAR# 
+			   
+		]]>	  
+	</select>
+	 
+	<delete id="deletePositionInfo" parameterClass="linkMap" >
+		<![CDATA[
+			DELETE HR_POSITION 
+				WHERE POSITION_NO = #POSITION_NO:NUMERIC# 
+					AND POSITION_ID = #POSITION_ID:VARCHAR#
+		]]>
+	</delete>
+	
+	<insert id="addPositionInfo" parameterClass="linkMap" >
+		<![CDATA[
+			INSERT INTO HR_POSITION (
+					POSITION_NO,
+					POSITION_ID,
+					POSITION_NAME,
+					POSITION_EN_NAME, 
+					DESCRIPTION,
+					POST_GROUP_ID, 
+					POST_COLUMN_ID, 
+					POST_GRADE_ID,
+					POST_ID,
+					CREATE_DATE,
+					CREATED_BY,
+					CPNY_ID,
+					ACTIVITY)
+				VALUES( 
+					HR_POSITION_SEQ.NEXTVAL ,
+					#POSITION_ID:VARCHAR# ,
+					#POSITION_NAME:VARCHAR# , 
+					#POSITION_EN_NAME:VARCHAR# ,
+					#DESCRIPTION:VARCHAR# , 
+					#POST_GROUP_ID:VARCHAR# , 
+					#POST_COLUMN_ID:VARCHAR# , 
+					#POST_GRADE_ID:VARCHAR# , 
+					#POST_ID:VARCHAR# , 
+					SYSDATE ,
+					#CREATED_BY:VARCHAR# ,
+					#CPNY_ID:VARCHAR# ,
+					#ACTIVITY:NUMERIC#
+				)
+		]]>
+	</insert>
+	
+	<select id="getPositionInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT T.POSITION_NO,
+			       T.POSITION_ID,
+			       T.POSITION_NAME,
+			       T.POSITION_EN_NAME,
+			       T.DESCRIPTION,
+			       
+			       T.POST_GROUP_ID,
+			       DECODE(#language#, 'en', B.POST_GROUP_EN_NAME, B.POST_GROUP_NAME) POST_GROUP_NAME,
+			       
+			       T.POST_COLUMN_ID,
+			       DECODE(#language#, 'en', C.POST_COLUMN_EN_NAME, C.POST_COLUMN_NAME) POST_COLUMN_NAME,
+			       
+			       T.POST_GRADE_ID,
+			       DECODE(#language#, 'en', D.POST_GRADE_EN_NAME, D.POST_GRADE_NAME) POST_GRADE_NAME,
+			       
+			       T.POST_ID,
+			       DECODE(#language#, 'en', E.POST_EN_NAME, E.POST_NAME) POST_NAME,
+			       
+			       T.CPNY_ID,
+			       DECODE(#language#, 'en', A.CPNY_EN_NAME, A.CPNY_NAME) CPNY_NAME,
+			       T.ACTIVITY STATUS_ID,
+			       DECODE(T.ACTIVITY,
+			              '1',
+			              DECODE(#language#, 'en', 'Available', '可用'),
+			              DECODE(#language#, 'en', 'Unavailable', '不可用')) STATUS
+			  FROM HR_POSITION T,
+			  	   HR_COMPANY A,
+			  	   HR_POST_GROUP B,
+			  	   HR_POST_COLUMN C,
+			  	   HR_POST_GRADE D,
+			  	   HR_POST E
+  				WHERE T.CPNY_ID = A.CPNY_ID(+)
+  				  AND T.POST_GROUP_ID = B.POST_GROUP_ID(+)
+  				  AND T.POST_COLUMN_ID = C.POST_COLUMN_ID(+)
+  				  AND T.POST_GRADE_ID = D.POST_GRADE_ID(+)
+  				  AND T.POST_ID = E.POST_ID(+)
+		]]>	   
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+		 		  T.CPNY_ID = #CPNY_ID#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="ACTIVITY">
+			<![CDATA[
+		 		  T.ACTIVITY = #ACTIVITY#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="POST_GROUP_ID">
+			<![CDATA[
+		 		  T.POST_GROUP_ID = #POST_GROUP_ID#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="POST_COLUMN_ID">
+			<![CDATA[
+		 		  T.POST_COLUMN_ID = #POST_COLUMN_ID#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="POST_GRADE_ID">
+			<![CDATA[
+		 		  T.POST_GRADE_ID = #POST_GRADE_ID#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="POST_ID">
+			<![CDATA[
+		 		  T.POST_ID = #POST_ID#
+		    ]]>
+		</isNotEmpty>
+		
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		  ORDER BY $sortname$ $sortorder$
+		    ]]>
+		</isNotEmpty>
+		
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		  ORDER BY T.POSITION_NO
+			]]>
+		</isEmpty> 
+	</select>
+	 
+	<select id="getPositionInfoCnt" parameterClass="linkMap" resultClass="int" >
+		<![CDATA[
+			SELECT COUNT(*)
+			  FROM HR_POSITION T,
+			       HR_COMPANY A,
+			       HR_POST_GROUP B,
+			       HR_POST_COLUMN C,
+			       HR_POST_GRADE D,
+			       HR_POST E
+  				WHERE T.CPNY_ID = A.CPNY_ID(+)
+  				  AND T.POST_GROUP_ID = B.POST_GROUP_ID(+)
+  				  AND T.POST_COLUMN_ID = C.POST_COLUMN_ID(+)
+  				  AND T.POST_GRADE_ID = D.POST_GRADE_ID(+)
+  				  AND T.POST_ID = E.POST_ID(+)
+		]]>	  
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+		 		  T.CPNY_ID = #CPNY_ID#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="ACTIVITY">
+			<![CDATA[
+		 		  T.ACTIVITY = #ACTIVITY#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="POST_GROUP_ID">
+			<![CDATA[
+		 		  T.POST_GROUP_ID = #POST_GROUP_ID#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="POST_COLUMN_ID">
+			<![CDATA[
+		 		  T.POST_COLUMN_ID = #POST_COLUMN_ID#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="POST_GRADE_ID">
+			<![CDATA[
+		 		  T.POST_GRADE_ID = #POST_GRADE_ID#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="POST_ID">
+			<![CDATA[
+		 		  T.POST_ID = #POST_ID#
+		    ]]>
+		</isNotEmpty>
+	</select>
+	  
+	<update id="updatePositionInfo" parameterClass="linkMap" >
+		<![CDATA[
+			UPDATE HR_POSITION T
+				SET 
+					T.POSITION_NAME = #POSITION_NAME:VARCHAR# ,
+					T.POSITION_EN_NAME = #POSITION_EN_NAME:VARCHAR# , 
+					T.DESCRIPTION = #DESCRIPTION:VARCHAR# ,
+					T.POST_GROUP_ID = #POST_GROUP_ID:VARCHAR# ,
+					T.POST_COLUMN_ID = #POST_COLUMN_ID:VARCHAR# ,
+					T.POST_GRADE_ID = #POST_GRADE_ID:VARCHAR# ,
+					T.POST_ID = #POST_ID:VARCHAR# ,
+					T.ACTIVITY = #STATUS_ID:NUMERIC# ,
+					T.CPNY_ID = #CPNY_ID:VARCHAR# ,
+					UPDATE_DATE = SYSDATE ,
+					UPDATED_BY = #UPDATED_BY:VARCHAR# 
+				WHERE T.POSITION_NO = #POSITION_NO# AND POSITION_ID = #POSITION_ID#
+		]]>
+	</update>
+	
+	<select id="getPostGroupSelectList" parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[
+			SELECT 
+			    POST_GROUP_ID POST_GROUP_ID,
+				(CASE WHEN #language# = 'en' then 
+					POST_GROUP_EN_NAME
+				ELSE
+					POST_GROUP_NAME
+				END) AS POST_GROUP_NAME
+			FROM HR_POST_GROUP
+			WHERE ACTIVITY = 1
+		]]> 
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+		 		  T.CPNY_ID = #CPNY_ID#
+		    ]]>
+		</isNotEmpty>
+		<![CDATA[
+				ORDER BY POST_GROUP_ID
+		    ]]>
+	</select>
+	<select id="getPostColumnSelectList" parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[
+			SELECT 
+			    POST_COLUMN_ID POST_COLUMN_ID,
+				(CASE WHEN #language# = 'en' then 
+					POST_COLUMN_EN_NAME
+				ELSE
+					POST_COLUMN_NAME
+				END) AS POST_COLUMN_NAME
+			FROM HR_POST_COLUMN
+			WHERE ACTIVITY = 1
+		]]> 
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+		 		  T.CPNY_ID = #CPNY_ID#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="POST_GROUP_ID">
+			<![CDATA[
+		 		  T.POST_GROUP_ID = #POST_GROUP_ID#
+		    ]]>
+		</isNotEmpty>
+		<![CDATA[
+  			ORDER BY NLSSORT(DECODE(#language#, 'en', POST_COLUMN_EN_NAME, POST_COLUMN_NAME),
+                   				'NLS_SORT=SCHINESE_PINYIN_M')
+		    ]]>
+	</select>
+	
+	<select id="getPostGradeSelectList" parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[
+			SELECT 
+			    POST_GRADE_ID POST_GRADE_ID,
+				(CASE WHEN #language# = 'en' then 
+					POST_GRADE_EN_NAME
+				ELSE
+					POST_GRADE_NAME
+				END) AS POST_GRADE_NAME
+			FROM HR_POST_GRADE
+			WHERE ACTIVITY = 1
+		]]> 
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+		 		  T.CPNY_ID = #CPNY_ID#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="POST_GROUP_ID">
+			<![CDATA[
+		 		  T.POST_GROUP_ID = #POST_GROUP_ID#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="POST_COLUMN_ID">
+			<![CDATA[
+		 		  T.POST_COLUMN_ID = #POST_COLUMN_ID#
+		    ]]>
+		</isNotEmpty>
+		<![CDATA[
+  			ORDER BY NLSSORT(DECODE(#language#, 'en', POST_GRADE_EN_NAME, POST_GRADE_NAME),
+                   				'NLS_SORT=SCHINESE_PINYIN_M')
+		    ]]>
+	</select>
+	
+	<select id="getPostSelectList" parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[
+			SELECT 
+			    POST_ID POST_ID,
+				(CASE WHEN #language# = 'en' then 
+					POST_EN_NAME
+				ELSE
+					POST_NAME
+				END) AS POST_NAME
+			FROM HR_POST
+			WHERE ACTIVITY = 1
+		]]> 
+		<isNotEmpty prepend="AND" property="CPNY_ID">
+			<![CDATA[
+		 		  T.CPNY_ID = #CPNY_ID#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="POST_GROUP_ID">
+			<![CDATA[
+		 		  T.POST_GROUP_ID = #POST_GROUP_ID#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="POST_COLUMN_ID">
+			<![CDATA[
+		 		  T.POST_COLUMN_ID = #POST_COLUMN_ID#
+		    ]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="POST_GRADE_ID">
+			<![CDATA[
+		 		  T.POST_GRADE_ID = #POST_GRADE_ID#
+		    ]]>
+		</isNotEmpty>
+		<![CDATA[
+  			ORDER BY NLSSORT(DECODE(#language#, 'en', POST_EN_NAME, POST_NAME),
+                   				'NLS_SORT=SCHINESE_PINYIN_M')
+		    ]]>
+	</select>
+</sqlMap>

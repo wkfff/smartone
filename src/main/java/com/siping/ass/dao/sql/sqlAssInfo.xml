@@ -1,0 +1,314 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap
+    PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+    "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="ass.assInfo">
+    <sql id="AssAssetCondition">
+        <isNotEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+                (
+                    ASAI.ASSET_MODEL        LIKE concat('%',TRIM(#keyWord#),'%')
+                    OR ASAI.STATUS_REMARK   LIKE concat('%',TRIM(#keyWord#),'%')
+                    OR ASAI.DESCRIPTION     LIKE concat('%',TRIM(#keyWord#),'%')
+                    OR HRD.DEPTNAME         LIKE concat('%',TRIM(#keyWord#),'%')
+                    OR HRD.DEPTID           LIKE concat('%',TRIM(#keyWord#),'%')
+                    OR HRE.CHINESENAME      LIKE concat('%',TRIM(#keyWord#),'%')
+                    OR ASAI.USER_ID         LIKE concat('%',TRIM(#keyWord#),'%')
+                    OR upper(HRE.CHINESE_PINYIN) LIKE concat('%',TRIM(upper(#keyWord#)),'%')
+                    OR upper(HRE.ENGLISHNAME) LIKE concat('%',TRIM(upper(#keyWord#)),'%')
+                    OR ASAI.ASSET_NAME      LIKE concat('%',TRIM(#keyWord#),'%')
+                    OR ASAI.ASSET_EN_NAME   LIKE concat('%',TRIM(#keyWord#),'%')
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="EMPID">
+            <![CDATA[
+                    ASAI.USER_ID = #EMPID#
+             ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="MANUFACTURER">
+            <![CDATA[
+                ASAI.MANUFACTURER = #MANUFACTURER#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="E_DATE">
+            <![CDATA[
+               ASAI.PURCHASE_DATE <= TO_DATE(#E_DATE#,'%Y-%m-%d %H:%i')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="S_DATE">
+            <![CDATA[
+               ASAI.PURCHASE_DATE >= TO_DATE(#S_DATE#,'%Y-%m-%d %H:%i')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="STATUS_CODE">
+            <![CDATA[
+               ASAI.STATUS_CODE = #STATUS_CODE#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="ASSET_CATEGORY_CODE">
+            <![CDATA[
+               ASAI.ASSET_CATEGORY_CODE = #ASSET_CATEGORY_CODE#
+            ]]>
+        </isNotEmpty>
+		
+		<isNotEmpty prepend="AND" property="DEPTID">
+            <![CDATA[
+            	ASAI.DEPTID = #DEPTID#
+                
+            ]]>
+        </isNotEmpty>
+      <!--  <isNotEmpty prepend="AND" property="DEPTID">
+            <![CDATA[
+                EXISTS (
+                    SELECT B1.DEPTID
+                    FROM HR_DEPARTMENT B1
+                    WHERE B1.DEPTID=ASAI.DEPTID
+                    START WITH B1.DEPTID = #DEPTID#
+                    CONNECT BY PRIOR B1.DEPTID = B1.PARENT_DEPT_ID
+                )
+            ]]>
+        </isNotEmpty> --> 
+
+        <!-- <isNotEmpty prepend="AND" property="AR_ADMIN_ID"> <![CDATA[ HRE.EMPID
+            IN( SELECT HRE.EMPID AR_SUPERVISOR_ID FROM AR_SUPERVISOR_INFO WHERE AR_SUPERVISOR_INFO.SUPERVISED_DEPTID
+            = HRE.DEPTID AND AR_SUPERVISOR_ID = #AR_ADMIN_ID:VARCHAR# UNION SELECT #AR_ADMIN_ID:VARCHAR#
+            AR_SUPERVISOR_ID FROM DUAL ) ]]> </isNotEmpty> <isNotEmpty prepend="AND"
+            property="HR_ADMIN_ID"> <![CDATA[ EXISTS ( SELECT EMPID FROM ( SELECT EMPID
+            FROM HR_EMPLOYEE H2 WHERE EXISTS ( SELECT S2.ADMINID AS EMPID FROM SY_ADMIN_DEPTID
+            S1, SY_ADMIN S2 WHERE S2.ADMINNO = S1.ADMIN_NO AND S2.ADMINID = #HR_ADMIN_ID#
+            AND H2.DEPTID=S1.ADMIN_DEPTID ) UNION SELECT #HR_ADMIN_ID# AS EMPID FROM
+            DUAL ) S3 WHERE S3.EMPID = HRE.EMPID ) ]]> </isNotEmpty> -->
+    </sql>
+
+    <select id="getAssetList" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT ASAI.ASSET_ID,
+                   IF(#language#='en', ASAI.ASSET_EN_NAME, ASAI.ASSET_NAME)  ASSET_NAME,
+                   IF(#language#= 'en', B.CODE_EN_NAME, B.CODE_NAME)          ASSET_CATEGORY,
+                   ASAI.ASSET_MODEL                                               ASSET_MODEL,
+                   ASAI.MANUFACTURER                                              MANUFACTURER,
+                   ASAI.MANUFACTURE_DATE                                          MANUFACTURE_DATE,
+                   ASAI.INTERNATIONAL_NUMBER                                      INTERNATIONAL_NUMBER,
+                   STR_TO_DATE(ASAI.PURCHASE_DATE,'YYYY-MM-DD')                       PURCHASE_DATE,
+                   ASAI.NET_SALVAGE_VALUE                                         NET_SALVAGE_VALUE,
+                   ASAI.SERVICE_LIFE                                              SERVICE_LIFE,
+                   ASAI.ORIGINAL_VALUE                                            ORIGINAL_VALUE,
+                   ASAI.NET_VALUE                                                 NET_VALUE,
+                   ASAI.DEPRECIATION_WAY                                          DEPRECIATION_WAY,
+                   IF(#language#='en', D.CODE_EN_NAME, D.CODE_NAME)          STATUS,
+                   ASAI.STATUS_REMARK                                             STATUS_REMARK,
+                   ASAI.DESCRIPTION                                               DESCRIPTION,
+                       ASAI.DEPTID                                                DEPTID,
+                       IF(#language#= 'en', HRD.DEPT_EN_NAME, HRD.DEPTNAME)   DEPTNAME,
+                       ASAI.USER_ID                                               USER_ID,
+                       IF(#language#= 'en', HRE.ENGLISHNAME, HRE.CHINESENAME) USER_NAME,
+                       ASAI.REMARK                                                REMARK,
+                       ASAI.PHOTOPATH                                             PHOTOPATH,
+                   ASAI.ORDERNO                                                   ORDERNO
+                  FROM ASS_ASSET_INFO   ASAI left join HR_EMPLOYEE      HRE on ASAI.USER_ID = HRE.EMPID
+                  							 left join HR_DEPARTMENT    HRD on ASAI.DEPTID = HRD.DEPTID
+                  							 left join SY_CODE          B   on ASAI.ASSET_CATEGORY_CODE = B.CODE_ID
+                  							 left join SY_CODE          D   on ASAI.STATUS_CODE = D.CODE_ID
+                 WHERE  ASAI.ACTIVITY = 1
+        ]]>
+        <include refid="AssAssetCondition" />
+    </select>
+
+    <select id="getAssetListCnt" parameterClass="linkMap"
+        resultClass="int">
+        <![CDATA[
+            SELECT COUNT(0)
+                  FROM ASS_ASSET_INFO   ASAI left join HR_EMPLOYEE      HRE on ASAI.USER_ID = HRE.EMPID
+                  							 left join HR_DEPARTMENT    HRD on ASAI.DEPTID = HRD.DEPTID
+                  							 left join SY_CODE          B   on ASAI.ASSET_CATEGORY_CODE = B.CODE_ID
+                  							 left join SY_CODE          D   on ASAI.STATUS_CODE = D.CODE_ID
+                 WHERE  ASAI.ACTIVITY = 1
+        ]]>
+        <include refid="AssAssetCondition" />
+    </select>
+
+    <select id="getBasicInfo" parameterClass="linkMap" resultClass="linkMap"
+        remapResults="true">
+    </select>
+
+    <select id="getAssetDetail" parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+        SELECT ASAI.ASSET_ID,
+                   ASAI.ASSET_CATEGORY_CODE                                       ASSET_CATEGORY_CODE,
+                   ASAI.STATUS_CODE                                               STATUS_CODE,
+                   ASAI.ASSET_NAME                                                ASSET_NAME,
+                   ASAI.ASSET_EN_NAME                                             ASSET_EN_NAME,
+                   ASAI.ACTIVITY                                                  ACTIVITY,
+                   ASAI.ALLOW_BORROW                                              ALLOW_BORROW,
+                   IF(#language#= 'en', B.CODE_EN_NAME, B.CODE_NAME)          ASSET_CATEGORY,
+                   ASAI.ASSET_MODEL                                               ASSET_MODEL,
+                   ASAI.MANUFACTURER                                              MANUFACTURER,
+                   STR_TO_DATE(ASAI.MANUFACTURE_DATE,'%Y-%m-%d')                    MANUFACTURE_DATE,
+                   ASAI.INTERNATIONAL_NUMBER                                      INTERNATIONAL_NUMBER,
+                   STR_TO_DATE(ASAI.PURCHASE_DATE,'%Y-%m-%d')                       PURCHASE_DATE,
+                   ASAI.NET_SALVAGE_VALUE                                         NET_SALVAGE_VALUE,
+                   ASAI.SERVICE_LIFE                                              SERVICE_LIFE,
+                   ASAI.ORIGINAL_VALUE                                            ORIGINAL_VALUE,
+                   ASAI.NET_VALUE                                                 NET_VALUE,
+                   ASAI.DEPRECIATION_WAY                                          DEPRECIATION_WAY,
+                   IF(#language#= 'en', D.CODE_EN_NAME, D.CODE_NAME)          STATUS,
+                   ASAI.STATUS_REMARK                                             STATUS_REMARK,
+                   ASAI.DESCRIPTION                                               DESCRIPTION,
+                   ASAI.DEPTID                                                    DEPTID,
+                   IF(#language#= 'en', HRD.DEPT_EN_NAME, HRD.DEPTNAME)       DEPTNAME,
+                   ASAI.USER_ID                                                   USER_ID,
+                   IF(#language#= 'en', HRE.ENGLISHNAME, HRE.CHINESENAME)     USER_NAME,
+                   ASAI.REMARK                                                    REMARK,
+                   ASAI.PHOTOPATH                                                 PHOTOPATH,
+                   ASAI.ORDERNO                                                   ORDERNO
+                  FROM ASS_ASSET_INFO   ASAI left join HR_EMPLOYEE HRE on ASAI.USER_ID = HRE.EMPID
+                  							 left join HR_DEPARTMENT HRD on ASAI.DEPTID = HRD.DEPTID
+                  							 left join SY_CODE B on ASAI.ASSET_CATEGORY_CODE = B.CODE_ID
+                  							 left join SY_CODE D on ASAI.STATUS_CODE = D.CODE_ID
+                 WHERE ASAI.ASSET_ID = #ASSET_ID#
+        ]]>
+    </select>
+
+    <select id="getBorrowRecord" parameterClass="linkMap"
+        resultClass="linkMap">
+    <![CDATA[
+        SELECT IF(#language#='en',ASAI.ASSET_EN_NAME,ASAI.ASSET_NAME) ASSET_NAME,
+               EAT.BORROW_DATE,
+               EAT.RETURN_DATE,
+               EAT.ACTIVITY,
+               EAT.RETURN_REMARK,
+               B.CODE_NAME RETURN_TYPE
+               FROM ESS_APPLY_TOOL EAT left join ASS_ASSET_INFO ASAI on EAT.ASSET_NO = ASAI.ASSET_ID
+                    				   left join SY_CODE B on EAT.RETURN_TYPE_CODE = B.CODE_ID
+               WHERE EAT.ASSET_NO = #ASSET_ID#
+               ORDER BY RETURN_DATE DESC
+    ]]>
+    </select>
+
+    <select id="getBorrowRecordList" parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+        SELECT EAT.EMPID  EMPID,
+           EAT.TOOL_NO    TOOL_NO,
+           EAT.TOOL_TYPE_CODE ASSET_NAME,
+           STR_TO_DATE(EAT.BORROW_DATE,'%Y-%m-%d %H:%i')    BORROW_DATE,
+           STR_TO_DATE(EAT.RETURN_DATE,'%Y-%m-%d %H:%i')    RETURN_DATE,
+           EAT.AFFIRM_FLAG    AFFIRM_FLAG,
+           EAT.TOOL_CONTENT   BORROW_REASON,
+           EAT.RETURN_REMARK  RETURN_REMARK,
+           AAI.ASSET_NO       ASSET_NO,
+           AAI.STATUS_CODE    STATUS_ID,
+           EAT.TOOL_REMARK    BORROW_REMARK,
+           EAT.RETURN_FLAG    RETURN_FLAG,
+           HRE.CHINESENAME    EMP_NAME,
+           HRD.DEPTNAME       DEPT_NAME
+        FROM ESS_APPLY_TOOL EAT left join  HR_EMPLOYEE    HRE on EAT.EMPID = HRE.EMPID
+            					left join ASS_ASSET_INFO AAI on EAT.ASSET_NO = AAI.ASSET_NO
+            					left join HR_DEPARTMENT  HRD on HRE.DEPTID = HRD.DEPTID
+        WHERE EAT.ACTIVITY = 1
+        ]]>
+        <isNotEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+            (
+                EAT.EMPID LIKE concat('%',TRIM(#keyWord#),'%')
+                OR HRE.CHINESENAME LIKE concat('%',TRIM(#keyWord#),'%')
+            )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="TOOL_TYPE_CODE">
+            <![CDATA[
+                EAT.TOOL_TYPE_CODE = #TOOL_TYPE_CODE#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="S_DATE">
+            <![CDATA[
+                EAT.BORROW_DATE >= TO_DATE(#S_DATE#,'%Y-%m-%d')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="E_DATE">
+            <![CDATA[
+                EAT.BORROW_DATE <= TO_DATE(#E_DATE#,'%Y-%m-%d')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY  EAT.BORROW_DATE DESC
+            ]]>
+        </isEmpty>
+    </select>
+
+    <select id="getBorrowRecordListCnt" parameterClass="linkMap"
+        resultClass="int">
+        <![CDATA[
+        SELECT COUNT(*)
+        FROM ESS_APPLY_TOOL EAT left join HR_EMPLOYEE    HRE on EAT.EMPID = HRE.EMPID
+                                left join ASS_ASSET_INFO AAI on EAT.ASSET_NO = AAI.ASSET_NO
+                                left join HR_DEPARTMENT  HRD on HRE.DEPTID = HRD.DEPTID
+             WHERE EAT.ACTIVITY = 1
+        ]]>
+        <isNotEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+            (
+                EAT.EMPID LIKE concat('%',TRIM(#keyWord#),'%')
+                OR HRE.CHINESENAME LIKE concat('%',TRIM(#keyWord#),'%')
+            )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="TOOL_TYPE_CODE">
+            <![CDATA[
+                EAT.TOOL_TYPE_CODE = #TOOL_TYPE_CODE#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="S_DATE">
+            <![CDATA[
+                EAT.BORROW_DATE >= TO_DATE(#S_DATE#,'%Y-%m-%d')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="E_DATE">
+            <![CDATA[
+                EAT.BORROW_DATE <= TO_DATE(#E_DATE#,'%Y-%m-%d')
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY  EAT.BORROW_DATE DESC
+            ]]>
+        </isEmpty>
+    </select>
+
+    <select id="getAssBrokenSelectList" parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT CODE_ID  STATUS_ID,
+                CODE_NAME   STATUS
+            FROM SY_CODE
+            WHERE ACTIVITY = 1 AND PARENT_CODE = 'ReturnTypeCode' ORDER BY CODE_ID
+            ]]>
+    </select>
+    <update id="assReturnUpdate" parameterClass="linkMap">
+        <![CDATA[
+               UPDATE ESS_APPLY_TOOL
+                  SET RETURN_FLAG = 1, RETURN_REMARK = #RETURN_REMARK#
+                WHERE TOOL_NO = #TOOL_NO#
+              ]]>
+    </update>
+    <update id="assStatusUpdate" parameterClass="linkMap">
+        <![CDATA[
+               UPDATE ASS_ASSET_INFO
+                  SET STATUS_CODE = #STATUS_ID#
+                WHERE ASSET_NO = #ASSET_NO#
+              ]]>
+    </update>
+</sqlMap>

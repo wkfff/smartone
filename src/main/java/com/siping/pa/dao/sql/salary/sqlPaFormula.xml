@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="pa.paFormula">
+	<sql id="getPaFormulaInfoCondition">
+		<isNotEmpty prepend="AND" property="FORMULAR_NO">
+			<![CDATA[
+				PF.FORMULAR_NO = #FORMULAR_NO#
+			]]>
+		</isNotEmpty>
+	</sql>
+	
+	<select id="getPaFormulaInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT PF.FORMULAR_NO,
+				PF.ITEM_NO,
+				PF.CONDITION,
+				PF.FORMULAR,
+				PF.DESCRIPTION,
+				PF.REMARK,
+				PF.ORDERNO,
+				TO_CHAR(PF.CREATE_DATE,'YYYY-MM-DD') CREATE_DATE,
+				PF.CREATED_BY,
+				TO_CHAR(PF.UPDATE_DATE,'YYYY-MM-DD') UPDATE_DATE, 
+				PF.UPDATED_BY,
+				PF.ACTIVITY
+			FROM PA_FORMULAR PF,PA_ITEM PI
+			WHERE PF.ITEM_NO = PI.ITEM_NO(+)
+				AND PF.ACTIVITY = 1 
+				AND PI.CPNY_ID = #CPNY_ID# 
+				AND PF.ITEM_NO = #ITEM_NO# 
+		]]>
+		<include refid="getPaFormulaInfoCondition" />
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY $sortname$ $sortorder$
+		]]>
+		</isNotEmpty>
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY FORMULAR_NO
+			]]>
+		</isEmpty>
+	</select>
+	
+	<select id="getPaFormulaInfoCnt" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+			SELECT COUNT(*)
+			FROM PA_FORMULAR PF,PA_ITEM PI
+			WHERE PF.ITEM_NO = PI.ITEM_NO(+)
+				AND PF.ACTIVITY = 1
+				AND PI.CPNY_ID = #CPNY_ID# 
+				AND PF.ITEM_NO = #ITEM_NO# 
+		]]>
+		<include refid="getPaFormulaInfoCondition" />
+	</select>
+
+	<select id="getFormulaItemInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT PDL.DISTINCT_FIELD AS ID, 
+				PDL.FIELD_NAME AS NAME
+			FROM PA_DISTINCT_LIST PDL
+			WHERE PDL.TABLE_NAME = 'PA_HR_V'
+				AND PDL.CPNY_ID = #CPNY_ID# 
+			
+			UNION
+			
+			SELECT ASI.ITEM_ID,
+				ASI.ITEM_NAME
+			FROM AR_STA_ITEM ASI
+			WHERE ASI.CPNY_ID = #CPNY_ID#
+			
+			UNION
+			
+			SELECT PI.ITEM_ID, PI.ITEM_NAME
+			FROM PA_ITEM PI
+			WHERE PI.CPNY_ID = #CPNY_ID# 
+			
+			UNION
+			
+			SELECT PPI.PARAM_ID, PPI.PARAM_NAME
+			FROM PA_PARAM_ITEM PPI
+			WHERE PPI.CPNY_ID = #CPNY_ID# 
+		]]>
+	</select>
+
+	<insert id="addPaFormulaInfo" parameterClass="linkMap">
+		<![CDATA[
+			INSERT INTO PA_FORMULAR (
+				FORMULAR_NO,
+				ITEM_NO,
+				CONDITION,
+				FORMULAR,
+				ORDERNO,
+				PA_MONTH,
+				DESCRIPTION,
+				CREATE_DATE,
+				CREATED_BY,
+				ACTIVITY
+			)
+			VALUES(
+				PA_FORMULAR_SEQ.NEXTVAL,
+				#ITEM_NO#,
+				#CONDITION#,
+				#FORMULAR#,
+				(SELECT NVL(MAX(ORDERNO), 0) + 1 AS ORDERNO
+					FROM PA_FORMULAR
+					WHERE ITEM_NO = #ITEM_NO#
+				),
+				#PA_MONTH#,
+				#DESCRIPTION#,
+				SYSDATE,
+				#CREATED_BY#,
+				1
+			)
+		]]>
+	</insert>
+
+	<update id="updatePaFormulaInfo" parameterClass="linkMap">
+		<![CDATA[
+			UPDATE PA_FORMULAR 
+			SET CONDITION = #CONDITION#,
+				FORMULAR = #FORMULAR#,
+				DESCRIPTION  = #DESCRIPTION#,
+				UPDATE_DATE = SYSDATE,
+				UPDATED_BY = #UPDATED_BY# 
+			WHERE FORMULAR_NO = #FORMULAR_NO#
+		]]>
+	</update>
+
+	<delete id="deletePaFormulaInfo" parameterClass="linkMap">
+		<![CDATA[
+			DELETE FROM PA_FORMULAR
+			WHERE FORMULAR_NO = #FORMULAR_NO#
+		]]>
+	</delete>
+
+	<delete id="initPaFormulaInfo" parameterClass="linkMap">
+		<![CDATA[
+			{CALL PR_FORMULA_INITIAL(#PA_MONTH:VARCHAR#)}
+		]]>
+	</delete>
+</sqlMap>

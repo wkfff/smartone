@@ -1,0 +1,37 @@
+.pop {
+    position: fixed;
+    left: 20%;
+    top: 25%;
+    width: 600px;
+    height: 280px;
+    background: #eee;
+    border: 1px solid #ccc;
+}
+
+.pop_head {
+    position: relative;
+    height: 30px;
+    line-height: 30px;
+    background: #ccc;
+    font-weight: bold;
+    color: rgb(0, 104, 0);
+    text-indent: 1em;
+}
+
+.pop_head a {
+    position: absolute;
+    right: 8px;
+    line-height: 30px;
+    color: #000;
+    text-decoration: none;
+    color: rgb(0, 104, 0);
+}
+
+.pop_head a:hover {
+    color: #f60;
+    text-decoration: none;
+}
+
+.pop_body {
+    height: 240px;
+}

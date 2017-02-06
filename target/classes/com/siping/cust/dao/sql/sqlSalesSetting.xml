@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+    PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+    "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="sales.salesSetting">
+
+    <sql id="SalesKeeperSearchCondition">        
+        <isNotEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+                  ( HR.EMPID LIKE CONCAT(TRIM(#keyWord:VARCHAR#), '%' )
+                  OR HR.CHINESENAME LIKE CONCAT('%',TRIM(#keyWord:VARCHAR#), '%') 
+                  OR HR.CHINESE_PINYIN LIKE CONCAT('%' , TRIM(#keyWord:VARCHAR#),'%')
+                  ) 
+            ]]>
+        </isNotEmpty>
+
+        <isNotEmpty prepend="AND" property="DEPT_ID">
+            <![CDATA[
+                  SELECT * FROM HR_DEPARTMENT WHERE HR_DEPARTMENT.DEPTID!='00110000'
+            ]]>
+        </isNotEmpty>
+    </sql> 
+
+    <select id="getSalesKeeperList" parameterClass="linkMap" resultClass="linkMap"  remapResults="true">
+        <![CDATA[
+            SELECT T.SUPERVISOR_ID                                          EMP_ID,
+                   IF(#language# = 'en', HR.ENGLISHNAME, HR.CHINESENAME) EMP_NAME, 
+                   IF(#language# =  'en', HD.DEPT_EN_NAME, HD.DEPTNAME) EMP_DEPT,
+                   IF(#language# =  'en', A.CODE_EN_NAME, A.CODE_NAME) EMP_STATUS,
+                   IF(#language# =  'en', B.CPNY_EN_NAME, B.CPNY_NAME) EMP_CPNY
+              FROM SALES_SUPERVISOR T LEFT JOIN HR_EMPLOYEE HR ON(T.SUPERVISOR_ID = HR.EMPID)
+                   LEFT JOIN HR_DEPARTMENT HD ON(HR.DEPTID = HD.DEPTID)
+                   LEFT JOIN SY_CODE A ON(HR.STATUS_CODE = A.CODE_ID)
+                   LEFT JOIN HR_COMPANY B ON(HD.CPNY_ID = B.CPNY_ID)
+             WHERE  T.ACTIVITY = 1
+         
+        ]]>
+        <include refid="SalesKeeperSearchCondition" />
+    </select>
+
+    <select id="getRecordCount" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(T.SUPERVISOR_ID)
+              FROM SALES_SUPERVISOR T
+             WHERE T.SUPERVISOR_ID = #EMP_ID#
+             AND   T.ACTIVITY = 1
+        ]]>
+    </select>
+
+    <select id="getSalesKeeperListCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(T.SUPERVISOR_ID)
+              FROM SALES_SUPERVISOR T LEFT JOIN HR_EMPLOYEE HR ON( T.SUPERVISOR_ID = HR.EMPID)
+              LEFT JOIN  HR_DEPARTMENT HD ON(HR.DEPTID = HD.DEPTID)
+              LEFT JOIN SY_CODE A ON(HR.STATUS_CODE = A.CODE_ID)
+              LEFT JOIN HR_COMPANY B ON(HD.CPNY_ID = B.CPNY_ID)
+               
+             WHERE  T.ACTIVITY = 1
+        ]]>
+        <include refid="SalesKeeperSearchCondition" />
+    </select>
+
+    <select id="getNetworkSalesList" parameterClass="linkMap" resultClass="linkMap">        
+        <![CDATA[
+        SELECT SSNE.NETWORK_SALES_SALARY_ID, 
+               SSNE.PERCENTAGE                              PERCENTAGE, 
+               DATE_FORMAT(SSNE.BEGIN_DATE, '%Y-%m-%d')       BEGIN_DATE,
+               DATE_FORMAT(SSNE.END_DATE, '%Y-%m-%d')         END_DATE
+        FROM SALES_SALARY_NETWORK SSNE
+        WHERE SSNE.ACTIVITY = 1
+        ]]>
+    </select>
+    <select id="getNetworkSalesListCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+        SELECT COUNT(0)
+        FROM SALES_SALARY_NETWORK SSNE
+        WHERE SSNE.ACTIVITY = 1
+        ]]> 
+    </select>
+
+    <sql id="DirectSalesSearchCondition"> 
+        <isNotEmpty prepend="AND" property="PRODUCT_ID">
+            <![CDATA[
+                SSDI.PRODUCT_ID = #PRODUCT_ID#
+            ]]>
+        </isNotEmpty>
+        
+        <isNotEmpty prepend="AND" property="SALES_AREA_CODE">
+            <![CDATA[
+                SSDI.SALES_AREA_CODE = #SALES_AREA_CODE#
+            ]]>
+        </isNotEmpty>
+        <![CDATA[
+                ORDER BY SSDI.PRODUCT_ID
+        ]]>
+    </sql> 
+
+    <select id="getDirectSalesList" parameterClass="linkMap" resultClass="linkMap">     
+    <![CDATA[
+        SELECT SSDI.PRODUCT_ID                PRODUCT_ID,
+               SSDI.DIRECT_SALES_SALARY_ID    DIRECT_SALES_SALARY_ID,
+               SSDI.REFER                     REFER,
+               SSDI.PERCENTAGE                PERCENTAGE,
+               SSDI.BOUNDARY                  BOUNDARY,
+               SSDI.BASIS                     BASIS,
+               SSDI.SALES_AREA_CODE           SALES_AREA_CODE,
+               DATE_FORMAT(SSDI.BEGIN_DATE,'%Y-%m-%d')     BEGIN_DATE,
+               DATE_FORMAT(SSDI.END_DATE,'%Y-%m-%d')       END_DATE,
+               PRBA.PRODUCT_NAME              PRODUCT_NAME
+        FROM SALES_SALARY_DIRECT SSDI, PRO_BASIC_INFO PRBA
+        WHERE SSDI.PRODUCT_ID = PRBA.PRODUCT_ID 
+        AND   SSDI.ACTIVITY = 1
+    ]]> 
+    <include refid="DirectSalesSearchCondition" />
+    </select>
+
+    <select id="getDirectSalesListCnt" parameterClass="linkMap" resultClass="int">
+    <![CDATA[   
+        SELECT COUNT(0)
+        FROM SALES_SALARY_DIRECT SSDI, PRO_BASIC_INFO PRBA
+        WHERE SSDI.PRODUCT_ID = PRBA.PRODUCT_ID 
+        AND   SSDI.ACTIVITY = 1
+    ]]> 
+    <include refid="DirectSalesSearchCondition" />
+    </select>
+
+    <select id="getSalesKeeperDetail" parameterClass="linkMap" resultClass="linkMap"  remapResults="true">
+        <![CDATA[
+            SELECT T.SUPERVISOR_ID                          SUPERVISOR_ID,
+                   HR.ENGLISHNAME                             ENGLISHNAME,
+                   HR.CHINESENAME                             CHINESENAME, 
+                   IF(#language# =  'en', HR.ENGLISHNAME, HR.CHINESENAME) EMP_NAME, 
+                   IF(#language# = 'en', HD.DEPT_EN_NAME, HD.DEPTNAME) EMP_DEPT,
+                   IF(#language# = 'en', A.CODE_EN_NAME, A.CODE_NAME) EMP_STATUS,
+                   IF(#language# = 'en', B.CPNY_EN_NAME, B.CPNY_NAME) EMP_CPNY
+                   FROM SALES_SUPERVISOR T LEFT JOIN HR_EMPLOYEE HR ON T.SUPERVISOR_ID = HR.EMPID
+                   LEFT JOIN  HR_DEPARTMENT HD ON HR.DEPTID = HD.DEPTID
+                   LEFT JOIN  SY_CODE A ON HR.STATUS_CODE = A.CODE_ID 
+                   LEFT JOIN HR_COMPANY B ON HD.CPNY_ID = B.CPNY_ID
+              
+             WHERE T.SUPERVISOR_ID = #SUPERVISOR_ID#
+               
+               AND T.ACTIVITY = 1
+        ]]>
+    </select>
+
+    <select id="getSalesKeeperDeptInfo" parameterClass="linkMap" resultClass="linkMap"  remapResults="true">
+        <!-- <![CDATA[
+            SELECT HD.DEPTID,
+                   IF(#language# = 'en', HD.DEPT_EN_NAME, HD.DEPTNAME) DEPTNAME,
+                   HD.PARENT_DEPT_ID, 
+                   (CASE
+                     WHEN T.SUPERVISED_DEPTID IS NOT NULL THEN
+                      'true'
+                     ELSE
+                      'false'
+                   END) AS ISCHECKED
+              FROM SALES_SUPERVISOR_INFO T, HR_DEPT_TREE_V HD
+             WHERE HD.DEPTID = T.SUPERVISED_DEPTID(+)
+               AND T.SUPERVISOR_ID(+) = #SUPERVISOR_ID:VARCHAR#
+        ]]> -->
+        <![CDATA[
+            SELECT HD.DEPTID,
+                   IF(#language# = 'en', HD.DEPT_EN_NAME, HD.DEPTNAME) DEPTNAME,
+                   HD.PARENT_DEPT_ID, 
+                   (CASE
+                     WHEN T.SUPERVISED_DEPTID IS NOT NULL THEN
+                      'true'
+                     ELSE
+                      'false'
+                   END) ISCHECKED
+              FROM HR_DEPT_TREE_V HD LEFT JOIN SALES_SUPERVISOR_INFO T ON(HD.DEPTID = T.SUPERVISED_DEPTID)
+             WHERE  T.SUPERVISOR_ID = #SUPERVISOR_ID:VARCHAR#
+        ]]>
+    </select>
+
+    <insert id="addSalesKeeper" parameterClass="linkMap" >
+        <![CDATA[
+            INSERT INTO SALES_SUPERVISOR (
+                    SUPERVISOR_ID,
+                    CREATED_DATE,
+                    CREATED_BY,
+                    ACTIVITY
+                )
+            VALUES(
+                    #EMP_ID:VARCHAR#,
+                    NOW(),
+                    #CREATED_BY:VARCHAR#,
+                    1
+                )
+        ]]>
+    </insert>
+
+    <insert id="addSalesKeeperInfo" parameterClass="linkMap" >
+        <![CDATA[
+            INSERT INTO SALES_SUPERVISOR_INFO (
+                    SUPERVISOR_ID,
+                    SUPERVISED_DEPTID
+                )
+            VALUES(
+                    #SUPERVISOR_ID:VARCHAR#,
+                    #SUPERVISED_DEPTID#
+                )
+        ]]>
+    </insert>
+
+    <update id="updateSalesKeeper" parameterClass="linkMap" >
+        <![CDATA[
+            UPDATE SALES_SUPERVISOR SET UPDATED_DATE=NOW(),
+                    UPDATED_BY=#UDPATED_BY#
+            WHERE SUPERVISOR_ID = #EMP_ID:VARCHAR#
+        ]]>
+    </update>
+
+    <update id="removeSalesKeeper" parameterClass="linkMap">
+        <![CDATA[
+            UPDATE SALES_SUPERVISOR SET ACTIVITY = 0, UPDATED_DATE = NOW(), UPDATED_BY = #UPDATED_BY#
+            WHERE SUPERVISOR_ID = #EMP_ID:VARCHAR#
+        ]]>
+    </update>
+
+    <delete id="removeSalesKeeperInfo" parameterClass="linkMap">
+        <![CDATA[
+            DELETE SALES_SUPERVISOR_INFO WHERE SUPERVISOR_ID = #EMP_ID:VARCHAR# 
+        ]]>
+    </delete>
+
+        <insert id="addDirectSales" parameterClass="linkMap">
+    <![CDATA[
+            INSERT INTO SALES_SALARY_DIRECT(
+                    
+                    PRODUCT_ID,
+                    REFER,
+                    PERCENTAGE,
+                    BOUNDARY,
+                    BASIS,
+                    SALES_AREA_CODE,
+                    BEGIN_DATE,
+                    END_DATE,
+                    CREATED_BY,
+                    CREATED_DATE,
+                    ACTIVITY,
+                    CPNY_ID
+                    ) 
+            VALUES(
+                   
+                   #PRODUCT_ID#,
+                   #REFER#,
+                   #PERCENTAGE#,
+                    #BOUNDARY#,
+                    #BASIS#,#SALES_AREA_CODE#,
+                    STR_TO_DATE(#BEGIN_DATE#,'%Y-%m-%d'),
+                    STR_TO_DATE(#END_DATE#,'%Y-%m-%d'),
+                    #CREATED_BY#,
+                    NOW(),
+                    1,
+                    'wooribank'
+                    );   
+    ]]>
+    </insert>
+
+    <update id="updateDirectSales" parameterClass="linkMap">
+    <![CDATA[
+        
+        UPDATE SALES_SALARY_DIRECT SET PRODUCT_ID = #PRODUCT_ID#,REFER = #REFER#,PERCENTAGE = TO_NUMBER(#PERCENTAGE#), BOUNDARY = TO_NUMBER(#BOUNDARY#), BASIS = #BASIS#,
+            SALES_AREA_CODE = #SALES_AREA_CODE#,BEGIN_DATE = STR_TO_DATE(#BEGIN_DATE#,'%Y-%m-%d'),END_DATE = STR_TO_DATE(#END_DATE#,'%Y-%m-%d'),
+            UPDATED_BY = #UPDATED_BY#, UPDATED_DATE = NOW()
+        WHERE DIRECT_SALES_SALARY_ID = #DIRECT_SALES_SALARY_ID#;
+        
+    ]]> 
+    </update>
+
+    <update id="removeDirectSales" parameterClass="linkMap">
+    <![CDATA[
+        
+        UPDATE SALES_SALARY_DIRECT SET ACTIVITY= 0,UPDATED_BY = #UPDATED_BY#, UPDATED_DATE = NOW()
+        WHERE DIRECT_SALES_SALARY_ID = #DIRECT_SALES_SALARY_ID#;
+        
+    ]]> 
+    </update>
+    
+    <insert id="addNetworkSales" parameterClass="linkMap">
+    <![CDATA[
+        
+            INSERT INTO SALES_SALARY_NETWORK(PERCENTAGE,
+                    BEGIN_DATE,END_DATE,
+                    CREATED_BY,CREATED_DATE,ACTIVITY,CPNY_ID) 
+            VALUES(#PERCENTAGE#,
+                    STR_TO_DATE(#BEGIN_DATE#,'%Y-%m-%d'),STR_TO_DATE(#END_DATE#,'%Y-%m-%d'),
+                    #CREATED_BY#,NOW(),1,'wooribank');
+           
+    ]]>
+    </insert>
+    
+    <update id="updateNetworkSales" parameterClass="linkMap">
+    <![CDATA[
+        
+        UPDATE SALES_SALARY_NETWORK SET PERCENTAGE = TO_NUMBER(#PERCENTAGE#), 
+            BEGIN_DATE = STR_TO_DATE(#BEGIN_DATE#,'%Y-%m-%d'),END_DATE = STR_TO_DATE(#END_DATE#,'%Y-%m-%d'),
+            UPDATED_BY = #UPDATED_BY#, UPDATED_DATE = NOW()
+        WHERE NETWORK_SALES_SALARY_ID = #NETWORK_SALES_SALARY_ID#;
+         
+    ]]> 
+    </update>
+</sqlMap>

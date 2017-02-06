@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="pa.paResult">
+	<!-- calculate pa  -->
+	<procedure id="paBalance" parameterClass="linkMap">
+		<![CDATA[
+			{call PA_CONFIRM(#message,jdbcType=VARCHAR,mode=OUT#) }
+		]]>
+	</procedure>
+	
+	<select id="getPaColumns" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+		<![CDATA[
+				SELECT 'EMPID' AS "COLUMN_NAME",
+					IF(#language#='en', 'Emp ID', '工号') ITEM_NAME, 
+					1 AS CALCU_ORDER
+				FROM DUAL
+				
+				UNION ALL
+				
+				SELECT 'CHINESENAME' AS "COLUMN_NAME", 
+					IF(#language#='en', 'Name', '姓名') ITEM_NAME,
+					2 AS CALCU_ORDER
+				FROM DUAL
+				
+				UNION ALL
+				
+				SELECT 'DEPTNAME' AS "COLUMN_NAME",
+					IF(#language#='en', 'Department', '部门') ITEM_NAME,  
+					3 AS CALCU_ORDER
+				FROM DUAL
+				
+				UNION ALL
+				
+				SELECT 'POST_NAME' AS "COLUMN_NAME",
+					IF(#language#='en', 'Post', '职位') ITEM_NAME,  
+					4 AS CALCU_ORDER
+				FROM DUAL
+				
+				UNION ALL
+				
+				SELECT ITEM_ID AS  COLUMN_NAME,
+				IF(''= 'en', ITEM_EN_NAME, ITEM_NAME) ITEM_NAME,  
+				CALCU_ORDER + 100 AS CALCU_ORDER
+				FROM PA_ITEM PI
+				WHERE ACTIVITY = 1
+					AND CPNY_ID = #CPNY_ID#
+				ORDER BY CALCU_ORDER
+			]]>
+	</select>
+</sqlMap>

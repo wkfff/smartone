@@ -1,0 +1,672 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap
+    PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+    "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="pa.paInputItem">
+    <sql id="getPaInputItemInfoCondition">
+        <isNotEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+                (
+                    OR PPI.PARAM_NAME       LIKE concat('%',TRIM(#keyWord#),'%')
+                    OR PPI.DESCRIPTION      LIKE concat('%',TRIM(#keyWord#),'%')
+                    OR upper(PPI.PARAM_EN_NAME) LIKE concat('%',upper(#keyWord#),'%')
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="PARAM_ID">
+            <![CDATA[
+                PPI.PARAM_ID = #PARAM_ID#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="PARAM_NO">
+            <![CDATA[
+                PPI.PARAM_NO = #PARAM_NO#
+            ]]>
+        </isNotEmpty>
+    </sql>
+    <select id="getPaInputItemInfo" parameterClass="linkMap"
+        resultClass="linkMap" remapResults="true">
+        <![CDATA[
+            SELECT PPI.PARAM_NO,
+               PPI.PARAM_NO ID,
+               PPI.PARAM_ID,
+               PPI.PARAM_ID ITEM_ID,
+               IF(#language#='en', PPI.PARAM_EN_NAME, PPI.PARAM_NAME) ITEM_NAME,
+               IF(#language#='en', PPI.PARAM_EN_NAME, PPI.PARAM_NAME) PARAM_NAME,
+               IF(#language#='en', PPI.PARAM_EN_NAME, PPI.PARAM_NAME) NAME,
+               PPI.PARAM_EN_NAME,
+               PPI.DATATYPE DATA_TYPE_CODE,
+               IF(#language#='en', A.CODE_EN_NAME, A.CODE_NAME) DATA_TYPE_NAME,
+               PPI.PARAM_TYPE_CODE,
+               IF(#language#='en', B.CODE_EN_NAME, B.CODE_NAME) PARAM_TYPE_NAME,
+               PPI.DISTINCT_FIELD_1ST MC_1ST_CODE,
+               IF(#language#='en', MC_1ST.FIELD_EN_NAME, MC_1ST.FIELD_NAME) MC_1ST_NAME,
+               PPI.DISTINCT_FIELD_2ND MC_2ND_CODE,
+               IF(#language#='en', MC_2ND.FIELD_EN_NAME, MC_2ND.FIELD_NAME) MC_2ND_NAME,
+               PPI.PA_MONTH,
+               PPI.DEFAULT_VAL,
+               date_format(PPI.CREATE_DATE, '%Y-%m-%d') CREATE_DATE,
+               PPI.CREATED_BY,
+               date_format(PPI.UPDATE_DATE, '%Y-%m-%d') UPDATE_DATE,
+               PPI.UPDATED_BY,
+               PPI.DESCRIPTION,
+               PPI.CPNY_ID,
+               PPI.ACTIVITY
+           FROM PA_PARAM_ITEM     PPI LEFT JOIN 
+                (SELECT * FROM PA_DISTINCT_LIST WHERE TABLE_NAME = 'PA_HR_V')   MC_1ST ON PPI.DISTINCT_FIELD_1ST = MC_1ST.DISTINCT_FIELD
+                LEFT JOIN (SELECT * FROM PA_DISTINCT_LIST WHERE TABLE_NAME = 'PA_HR_V')   MC_2ND ON PPI.DISTINCT_FIELD_2ND = MC_2ND.DISTINCT_FIELD
+                LEFT JOIN SY_CODE  A ON PPI.DATATYPE = A.CODE_ID
+                LEFT JOIN SY_CODE  B ON PPI.PARAM_TYPE_CODE = B.CODE_ID
+            WHERE PPI.ACTIVITY = 1
+        ]]>
+        <include refid="getPaInputItemInfoCondition" />
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                  ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY PPI.PARAM_NO
+            ]]>
+        </isEmpty>
+    </select>
+
+    <select id="getPaInputItemInfoCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(*)
+            FROM PA_PARAM_ITEM     PPI LEFT JOIN 
+                (SELECT * FROM PA_DISTINCT_LIST WHERE TABLE_NAME = 'PA_HR_V')   MC_1ST ON PPI.DISTINCT_FIELD_1ST = MC_1ST.DISTINCT_FIELD
+                LEFT JOIN (SELECT * FROM PA_DISTINCT_LIST WHERE TABLE_NAME = 'PA_HR_V')   MC_2ND ON PPI.DISTINCT_FIELD_2ND = MC_2ND.DISTINCT_FIELD
+                LEFT JOIN SY_CODE  A ON PPI.DATATYPE = A.CODE_ID
+                LEFT JOIN SY_CODE  B ON PPI.PARAM_TYPE_CODE = B.CODE_ID
+            WHERE PPI.ACTIVITY = 1
+        ]]>
+        <include refid="getPaInputItemInfoCondition" />
+    </select>
+
+    <insert id="addPaInputItemInfo" parameterClass="linkMap">
+        <selectKey resultClass="int" keyProperty="PARAM_NO"> 
+           SELECT Auto_increment 
+				FROM information_schema.`TABLES`
+				WHERE Table_Schema='smartone_v1'
+				AND table_name = 'PARAM_NO'
+        </selectKey>
+        <![CDATA[
+            INSERT INTO PA_PARAM_ITEM
+                (
+                    PARAM_NO,
+                    PARAM_ID,
+                    PARAM_NAME,
+                    PARAM_EN_NAME,
+                    DISTINCT_FIELD_1ST,
+                    DISTINCT_FIELD_2ND,
+                    DATATYPE,
+                    DESCRIPTION,
+                    PARAM_TYPE_CODE,
+                    DEFAULT_VAL,
+                    CREATE_DATE,
+                    CREATED_BY,
+                    ACTIVITY,
+                    CPNY_ID
+                )
+            VALUES(
+                    #PARAM_NO#,
+                    concat('I_PA_' , #PARAM_NO#),
+                    #PARAM_NAME#,
+                    #PARAM_EN_NAME#,
+                    #MC_1ST_CODE#,
+                    #MC_2ND_CODE#,
+                    #DATA_TYPE_CODE#,
+                    #DESCRIPTION#,
+                    #PARAM_TYPE_CODE#,
+                    #DEFAULT_VAL#,
+                    now(),
+                    #CREATED_BY#,
+                    1,
+                    #CPNY_ID#
+                )
+        ]]>
+    </insert>
+
+    <update id="updatePaInputItemInfo" parameterClass="linkMap">
+        <![CDATA[
+            UPDATE PA_PARAM_ITEM SET
+                 PARAM_NAME = #PARAM_NAME#,
+                 PARAM_EN_NAME = #PARAM_EN_NAME#,
+                 DISTINCT_FIELD_1ST = #MC_1ST_CODE#,
+                 DISTINCT_FIELD_2ND = #MC_2ND_CODE#,
+                 DATATYPE = #DATA_TYPE_CODE#,
+                 DESCRIPTION = #DESCRIPTION#,
+                 PARAM_TYPE_CODE = #PARAM_TYPE_CODE#,
+                 DEFAULT_VAL = #DEFAULT_VAL#
+            WHERE PARAM_NO = #PARAM_NO#
+        ]]>
+    </update>
+
+    <select id="checkDeletePaInputItemInfo" parameterClass="linkMap"
+        resultClass="int">
+        <![CDATA[
+            SELECT (SELECT COUNT(*) FROM PA_PARAM_DATA WHERE PARAM_NO = #PARAM_NO#) +
+                (SELECT COUNT(*)
+                    FROM USER_TAB_COLS
+                    WHERE TABLE_NAME = 'PA_HISTORY'
+                    AND COLUMN_NAME = #PARAM_ID#) AS A
+            FROM DUAL
+        ]]>
+    </select>
+
+    <delete id="deletePaInputItemInfo" parameterClass="linkMap">
+        <![CDATA[
+            DELETE PA_PARAM_ITEM WHERE PARAM_NO = #PARAM_NO#
+        ]]>
+    </delete>
+
+    <sql id="empID_getPaInputItemDataInfoCondition">
+        <isNotEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+                (
+                    HRE.CHINESENAME         LIKE concat('%',TRIM(#keyWord#),'%')
+                    OR HRE.EMPID            LIKE concat('%',TRIM(#keyWord#),'%')
+                    OR HRD.DEPTNAME         LIKE concat('%',TRIM(#keyWord#),'%')
+                    OR PPD.RETURN_VALUE     LIKE concat('%',TRIM(#keyWord#),'%')
+                    OR PPD.FIELD1_VALUE     LIKE concat('%',TRIM(#keyWord#),'%')
+                    OR upper(HRE.ENGLISHNAME) LIKE concat('%',upper(#keyWord#),'%')
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="DEPTID">
+            <![CDATA[
+                EXISTS (
+                        SELECT   *
+                        FROM HR_DEPARTMENT B1
+                        WHERE B1.DEPTID=HRE.DEPTID
+                        START WITH B1.DEPTID = #DEPTID#
+                        CONNECT BY PRIOR B1.DEPTID = B1.PARENT_DEPT_ID
+                    )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="HR_ADMIN_ID">
+            <![CDATA[
+                HRE.EMPID IN(
+                    SELECT HRE.EMPID AR_SUPERVISOR_ID
+                    FROM AR_SUPERVISOR_INFO
+                    WHERE AR_SUPERVISOR_INFO.SUPERVISED_DEPTID = HRE.DEPTID
+                        AND AR_SUPERVISOR_ID = #HR_ADMIN_ID#
+
+                    UNION
+
+                    SELECT #HR_ADMIN_ID# AR_SUPERVISOR_ID
+                    FROM DUAL
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="PARAM_DATA_NO">
+            <![CDATA[
+                PPD.PARAM_DATA_NO = #PARAM_DATA_NO#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="PARAM_NO">
+            <![CDATA[
+                PPD.PARAM_NO = #PARAM_NO#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="PA_MONTH">
+            <![CDATA[
+                PPD.PA_MONTH = #PA_MONTH#
+            ]]>
+        </isNotEmpty>
+    </sql>
+    <select id="empID_getPaInputItemDataInfo" parameterClass="linkMap" resultClass="linkMap">
+        <![CDATA[
+            SELECT PPD.PARAM_DATA_NO,
+               PPD.PARAM_NO,
+               PPD.FIELD1_VALUE,
+               PPD.FIELD1_EN_VALUE,
+               PPD.FIELD2_VALUE,
+               PPD.FIELD2_EN_VALUE,
+               PPD.RETURN_VALUE,
+               PPD.REMARK,
+               HRE.EMPID,
+               HRE.POST_ID,
+               IF(#language#='en', HP.POST_EN_NAME, HP.POST_NAME) POST_NAME,
+               IF(#language#='en', HRE.ENGLISHNAME, HRE.CHINESENAME) CHINESENAME,
+               HRE.DEPTID,
+               IF(#language#='en', HRD.DEPT_EN_NAME, HRD.DEPTNAME) DEPTNAME,
+               HRE.STATUS_CODE,
+               IF(#language#='en', C.CODE_EN_NAME, C.CODE_NAME) STATUS_NAME,
+               date_format(HRE.JOIN_DATE, '%Y-%m-%d') JOIN_DATE,
+               date_format(HRE.LEFT_DATE, '%Y-%m-%d') LEFT_DATE
+            FROM HR_EMPLOYEE  HRE LEFT JOIN PA_PARAM_DATA PPD ON HRE.EMPID = PPD.FIELD1_VALUE
+     LEFT JOIN HR_DEPARTMENT   HRD ON  HRE.DEPTID = HRD.DEPTID
+     LEFT JOIN SY_CODE  C ON HRE.STATUS_CODE = C.CODE_ID
+     LEFT JOIN HR_POST  HP ON HRE.POST_ID = HP.POST_ID
+            WHERE PPD.PARAM_NO = #PARAM_NO#
+                AND PPD.ACTIVITY = 1
+        ]]>
+        <include refid="empID_getPaInputItemDataInfoCondition" />
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY HRD.DEPTID,HRE.EMPID
+            ]]>
+        </isEmpty>
+    </select>
+    <select id="empID_getPaInputItemDataInfoCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(*)
+             FROM HR_EMPLOYEE  HRE LEFT JOIN PA_PARAM_DATA PPD ON HRE.EMPID = PPD.FIELD1_VALUE
+     LEFT JOIN HR_DEPARTMENT   HRD ON  HRE.DEPTID = HRD.DEPTID
+     LEFT JOIN SY_CODE  C ON HRE.STATUS_CODE = C.CODE_ID
+     LEFT JOIN HR_POST  HP ON HRE.POST_ID = HP.POST_ID
+            WHERE PPD.PARAM_NO = #PARAM_NO#
+                AND PPD.ACTIVITY = 1
+        ]]>
+        <include refid="empID_getPaInputItemDataInfoCondition" />
+    </select>
+
+    <sql id="other_getPaInputItemDataInfoCondition">
+        <isNotEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+                (
+                    PPD.REMARK              LIKE concat('%',TRIM(#keyWord#),'%')
+                    OR PPD.RETURN_VALUE     LIKE concat('%',TRIM(#keyWord#),'%')
+                    OR PPD.FIELD1_VALUE     LIKE concat('%',TRIM(#keyWord#),'%')
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="PARAM_DATA_NO">
+            <![CDATA[
+                  PPD.PARAM_DATA_NO = #PARAM_DATA_NO#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="PARAM_NO">
+            <![CDATA[
+                  PPD.PARAM_NO = #PARAM_NO#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="PA_MONTH">
+            <![CDATA[
+                PPD.PA_MONTH = #PA_MONTH#
+            ]]>
+        </isNotEmpty>
+    </sql>
+    <select id="other_getPaInputItemDataInfo" parameterClass="linkMap"
+        resultClass="linkMap">
+        <![CDATA[
+            SELECT PPD.PARAM_DATA_NO,
+                   PPD.PARAM_NO,
+                   PPD.FIELD1_VALUE,
+                   PPD.FIELD1_EN_VALUE,
+                   PPD.FIELD2_VALUE,
+                   PPD.FIELD2_EN_VALUE,
+                   PPD.RETURN_VALUE,
+                   PPD.REMARK,
+                   HRD.DEPTID,
+                   HRD.DEPTNAME
+            FROM HR_DEPARTMENT HRD left join PA_PARAM_DATA PPD on HRD.DEPTID = PPD.FIELD1_VALUE
+            WHERE PPD.PARAM_NO = #PARAM_NO# AND   PPD.ACTIVITY = 1
+        ]]>
+        <include refid="other_getPaInputItemDataInfoCondition" />
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY PPD.FIELD1_VALUE,PPD.RETURN_VALUE
+            ]]>
+        </isEmpty>
+    </select>
+
+    <select id="other_getPaInputItemDataInfoCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(*)
+            FROM HR_DEPARTMENT HRD left join PA_PARAM_DATA PPD on HRD.DEPTID = PPD.FIELD1_VALUE
+            WHERE PPD.PARAM_NO = #PARAM_NO# AND   PPD.ACTIVITY = 1
+        ]]>
+        <include refid="other_getPaInputItemDataInfoCondition" />
+    </select>
+
+    <sql id="getPaInputItemDataEmpInfoCondition">
+        <isNotEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+                (
+                    HRE.CHINESENAME         LIKE concat('%',TRIM(#keyWord#),'%')
+                    OR HRE.EMPID            LIKE concat('%',TRIM(#keyWord#),'%')
+                    OR HRD.DEPTNAME         LIKE concat('%',TRIM(#keyWord#),'%')
+                    OR upper(HRD.DEPT_EN_NAME) LIKE concat('%',TRIM(upper(#keyWord#)),'%')
+                    OR upper(HRE.CHINESE_PINYIN) LIKE concat('%',TRIM(upper(#keyWord#)),'%')
+                    OR upper(HRE.ENGLISHNAME) LIKE concat('%',TRIM(upper(#keyWord#)),'%')
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="DEPTID">
+            <![CDATA[
+                EXISTS (
+                    SELECT  *
+                    FROM HR_DEPARTMENT B1
+                    WHERE B1.DEPTID=HRE.DEPTID
+                    START WITH B1.DEPTID = #DEPTID#
+                    CONNECT BY PRIOR B1.DEPTID = B1.PARENT_DEPT_ID
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="HR_ADMIN_ID">
+            <![CDATA[
+                HRE.EMPID IN(
+                    SELECT HRE.EMPID AR_SUPERVISOR_ID
+                    FROM AR_SUPERVISOR_INFO
+                    WHERE AR_SUPERVISOR_INFO.SUPERVISED_DEPTID = HRE.DEPTID
+                    AND AR_SUPERVISOR_ID = #HR_ADMIN_ID#
+
+                    UNION
+
+                    SELECT #HR_ADMIN_ID# AR_SUPERVISOR_ID
+                    FROM DUAL
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="STATUS_CODE">
+            <![CDATA[
+                HRE.STATUS_CODE = #STATUS_CODE#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="PARAM_NO">
+            <![CDATA[
+            HRE.EMPID NOT IN(
+                SELECT PPD.FIELD1_VALUE
+                FROM PA_PARAM_DATA PPD
+                WHERE PPD.PARAM_NO = #PARAM_NO#
+                    AND   PPD.ACTIVITY = 1
+                    AND   PPD.PA_MONTH = #PA_MONTH#
+            )
+            ]]>
+        </isNotEmpty>
+    </sql>
+
+    <select id="getPaInputItemDataEmpInfo" parameterClass="linkMap"
+        resultClass="linkMap">
+        <![CDATA[
+            SELECT   #PARAM_NO# PARAM_NO,
+               '0' RETURN_VALUE,
+               ''  REMARK,
+               HRE.EMPID,
+               HRE.EMPID FIELD1_VALUE,
+               IF(#language#='en', HRE.ENGLISHNAME, HRE.CHINESENAME) CHINESENAME,
+               HRE.DEPTID,
+               IF(#language#='en', HRD.DEPT_EN_NAME, HRD.DEPTNAME) DEPTNAME,
+               HRE.STATUS_CODE,
+               IF(#language#='en', C.CODE_EN_NAME, C.CODE_NAME) STATUS_NAME,
+               date_format(HRE.JOIN_DATE, '%Y-%m-%d') JOIN_DATE,
+               date_format(HRE.LEFT_DATE, '%Y-%m-%d') LEFT_DATE
+            FROM HR_EMPLOYEE  HRE left join HR_DEPARTMENT HRD on HRE.DEPTID = HRD.DEPTID
+                 left join SY_CODE  C on HRE.STATUS_CODE = C.CODE_ID
+             where 1=1
+        ]]>
+        <include refid="getPaInputItemDataEmpInfoCondition" />
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY HRD.DEPTID,HRE.EMPID
+            ]]>
+        </isEmpty>
+    </select>
+
+    <select id="getPaInputItemDataEmpInfoCnt" parameterClass="linkMap"
+        resultClass="int">
+        <![CDATA[
+            SELECT COUNT(*)
+           FROM HR_EMPLOYEE  HRE left join HR_DEPARTMENT HRD on HRE.DEPTID = HRD.DEPTID
+                 left join SY_CODE  C on HRE.STATUS_CODE = C.CODE_ID
+             where 1=1
+        ]]>
+        <include refid="getPaInputItemDataEmpInfoCondition" />
+    </select>
+
+    <select id="getPaInputItemDataPostGradeInfo" parameterClass="linkMap"
+        resultClass="linkMap">
+        <![CDATA[
+            SELECT   #PARAM_NO# PARAM_NO,
+                '0' RETURN_VALUE,
+                ''  REMARK,
+                HRPG.POST_GRADE_ID FIELD1_VALUE,
+                IF(#language#='en', HRPG.POST_GRADE_EN_NAME, HRPG.POST_GRADE_NAME) NAME
+            FROM HR_POST_GRADE   HRPG
+            WHERE HRPG.ACTIVITY = 1
+                AND HRPG.CPNY_ID = #CPNY_ID#
+        ]]>
+        <isNotEmpty prepend="AND" property="PARAM_NO">
+            <![CDATA[
+                HRPG.POST_GRADE_ID NOT IN(
+                    SELECT PPD.FIELD1_VALUE
+                    FROM PA_PARAM_DATA PPD
+                    WHERE PPD.PARAM_NO = #PARAM_NO#
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY HRPG.POST_GRADE_ID
+            ]]>
+        </isEmpty>
+    </select>
+
+    <select id="getPaInputItemDataPostGradeInfoCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(*)
+            FROM HR_POST_GRADE   HRPG
+            WHERE HRPG.ACTIVITY = 1
+            AND HRPG.CPNY_ID = #CPNY_ID#
+        ]]>
+        <isNotEmpty prepend="AND" property="PARAM_NO">
+            <![CDATA[
+                HRPG.POST_GRADE_ID NOT IN(
+                    SELECT PPD.FIELD1_VALUE
+                    FROM PA_PARAM_DATA PPD
+                    WHERE PPD.PARAM_NO = #PARAM_NO#
+                )
+            ]]>
+        </isNotEmpty>
+    </select>
+
+    <delete id="deletePaInputItemDataInfo" parameterClass="linkMap">
+        <![CDATA[
+            UPDATE PA_PARAM_DATA SET ACTIVITY = 0
+            WHERE PARAM_NO = #PARAM_NO#
+                AND PARAM_DATA_NO = #PARAM_DATA_NO#
+        ]]>
+    </delete>
+
+    <update id="updatePaInputItemDataInfo" parameterClass="linkMap">
+        <![CDATA[
+            UPDATE PA_PARAM_DATA SET
+                RETURN_VALUE = #RETURN_VALUE#,
+                REMARK = #REMARK#
+            WHERE PARAM_DATA_NO = #PARAM_DATA_NO#
+                AND PA_MONTH = #PA_MONTH#
+                AND ACTIVITY = 1
+        ]]>
+    </update>
+    <insert id="insert_updatePaInputItemDataInfo" parameterClass="linkMap">
+        <![CDATA[
+            INSERT INTO PA_PARAM_DATA_T (
+                PARAM_DATA_NO,
+                PARAM_NO,
+                FIELD1_VALUE,
+                FIELD1_EN_VALUE,
+                RETURN_VALUE,
+                FIELD2_VALUE,
+                FIELD2_EN_VALUE,
+                CREATE_DATE,
+                CREATED_BY,
+                FLAG,
+                UPDATE_DATE,
+                UPDATED_BY,
+                UD_DATE,
+                UD_BY,
+                ACTIVITY,
+                PA_MONTH
+            )
+            SELECT  PARAM_DATA_NO,
+                PARAM_NO,
+                FIELD1_VALUE,
+                FIELD1_EN_VALUE,
+                RETURN_VALUE,
+                FIELD2_VALUE,
+                FIELD2_EN_VALUE,
+                SYSDATE,
+                CREATED_BY,
+                #FLAG#,
+                UPDATE_DATE,
+                UPDATED_BY,
+                now(),
+                #UD_BY#,
+                1,
+                PA_MONTH
+            FROM PA_PARAM_DATA
+            WHERE PARAM_DATA_NO = #PARAM_DATA_NO#
+        ]]>
+    </insert>
+
+    <insert id="addPaInputItemDataInfo" parameterClass="linkMap">
+        <![CDATA[
+            DECLARE
+            BEGIN
+                UPDATE PA_PARAM_DATA
+                SET ACTIVITY = 0,
+                    UPDATED_BY = #CREATED_BY#,
+                    UPDATE_DATE = SYSDATE
+                WHERE PA_MONTH = #PA_MONTH#
+                    AND FIELD1_VALUE = #FIELD1_VALUE#
+                    AND CPNY_ID = #CPNY_ID#
+                    AND PARAM_NO = #PARAM_NO#
+                    AND ACTIVITY = 1;
+                COMMIT;
+                INSERT INTO PA_PARAM_DATA (
+                    PARAM_DATA_NO,
+                    PARAM_NO,
+                    FIELD1_VALUE,
+                    FIELD1_EN_VALUE,
+                    RETURN_VALUE,
+                    FIELD2_VALUE,
+                    FIELD2_EN_VALUE,
+                    REMARK,
+                    CREATE_DATE,
+                    CREATED_BY,
+                    ACTIVITY,
+                    PA_MONTH,
+                    CPNY_ID
+                )
+                VALUES(
+                    PA_PARAM_DATA_SEQ.NEXTVAL,
+                    #PARAM_NO#,
+                    #FIELD1_VALUE#,
+                    #FIELD1_EN_VALUE#,
+                    #RETURN_VALUE#,
+                    #FIELD2_VALUE#,
+                    #FIELD2_EN_VALUE#,
+                    #REMARK#,
+                    now(),
+                    #CREATED_BY#,
+                    1,
+                    #PA_MONTH#,
+                    #CPNY_ID#
+                );
+            END;
+        ]]>
+    </insert>
+
+    <procedure id="createPaInputItemDataInfo" parameterClass="linkMap">
+        {CALL PR_PARAM_LIST(#PARAM_NO#)}
+    </procedure>
+
+    <procedure id="createPaInputItemInfo" parameterClass="linkMap">
+        {CALL PR_PARAM_INITIAL(#PA_MONTH#)}
+    </procedure>
+
+    <procedure id="initialPaInputItemInfo" parameterClass="linkMap">
+        {CALL PA_PARAM_INITIAL(#PA_MONTH#)}
+    </procedure>
+
+    <procedure id="timingInsertAttendanceInfo" parameterClass="linkMap">
+        {CALL PA_ATTENDANCE_M_INSERT}
+    </procedure>
+
+    <procedure id="initialEvaItemInfo" parameterClass="linkMap">
+        {CALL EVA_ITEM_INITIAL(#PA_MONTH#)}
+    </procedure>
+
+
+    <sql id="getPaInputItemDataDeptIdInfoCondition">
+        <isNotEmpty prepend="AND" property="PARAM_NO">
+            <![CDATA[
+            HRD.DEPTID NOT IN(
+                SELECT PPD.FIELD1_VALUE
+                FROM PA_PARAM_DATA PPD
+                WHERE PPD.PARAM_NO = #PARAM_NO#
+                    AND   PPD.ACTIVITY = 1
+                    AND   PPD.PA_MONTH = #PA_MONTH#
+            )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+                (
+                    HRD.DEPTNAME            LIKE concat('%',TRIM(#keyWord#),'%')
+                    OR HRD.DEPTID           LIKE concat('%',TRIM(#keyWord#),'%')
+                )
+            ]]>
+        </isNotEmpty>
+    </sql>
+    <select id="getPaInputItemDataDeptIdInfo" parameterClass="linkMap"
+        resultClass="linkMap">
+        <![CDATA[
+            SELECT   #PARAM_NO# PARAM_NO,
+               '0' RETURN_VALUE,
+               ''  REMARK,
+               HRD.DEPTID FIELD1_VALUE,
+               HRD.DEPTID DEPTID,
+               IF(#language#='en', HRD.DEPT_EN_NAME, HRD.DEPTNAME) DEPTNAME
+            FROM HR_DEPARTMENT   HRD
+            WHERE 1=1
+            AND   HRD.ACTIVITY = 1
+        ]]>
+        <include refid="getPaInputItemDataDeptIdInfoCondition" />
+        <isNotEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY $sortname$ $sortorder$
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+            <![CDATA[
+                ORDER BY HRD.DEPTID
+            ]]>
+        </isEmpty>
+    </select>
+
+    <select id="getPaInputItemDataDeptIdInfoCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(*)
+            FROM HR_DEPARTMENT   HRD
+            WHERE 1=1
+            AND   HRD.ACTIVITY = 1
+        ]]>
+        <include refid="getPaInputItemDataDeptIdInfoCondition" />
+    </select>
+
+</sqlMap>

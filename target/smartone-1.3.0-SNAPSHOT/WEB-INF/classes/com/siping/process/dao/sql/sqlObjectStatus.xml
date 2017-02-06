@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap
+    PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+    "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="process.objectStatus">
+    <resultMap id="stateMap" class="state">
+        <result property="no" column="STATUS_NO" />
+        <result property="id" column="STATUS_ID" />
+        <result property="name" column="STATUS_NAME" />
+        <result property="description" column="DESCRIPTION" />
+        <result property="active" column="ACTIVITY" />
+    </resultMap>
+
+    <sql id="ObjectStatusSearchCondition">
+        <isNotEmpty prepend="AND" property="keyWord">
+            <![CDATA[
+                (
+                    PSI.STATUS_NAME           LIKE '%'||TRIM(#keyWord#)||'%'
+                    OR PSI.DESCRIPTION        LIKE '%'||TRIM(#keyWord#)||'%'
+                )
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="ACTIVITY">
+            <![CDATA[
+                PSI.ACTIVITY = #ACTIVITY#
+            ]]>
+        </isNotEmpty>
+        <isEmpty prepend="AND" property="ACTIVITY">
+            <![CDATA[
+                PSI.ACTIVITY = 1
+            ]]>
+        </isEmpty>
+    </sql>
+
+    <select id="getObjectStatusList" parameterClass="linkMap" resultMap="stateMap">
+        <![CDATA[
+            SELECT  PSI.STATUS_NO           STATUS_NO,
+                    PSI.STATUS_ID           STATUS_ID,
+                    PSI.STATUS_NAME         STATUS_NAME,
+                    PSI.DESCRIPTION              DESCRIPTION,
+                    PSI.ACTIVITY                 ACTIVITY
+            FROM    PROCESS_STATUS_INFO            PSI,
+                    HR_EMPLOYEE         HE1,
+                    HR_EMPLOYEE         HE2
+            WHERE   PSI.CREATED_BY    = HE1.EMPID(+)
+            AND     PSI.UPDATED_BY    = HE2.EMPID(+)
+            AND     PSI.CPNY_ID = #metaData.company.companyId#
+        ]]>
+        <include refid="ObjectStatusSearchCondition" />
+    </select>
+
+    <select id="getObjectStatusListCnt" parameterClass="linkMap" resultClass="int">
+        <![CDATA[
+            SELECT COUNT(0)
+            FROM    PROCESS_STATUS_INFO       PSI,
+                    HR_EMPLOYEE         HE1,
+                    HR_EMPLOYEE         HE2
+            WHERE   PSI.CREATED_BY    = HE1.EMPID(+)
+            AND     PSI.UPDATED_BY    = HE2.EMPID(+)
+            AND     PSI.CPNY_ID = #metaData.company.companyId#
+        ]]>
+        <include refid="ObjectStatusSearchCondition" />
+    </select>
+
+    <insert id="addObjectStatus" parameterClass="state">
+        <![CDATA[
+            INSERT INTO PROCESS_STATUS_INFO (
+                STATUS_NO,
+                STATUS_ID,
+                STATUS_NAME,
+                DESCRIPTION,
+                CREATE_DATE,
+                CREATED_BY,
+                ACTIVITY,
+                CPNY_ID)
+            VALUES(
+                PROCESS_STATUS_SEQ.NEXTVAL,
+                'STATUS-'||PROCESS_STATUS_SEQ.NEXTVAL,
+                #name# ,
+                #description# ,
+                #metaData.createDate#,
+                #metaData.createUser.adminID#,
+                #active#,
+                #metaData.company.companyId#
+            )
+        ]]>
+    </insert>
+
+    <update id="updateObjectStatus" parameterClass="state">
+        <![CDATA[
+            UPDATE PROCESS_STATUS_INFO SET
+                STATUS_NAME = #name#,
+                DESCRIPTION = #description#,
+                ACTIVITY = #active#,
+                UPDATE_DATE = #metaData.lastUpdateDate#,
+                UPDATED_BY = #metaData.lastUpdateUser.adminID#
+            WHERE STATUS_NO = #no#
+            AND CPNY_ID = #metaData.company.companyId#
+        ]]>
+    </update>
+    
+    <update id="removeObjectStatus" parameterClass="state">
+        <![CDATA[
+            UPDATE PROCESS_STATUS_INFO SET
+                ACTIVITY = #active#,
+                UPDATE_DATE = #metaData.lastUpdateDate#,
+                UPDATED_BY = #metaData.lastUpdateUser.adminID#
+            WHERE STATUS_NO = #no#
+            AND CPNY_ID = #metaData.company.companyId#
+        ]]>
+    </update>
+</sqlMap>

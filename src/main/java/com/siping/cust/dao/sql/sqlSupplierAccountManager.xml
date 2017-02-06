@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap  PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="cust.supplierAccount" >
+<sql id="supplierAccountCondition">
+	<isNotEmpty prepend="AND" property="keyWord">
+		<![CDATA[
+			SUP.SUPPLIER_NAME LIKE CONCAT('%',TRIM(#keyWord#),'%')  
+			
+		]]>
+	</isNotEmpty>
+	
+	<isNotEmpty prepend="AND" property="STATUS">
+			SY.ACTIVITY LIKE CONCAT('%',TRIM(#STATUS#),'%')
+	</isNotEmpty>
+	
+	<isNotEmpty prepend="" property="sortname">
+		<![CDATA[
+			ORDER BY $sortname$  $sortorder$
+		]]>
+	</isNotEmpty>
+	
+	<isEmpty prepend="" property="sortname" >
+		<![CDATA[
+			ORDER BY SY.CREATE_DATE DESC
+		]]>
+	</isEmpty>
+	
+</sql>
+	<select id="getSupplierAccountList" resultClass="linkMap" parameterClass="linkMap">
+		<![CDATA[
+			SELECT 
+			SUP.SUPPLIER_NO,
+			SUP.SUPPLIER_ID,
+			SUP.SUPPLIER_NAME,
+			SUP.SUPPLIER_CONTACTS,
+			SY.ADMINNO,
+			SY.PASSWORD,
+			SY.USERNAME,
+			SY.ACTIVITY
+			FROM PROSTOR_SUPPLIER SUP LEFT JOIN SY_ADMIN SY ON(SUP.SUPPLIER_ID=SY.CPNY_ID) 
+			WHERE SY.ADMINLEVEL IS NULL OR SY.ADMINLEVEL=1
+			 
+		]]>
+		<include refid="supplierAccountCondition"/>
+	</select>
+	
+	<select id="getSupplierAccountCnt" resultClass="int" parameterClass="linkMap">
+		<![CDATA[
+			SELECT 
+				COUNT(*) FROM  PROSTOR_SUPPLIER SUP LEFT JOIN SY_ADMIN SY ON(SUP.SUPPLIER_ID=SY.CPNY_ID)
+			WHERE  SY.ADMINLEVEL IS NULL OR SY.ADMINLEVEL=1
+	
+		]]>
+		<include refid="supplierAccountCondition"/>
+	</select>
+	
+	<update id="updateSupplierAccount"   parameterClass="linkMap">
+		<![CDATA[
+			UPDATE SY_ADMIN SET 
+				USERNAME=#USERNAME#,
+				PASSWORD=#PASSWORD#,
+				UPDATE_DATE=now(),
+				UPDATED_BY=#UPDATED_BY#
+				
+			WHERE
+				ADMINNO=#ADMINNO#
+				
+				]]>
+	</update>
+	
+	
+	<insert id="insertSupplierAccount" parameterClass="linkMap">
+	<selectKey resultClass="int" keyProperty="CUST_NO"> 
+            SELECT Auto_increment AS CUST_NO
+				FROM information_schema.`TABLES`
+				WHERE Table_Schema='smartone_v1'
+				AND table_name = 'SY_ADMIN'
+        </selectKey>		
+		<![CDATA[
+			INSERT INTO SY_ADMIN(
+				ADMINNO,
+				ADMINID, 
+				ADMINLEVEL,
+				USERNAME, 
+				PASSWORD,
+				SCREEN_GRANT_ID,
+				CREATE_DATE,
+				CREATED_BY,
+				ACTIVITY,
+				SET_APP,
+				CPNY_ID
+			)VALUES(
+				#ADMINNO#,
+				CONCAT('SUP',#ADMINNO#),
+				1,
+				#USERNAME#,
+				#PASSWORD#,
+				'',
+				now(),
+				#CREATED_BY#,
+				1,
+				'no',
+				 (SELECT SUPPLIER_ID FROM PROSTOR_SUPPLIER WHERE SUPPLIER_NO=#SUPPLIER_NO#)
+			)
+		]]>
+		
+	</insert>
+	
+	<delete id="deleteSupplierAccount" parameterClass="linkMap">
+		<![CDATA[
+			DELETE FROM SY_ADMIN 
+			WHERE
+				CPNY_ID=(SELECT SUPPLIER_ID FROM PROSTOR_SUPPLIER WHERE SUPPLIER_NO=#SUPPLIER_NO#)
+			
+		]]>
+	</delete>
+	
+	
+	<select id="checkUsernameExist" parameterClass="linkMap"   resultClass="int">
+		<![CDATA[
+			SELECT COUNT(*) FROM SY_ADMIN 
+			  WHERE
+			    USERNAME=#USERNAME#
+		]]>
+	</select>
+	<select id="getSupplierByPassword" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+			SELECT COUNT(*) FROM SY_ADMIN
+			   WHERE
+			     USERNAME=#USERNAME# 
+			     AND
+			     PASSWORD=#OLDPASSWORD#
+		]]>
+	</select>
+	 <update id="updateSupplierPassword">
+	 	<![CDATA[
+	 	
+	 		UPDATE SY_ADMIN
+	 		  SET 
+	 		  	PASSWORD=#ENTERNEWPASSWORD#
+	 		  WHERE
+	 		  	USERNAME=#USERNAME#	
+	 	]]>
+	 </update>
+	 
+	 <update id="toggleActivity" parameterClass="linkMap" >
+	 	<![CDATA[
+	 		UPDATE SY_ADMIN
+	 		   SET ACTIVITY=#ACTIVITY#
+	 		   WHERE 
+	 		    CPNY_ID=#SUPPLIER_ID#
+	 	]]>
+	 </update>
+</sqlMap>

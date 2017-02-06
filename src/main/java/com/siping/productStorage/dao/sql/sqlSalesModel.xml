@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="prostor.salesmodel">
+    <sql id="ProSalesModelCondition">
+        <isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+				(	
+					PSM.SALES_MODE_NAME LIKE concat('%',TRIM(#keyWord#),'%')
+					OR PSM.REMARK LIKE concat('%',TRIM(#keyWord#),'%')
+				)
+			]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="STATUS">
+			<![CDATA[
+				PSM.STATUS = #STATUS#
+			]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="SALES_MODE_NAME">
+            <![CDATA[
+                PSM.SALES_MODE_NAME = #SALES_MODE_NAME#
+            ]]>
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="MOBILE_STATUS">
+            <![CDATA[
+                PSM.MOBILE_STATUS = #MOBILE_STATUS#
+            ]]>
+        </isNotEmpty>
+    </sql>
+    <select id="getSalesModelList" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+		<![CDATA[	
+			SELECT
+				PSM.SALES_MODE_NO SALES_MODE_NO,
+				PSM.SALES_MODE_ID SALES_MODE_ID,
+				PSM.SALES_MODE_NAME SALES_MODE_NAME,
+				PSM.REMARK REMARK,
+				PSM.STATUS STATUS,
+				PSM.MOBILE_STATUS
+			FROM
+				PROSTOR_SALES_MODEL	PSM
+			WHERE	PSM.ACTIVITY = 1
+		]]>
+        <include refid="ProSalesModelCondition" />
+        <isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY $sortname$ $sortorder$
+			]]>
+        </isNotEmpty>
+        <isEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY PSM.SALES_MODE_NO
+			]]>
+        </isEmpty>
+    </select>
+    <select id="getSalesModelListCnt" parameterClass="linkMap" resultClass="int">
+		<![CDATA[	
+			SELECT
+				COUNT(PSM.SALES_MODE_NO)
+			FROM
+				PROSTOR_SALES_MODEL	PSM
+			WHERE	PSM.ACTIVITY = 1
+		]]>
+        <include refid="ProSalesModelCondition" />
+    </select>
+    <insert id="addSalesModel" parameterClass="linkMap">
+		<![CDATA[
+			INSERT INTO PROSTOR_SALES_MODEL (
+				SALES_MODE_ID,
+				SALES_MODE_NAME,
+				REMARK,
+				CREATE_DATE,
+				CREATED_BY,
+				ACTIVITY,
+				CPNY_ID,
+				STATUS,
+				MOBILE_STATUS)
+			VALUES(
+			concat('SM',LAST_INSERT_ID()),
+			#SALES_MODE_NAME#,
+				#REMARK#,
+				SYSDATE(),
+				#CREATED_BY#,
+				1,
+				#CPNY_ID#,
+				#STATUS_IN#,
+				0)
+		]]>
+    </insert>
+    <update id="updateSalesModel" parameterClass="linkMap">
+		<![CDATA[
+			UPDATE PROSTOR_SALES_MODEL
+			SET SALES_MODE_NAME = #SALES_MODE_NAME#,
+				REMARK = #REMARK#,
+				STATUS = #STATUS_IN#,
+				UPDATE_DATE = SYSDATE(),
+				UPDATED_BY = #UPDATED_BY#
+			WHERE SALES_MODE_NO = #SALES_MODE_NO#
+			AND   ACTIVITY = 1
+			AND   CPNY_ID = #CPNY_ID#
+		]]>
+    </update>
+    <delete id="deleteSalesModel" parameterClass="linkMap">
+		<![CDATA[
+		
+			delete from  PROSTOR_SALES_MODEL where SALES_MODE_NO = #SALES_MODE_NO#
+		]]>
+    </delete>
+    <select id="checkSalesDistri" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+			SELECT
+				COUNT(PPSM.SALES_MODE_NO)
+			FROM
+				PROSTOR_PRODUCT_SALES_MODEL PPSM
+			WHERE	PPSM.ACTIVITY = 1
+			AND		PPSM.SALES_MODE_NO = #SALES_MODE_NO#
+			AND		PPSM.CPNY_ID = #CPNY_ID#
+		]]>
+    </select>
+    <select id="getAllSalesModes" resultClass="com.siping.productStorage.bean.SalesMode">
+        <![CDATA[
+                SELECT
+                    SALES_MODE_NO salesModeNo,
+                    SALES_MODE_ID salesModeId,
+                    SALES_MODE_NAME salesModeName
+                FROM
+                    PROSTOR_SALES_MODEL
+                WHERE
+                    ACTIVITY = 1
+        ]]>
+    </select>
+    <update id="updateSalesMobileStatus" parameterClass="linkMap">
+        <![CDATA[
+        DECLARE
+        BEGIN
+            UPDATE PROSTOR_SALES_MODEL
+            SET MOBILE_STATUS = 0,
+                UPDATE_DATE = SYSDATE,
+                UPDATED_BY = #UPDATED_BY#
+            WHERE ACTIVITY = 1
+            AND   MOBILE_STATUS = 1
+            AND   CPNY_ID = #CPNY_ID#;
+            
+            UPDATE PROSTOR_SALES_MODEL
+            SET MOBILE_STATUS = 1,
+                UPDATE_DATE = SYSDATE,
+                UPDATED_BY = #UPDATED_BY#
+            WHERE ACTIVITY = 1
+            AND   CPNY_ID = #CPNY_ID#
+            AND   SALES_MODE_NO = #SALES_MODE_NO#;
+        END;
+        ]]>
+    </update>
+</sqlMap>

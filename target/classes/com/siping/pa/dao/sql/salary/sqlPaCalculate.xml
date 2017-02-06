@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="pa.paCalculate">
+	<!-- calculate pa  -->
+	<procedure id="paCalculate" parameterClass="linkMap">
+		<![CDATA[
+			{CALL PA_PACAL(#PA_MONTH:VARCHAR#, #PA_MONTH:VARCHAR#, #CPNY_ID:VARCHAR#,'NORMAL', 'NONE', #message,jdbcType=VARCHAR,mode=OUT#) }
+		]]>
+	</procedure>
+	
+	<select id="getPaMonInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT * 
+			FROM PA_HISTORY PH
+			WHERE PA_MONTH = #PA_MONTH#
+		]]>
+		<isNotEmpty prepend="AND" property="EMPID">
+			<![CDATA[
+				PH.EMPID = #EMPID#
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="DEPTID">
+			<![CDATA[
+				PH.DEPTID IN ( SELECT DEPTID FROM HR_DEPARTMENT 
+					START WITH DEPTID = #DEPTID# 
+					CONNECT BY PRIOR DEPTID = PARENT_DEPT_ID
+				)
+			]]>
+		</isNotEmpty>
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY EMP_TYPE_NAME, DEPTID, POST_ID, EMPID
+			]]>
+		</isEmpty>
+	</select>
+	
+	<select id="getPaMonInfoCnt" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+			SELECT COUNT(*) 
+			FROM PA_HISTORY PH
+			WHERE PA_MONTH = #PA_MONTH#
+		]]>
+		<isNotEmpty prepend="AND" property="EMPID">
+			<![CDATA[
+				PH.EMPID = #EMPID#
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="DEPTID">
+			<![CDATA[
+				PH.DEPTID IN ( SELECT DEPTID FROM HR_DEPARTMENT 
+					START WITH DEPTID = #DEPTID# 
+					CONNECT BY PRIOR DEPTID = PARENT_DEPT_ID
+				)
+			]]>
+		</isNotEmpty>
+	</select>
+	
+	<select id="getPaSqlColumns" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT ITEM_ID AS  COLUMN_NAME,
+			IF(''='en', ITEM_EN_NAME, ITEM_NAME) ITEM_NAME,  
+			CALCU_ORDER AS CALCU_ORDER
+			FROM PA_ITEM PI
+			WHERE ACTIVITY = 1
+				AND CPNY_ID = #CPNY_ID#
+			ORDER BY CALCU_ORDER
+		]]>
+	</select>
+	
+	<update id="updatePaMonthInfo"  parameterClass="linkMap" >
+	   $sql$ 
+	</update>
+</sqlMap>

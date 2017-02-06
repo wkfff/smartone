@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="att.attMonthCalculate">
+
+	<procedure id="monthCalculate" parameterClass="linkMap">
+		<![CDATA[
+			{CALL AR_MONTH_CAL(#attMonth#,#empID,jdbcType=VARCHAR,mode=OUT#)}
+		]]>
+	</procedure>
+
+	<select id="getMonthlyStatusCnt" parameterClass="linkMap"
+		resultClass="int" >
+		<![CDATA[ 
+			SELECT COUNT(*) CNT
+				FROM PA_PROGRESS
+		]]>
+		<isNotEmpty prepend="WHERE" property="attMonth">
+			<![CDATA[
+				MONTH_STR = #attMonth#
+			]]>
+		</isNotEmpty>
+	</select>
+
+	<update id="updateDetailLock" parameterClass="linkMap">
+		<![CDATA[	 
+			UPDATE AR_DETAIL_LOCK
+				SET STATUS = 'LockStatus010',
+					UPDATE_DATE = SYSDATE,
+					UPDATED_BY = #UPDATED_BY#
+			 WHERE ACTIVITY = 1 
+			]]>
+
+		<isNotEmpty prepend="AND" property="attMonth">
+			<![CDATA[
+				AR_MONTH_STR = #attMonth#
+			]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="AND" property="AR_DATE_STR">
+			<![CDATA[
+				AR_DATE_STR = #AR_DATE_STR#
+			]]>
+		</isNotEmpty>
+		
+	</update>
+
+	<update id="updateDailyAttStatus" parameterClass="linkMap">
+		<![CDATA[
+			UPDATE PA_PROGRESS
+				SET DAILY_LOCK_FLAG = 1
+					WHERE MONTH_STR = #attMonth#
+					AND MONTHLY_LOCK_FLAG = 0
+		]]>
+	</update>
+
+	<update id="updateMonthlyAttStatus" parameterClass="linkMap">
+		<![CDATA[
+			UPDATE PA_PROGRESS
+				SET MONTHLY_LOCK_FLAG = 1
+				WHERE MONTH_STR = #attMonth#
+				AND PA_LOCK_FLAG = 0
+				AND DAILY_LOCK_FLAG = 1
+		]]>
+	</update>
+
+	<insert id="insertMonthlyStatus" parameterClass="linkMap">
+		<![CDATA[	
+			INSERT INTO PA_PROGRESS
+					( MONTH_STR, 
+						DAILY_LOCK_FLAG,
+						MONTHLY_LOCK_FLAG,
+						PA_LOCK_FLAG,
+						PA_OPEN_FLAG,
+						INS_LOCK_FLAG,
+						CREATED_BY,
+						CREATE_DATE )
+			VALUES (#attMonth:VARCHAR#, 
+					0,
+					0,
+					0, 
+					0,
+					0,
+					#CREATED_BY:VARCHAR#,
+					SYSDATE
+				)
+			]]>
+	</insert>
+	
+	<select id="getMonthlyStatusList" parameterClass="linkMap"
+		resultClass="linkMap">
+		<![CDATA[
+				SELECT MONTH_STR, 
+						DAILY_LOCK_FLAG,
+						MONTHLY_LOCK_FLAG,
+						PA_LOCK_FLAG,
+						PA_OPEN_FLAG,
+						INS_LOCK_FLAG, 
+						CREATED_BY,
+						CREATE_DATE
+					FROM PA_PROGRESS
+		]]>
+
+		<isNotEmpty prepend="WHERE" property="attMonth">
+			<![CDATA[
+				MONTH_STR = #attMonth#
+			]]>
+		</isNotEmpty>
+
+	</select>
+	
+	<select id="getMonthlyStatus" parameterClass="linkMap"
+		resultClass="int">
+		<![CDATA[
+				SELECT MONTHLY_LOCK_FLAG
+					FROM PA_PROGRESS
+		]]>
+
+		<isNotEmpty prepend="WHERE" property="attMonth">
+			<![CDATA[
+				MONTH_STR = #attMonth#
+			]]>
+		</isNotEmpty>
+
+	</select>
+</sqlMap>

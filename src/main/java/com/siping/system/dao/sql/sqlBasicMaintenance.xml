@@ -1,0 +1,1442 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMap 
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" 
+	"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="system.basicMaintenance">
+
+	
+	<select id="checkCompanyInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT T.CPNY_ID
+			  FROM HR_COMPANY T WHERE T.CPNY_ID = #CPNY_ID:VARCHAR#
+		]]>	  
+	</select>
+	 
+	<delete id="deleteCompanyInfo" parameterClass="linkMap" >
+		<![CDATA[
+			DELETE HR_COMPANY WHERE CPNY_ID = #CPNY_ID:VARCHAR#
+		]]>
+	</delete>
+	
+	<insert id="addCompanyInfo" parameterClass="linkMap" >
+		<![CDATA[
+			INSERT INTO HR_COMPANY (
+					CPNY_ID,
+					CPNY_LOCATION,
+					CPNY_NAME,
+					CPNY_EN_NAME, 
+					CPNY_ADDR,
+					CPNY_POSTALCODE,
+					CPNY_WEB_ADDR,
+					CPNY_TEL_NO,
+					CPNY_FAX_NO,
+					CPNY_INTRO,
+					CPNY_HISTORY,
+					CREATE_DATE,
+					CREATED_BY,
+					ACTIVITY)
+				VALUES( 
+					#CPNY_ID:VARCHAR# ,
+					#CPNY_LOCATION:VARCHAR# ,
+					#CPNY_NAME:VARCHAR# , 
+					#CPNY_EN_NAME:VARCHAR# ,
+					#CPNY_ADDR:VARCHAR# ,
+					#CPNY_POSTALCODE:VARCHAR#,
+					#CPNY_WEB_ADDR:VARCHAR#,
+					#CPNY_TEL_NO:VARCHAR#,
+					#CPNY_FAX_NO:VARCHAR#,
+					#CPNY_INTRO:VARCHAR#,
+					#CPNY_HISTORY:VARCHAR#,
+					SYSDATE ,
+					#CREATED_BY:VARCHAR# ,
+					#ACTIVITY:NUMERIC#
+				)
+		]]>
+	</insert>
+	
+	<select id="getCompanyInfo" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT T.CPNY_ID,
+			       T.CPNY_LOCATION,
+			       T.CPNY_NAME,
+			       T.CPNY_EN_NAME,
+			       T.CPNY_ADDR, 
+			       T.CPNY_POSTALCODE,
+			       T.CPNY_WEB_ADDR,
+			       T.CPNY_TEL_NO,
+			       T.CPNY_FAX_NO,
+			       T.CPNY_INTRO,
+			       T.CPNY_HISTORY, 
+			       IF(T.ACTIVITY='1',IF(#language#='en', 'Available', '可用'),IF(#language#='en', 'Unavailable', '不可用')) ACTIVITY
+			  FROM HR_COMPANY T 
+		]]>	  
+		
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		  ORDER BY $sortname$ $sortorder$
+		    ]]>
+		</isNotEmpty>
+		
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+		 		  ORDER BY CPNY_ID
+			]]>
+		</isEmpty> 
+	</select>
+	 
+	<select id="getCompanyInfoObj" parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[
+			SELECT T.CPNY_ID,
+			       T.CPNY_LOCATION,
+			       T.CPNY_NAME,
+			       T.CPNY_EN_NAME,
+			       T.CPNY_ADDR, 
+			       T.CPNY_POSTALCODE,
+			       T.CPNY_WEB_ADDR,
+			       T.CPNY_TEL_NO,
+			       T.CPNY_FAX_NO,
+			       T.CPNY_INTRO,
+			       T.CPNY_HISTORY,
+       			   T.ACTIVITY 
+			  FROM HR_COMPANY T
+			   WHERE T.CPNY_ID = #CPNY_ID:VARCHAR#
+		]]>	  
+	</select>
+	  
+	<update id="updateCompanyInfo" parameterClass="linkMap" >
+		<![CDATA[
+			UPDATE HR_COMPANY T
+				SET 
+					T.CPNY_LOCATION = #CPNY_LOCATION:VARCHAR# ,
+					T.CPNY_NAME = #CPNY_NAME:VARCHAR# , 
+					T.CPNY_EN_NAME = #CPNY_EN_NAME:VARCHAR# ,
+					T.CPNY_ADDR = #CPNY_ADDR:VARCHAR#,
+					T.CPNY_POSTALCODE = #CPNY_POSTALCODE:VARCHAR#,
+					T.CPNY_WEB_ADDR = #CPNY_WEB_ADDR:VARCHAR#,
+					T.CPNY_TEL_NO = #CPNY_TEL_NO:VARCHAR#,
+					T.CPNY_FAX_NO = #CPNY_FAX_NO:VARCHAR#,
+					T.CPNY_INTRO = #CPNY_INTRO:VARCHAR#,
+					T.CPNY_HISTORY = #CPNY_HISTORY:VARCHAR#,
+					T.ACTIVITY = #ACTIVITY:NUMERIC# ,
+					UPDATE_DATE = now() ,
+					UPDATED_BY = #UPDATED_BY:VARCHAR# 
+				WHERE T.CPNY_ID = #CPNY_ID:VARCHAR#
+		]]>
+	</update>
+	 
+	 <select id="getDeptInfoList" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT A.DEPTNO,
+			       A.DEPTID,
+			       A.DEPTNAME,
+			       A.DEPT_EN_NAME,
+			       A.CPNY_ID,
+			       A.DATE_CREATED,
+			       A.DATE_ENDED,
+			       A.PARENT_DEPT_ID,
+			       A.DEPT_LEVEL,
+			       A.MANAGER_EMP_ID,
+			       A.DEPTCODE,
+			       A.AREA_CODE,
+			       DECODE(#language#, 'en', B.CODE_EN_NAME, B.CODE_NAME) AREA,
+			       A.DESCRIPTION,
+			       DECODE(A.ACTIVITY,
+			              '1',
+			              DECODE(#language#, 'en', 'Available', '可用'),
+			              DECODE(#language#, 'en', 'Unavailable', '不可用')) ACTIVITY
+			  FROM HR_DEPARTMENT A, SY_CODE B
+			 WHERE A.AREA_CODE = B.CODE_ID(+)
+			   AND (A.DATE_CREATED < SYSDATE AND
+						 A.DATE_ENDED > SYSDATE OR
+						 A.DATE_ENDED IS NULL)
+			 START WITH A.PARENT_DEPT_ID = #parentCode:VARCHAR#
+			CONNECT BY PRIOR A.DEPTID = A.PARENT_DEPT_ID
+			 ORDER SIBLINGS BY A.DEPT_LEVEL 
+		]]>	  
+	</select>
+	 
+	 <select id="getDeptListByParentCode" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT A.DEPTNO,
+			       A.DEPTID,
+			       A.DEPTNAME,
+			       A.DEPT_EN_NAME,
+			       A.CPNY_ID,
+			       A.DATE_CREATED,
+			       A.DATE_ENDED,
+			       A.PARENT_DEPT_ID,
+			       A.DEPT_LEVEL,
+			       A.MANAGER_EMP_ID,
+			       A.DEPTCODE,
+			       A.AREA_CODE,
+			       DECODE(#language#, 'en', B.CODE_EN_NAME, B.CODE_NAME) AREA,
+			       A.DESCRIPTION,
+			       DECODE(A.ACTIVITY,
+			              '1',
+			              DECODE(#language#, 'en', 'Available', '可用'),
+			              DECODE(#language#, 'en', 'Unavailable', '不可用')) ACTIVITY
+			  FROM HR_DEPARTMENT A, SY_CODE B
+			 WHERE A.AREA_CODE = B.CODE_ID(+)
+			   AND A.DEPT_LEVEL < 12
+			   AND (A.DATE_CREATED < SYSDATE AND
+						 A.DATE_ENDED > SYSDATE OR
+						 A.DATE_ENDED IS NULL)
+			 START WITH A.PARENT_DEPT_ID = #parentCode:VARCHAR#
+			CONNECT BY PRIOR A.DEPTID = A.PARENT_DEPT_ID
+			 ORDER SIBLINGS BY A.DEPT_LEVEL
+		]]>	  
+	</select>
+	 
+	<select id="getDeptInfoObj" parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[
+			SELECT A.DEPTNO,
+			       A.DEPTID,
+			       A.DEPTNAME,
+			       A.DEPT_EN_NAME,
+			       A.CPNY_ID,
+			       A.DATE_CREATED,
+			       A.DATE_ENDED,
+			       A.PARENT_DEPT_ID,
+			       A.DEPT_LEVEL,
+			       A.MANAGER_EMP_ID,
+			       A.DEPTCODE,
+			       A.AREA_CODE,
+			       DECODE(#language#, 'en', B.CODE_EN_NAME, B.CODE_NAME) AREA,
+			       A.DESCRIPTION,
+			      IF(T.ACTIVITY='1',IF(#language#='en', 'Available', '可用'),IF(#language#='en', 'Unavailable', '不可用')) ACTIVITY
+			  FROM HR_DEPARTMENT A, SY_CODE B
+			 WHERE A.AREA_CODE = B.CODE_ID(+) 
+			   AND A.DEPTNO = #DEPTNO:NUMERIC#
+		]]>	  
+	</select>
+	
+	
+	<!-- <select id="getParentCodeList" parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[
+			SELECT T.CODE_ID, 
+			       (CASE WHEN #language# = 'en' THEN
+					NVL(T.CODE_EN_NAME, T.CODE_NAME)
+					ELSE
+				       T.CODE_NAME
+				    END) AS CODE_NAME,
+				   T.CPNY_ID,
+			       DECODE(#language#, 'en', A.CPNY_EN_NAME, A.CPNY_NAME) CPNY_NAME,
+			       T.ACTIVITY STATUS_ID,
+			       DECODE(T.ACTIVITY,
+			            '1',
+			            DECODE(#language#, 'en', 'Available', '可用'),
+			            DECODE(#language#, 'en', 'Unavailable', '不可用')) STATUS,
+				   T.DESCRIPTION,
+			       T.DEPTH
+			  FROM SY_CODE T, HR_COMPANY A
+			 WHERE T.DEPTH < 2  
+			  AND T.CPNY_ID = A.CPNY_ID(+)
+			 START WITH T.PARENT_CODE = 'HRMS'
+			CONNECT BY PRIOR T.CODE_ID = T.PARENT_CODE
+			 ORDER SIBLINGS BY T.ORDERNO
+		]]>	  
+	</select> -->
+	<select id="getParentCodeList" parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[
+			SELECT T.CODE_ID,
+			       (CASE WHEN #language# = 'en' THEN
+					IFNULL(T.CODE_EN_NAME, T.CODE_NAME)
+					ELSE
+				       T.CODE_NAME
+				    END) AS CODE_NAME,
+				   T.CPNY_ID,
+			       IF(#language#='en', A.CPNY_EN_NAME, A.CPNY_NAME) CPNY_NAME,
+			       T.ACTIVITY STATUS_ID,
+			       IF(T.ACTIVITY='1',IF(#language#='en', 'Available', '可用'),IF(#language#='en', 'Unavailable', '不可用')) STATUS,
+				   T.DESCRIPTION,
+			       T.DEPTH 
+			  FROM SY_CODE T left join HR_COMPANY A on T.CPNY_ID = A.CPNY_ID
+			 WHERE T.DEPTH < 2  AND 
+			 FIND_IN_SET(T.CODE_ID, getCodeChildLst('HRMS'))
+
+		]]>	  
+	</select>
+	<!-- <select id="getCodeListByParentCode" parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[
+			SELECT T.CODE_NO,
+			       T.CODE_ID,
+			       T.CODE_NAME,
+			       T.CODE_EN_NAME,
+			       T.DESCRIPTION,
+			       T.CPNY_ID,
+			       DECODE(#language#, 'en', A.CPNY_EN_NAME, A.CPNY_NAME) CPNY_NAME,
+			       T.ACTIVITY STATUS_ID,
+			       DECODE(T.ACTIVITY,
+			            '1',
+			            DECODE(#language#, 'en', 'Available', '可用'),
+			            DECODE(#language#, 'en', 'Unavailable', '不可用')) STATUS
+			  FROM SY_CODE T, HR_COMPANY A
+			 WHERE T.CPNY_ID = A.CPNY_ID(+)
+			 START WITH T.PARENT_CODE = #parentCode:VARCHAR#
+			CONNECT BY PRIOR T.CODE_ID = T.PARENT_CODE
+			 ORDER SIBLINGS BY T.ORDERNO
+		]]>	  
+	</select> -->
+	<select id="getCodeListByParentCode" parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[
+			SELECT T.CODE_NO,
+			       T.CODE_ID,
+			       T.CODE_NAME,
+			       T.CODE_EN_NAME,
+			       T.DESCRIPTION,
+			       T.CPNY_ID,
+			       IF(#language#='en', A.CPNY_EN_NAME, A.CPNY_NAME) CPNY_NAME,
+			       T.ACTIVITY STATUS_ID,
+			        IF(T.ACTIVITY='1',IF(#language#='en', 'Available', '可用'),IF(#language#='en', 'Unavailable', '不可用')) STATUS
+			  FROM SY_CODE T left join HR_COMPANY A on T.CPNY_ID = A.CPNY_ID
+			 WHERE  FIND_IN_SET(T.CODE_ID, getCodeChildLst(#parentCode:VARCHAR#))
+			 
+		]]>	  
+	</select>
+	<!-- <select id="getParentMenuList" parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[
+			SELECT T.MENU_CODE,
+			       (CASE
+			         WHEN #language# = 'en' THEN
+			          NVL(T.MENU_EN_INTRO, T.MENU_INTRO)
+			         ELSE
+			          T.MENU_INTRO
+			       END) AS MENU_INTRO,
+			       T.BUILD_FLAG YN_ID,
+			       DECODE(#language#, 'en', B.CODE_EN_NAME, B.CODE_NAME) YN_NAME,
+			       T.CPNY_ID,
+		           DECODE(#language#, 'en', A.CPNY_EN_NAME, A.CPNY_NAME) CPNY_NAME,
+		           T.ACTIVITY STATUS_ID,
+		           DECODE(T.ACTIVITY,
+		                '1',
+		                DECODE(#language#, 'en', 'Available', '可用'),
+		                DECODE(#language#, 'en', 'Unavailable', '不可用')) STATUS,
+			       T.MENU_URL,
+			       T.DESCRIPTION,
+			       T.ORDERNO,
+			       T.DEPTH 
+			  FROM SY_MENU T, HR_COMPANY A,SY_CODE B
+			 WHERE T.DEPTH < 2
+			  AND T.CPNY_ID = A.CPNY_ID(+)
+			  AND T.BUILD_FLAG = B.CODE_ID(+)
+			 START WITH T.MENU_PARENT_CODE = 'HRMS'
+			CONNECT BY PRIOR T.MENU_CODE = T.MENU_PARENT_CODE
+			 ORDER SIBLINGS BY T.ORDERNO
+		]]>	  
+	</select> -->
+	<!-- shanzhi -->
+	<select id="getParentMenuList" parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[
+			SELECT T.MENU_CODE,LEFT(T.MENU_CODE,3) as tmc,
+			       (CASE
+			         WHEN #language# = 'en' THEN
+			          IFNULL(T.MENU_EN_INTRO, T.MENU_INTRO)
+			         ELSE
+			          T.MENU_INTRO
+			       END) AS MENU_INTRO,
+			       T.BUILD_FLAG YN_ID,
+			       IF(#language#='en', B.CODE_EN_NAME, B.CODE_NAME) YN_NAME,
+			       T.CPNY_ID,
+		           IF(#language#='en', A.CPNY_EN_NAME, A.CPNY_NAME) CPNY_NAME,
+		           T.ACTIVITY STATUS_ID,
+		           IF(T.ACTIVITY='1',
+		                If(#language#='en', 'Available', '可用'),
+		                IF(#language#='en', 'Unavailable', '不可用')) STATUS,
+			       T.MENU_URL,
+			       T.DESCRIPTION,
+			       T.ORDERNO,
+			       T.DEPTH 
+			  FROM SY_MENU T LEFT JOIN HR_COMPANY A ON T.CPNY_ID = A.CPNY_ID
+              LEFT JOIN SY_CODE B ON T.BUILD_FLAG = B.CODE_ID
+			 WHERE T.DEPTH < 2 and FIND_IN_SET(T.MENU_CODE, getMenuChildLst('HRMS'))
+			 ORDER BY tmc,T.DEPTH,T.ORDERNO 
+		]]>	  
+	</select>
+	 <select id="getMenuInfo" parameterClass="linkMap" resultClass="string">
+		<![CDATA[
+			SELECT T.MENU_CODE||'-'||T.MENU_URL
+			  FROM SY_MENU T 
+			 WHERE MENU_NO = #MENU_NO#
+			   AND T.DEPTH = 2
+		]]>	  
+	</select>
+	<!-- <select id="getMenuListByParentMenuCode" parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[
+		  SELECT T.MENU_NO,
+		         T.MENU_CODE,
+		         T.MENU_INTRO,
+		         T.MENU_EN_INTRO,
+		         T.MENU_URL,
+		         T.BUILD_FLAG YN_ID,
+		         DECODE(#language#, 'en', B.CODE_EN_NAME, B.CODE_NAME) YN_NAME,
+		         T.CPNY_ID,
+		         DECODE(#language#, 'en', A.CPNY_EN_NAME, A.CPNY_NAME) CPNY_NAME,
+		         T.ACTIVITY STATUS_ID,
+		         DECODE(T.ACTIVITY,
+		                '1',
+		                DECODE(#language#, 'en', 'Available', '可用'),
+		                DECODE(#language#, 'en', 'Unavailable', '不可用')) STATUS,
+			     T.DESCRIPTION,
+			     T.DEPTH,
+		         T.ORDERNO
+		    FROM SY_MENU T, HR_COMPANY A,SY_CODE B
+		   WHERE T.CPNY_ID = A.CPNY_ID(+)
+			  AND T.BUILD_FLAG = B.CODE_ID(+)
+		   START WITH T.MENU_PARENT_CODE = #parentCode:VARCHAR#
+		  CONNECT BY PRIOR T.MENU_CODE = T.MENU_PARENT_CODE
+		   ORDER SIBLINGS BY T.ORDERNO
+		]]>	  
+	</select> -->
+	<!-- shanzhi -->
+	<select id="getMenuListByParentMenuCode" parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[
+			  SELECT T.MENU_NO,LEFT(T.MENU_CODE,3) as tmc,
+			         T.MENU_CODE,
+			         T.MENU_INTRO,
+			         T.MENU_EN_INTRO,
+			         T.MENU_URL,
+			         T.BUILD_FLAG YN_ID,
+			       IF(#language#='en', B.CODE_EN_NAME, B.CODE_NAME) YN_NAME,
+			       T.CPNY_ID,
+		           IF(#language#='en', A.CPNY_EN_NAME, A.CPNY_NAME) CPNY_NAME,
+		           T.ACTIVITY STATUS_ID,
+		           IF(T.ACTIVITY='1',
+	                If(#language#='en', 'Available', '可用'),
+	                IF(#language#='en', 'Unavailable', '不可用')) STATUS,
+			       T.DESCRIPTION,
+			       T.DEPTH,
+		           T.ORDERNO
+			  FROM SY_MENU T LEFT JOIN HR_COMPANY A ON T.CPNY_ID = A.CPNY_ID
+              LEFT JOIN SY_CODE B ON T.BUILD_FLAG = B.CODE_ID
+			 WHERE FIND_IN_SET(T.MENU_CODE, getMenuChildLst(#parentCode:VARCHAR#))
+			 ORDER BY tmc,T.DEPTH,T.ORDERNO
+		]]>	  
+	</select>
+	 
+	<insert id="addMenuInfo" parameterClass="linkMap" >
+		<![CDATA[
+			INSERT INTO SY_MENU (
+					MENU_NO,
+					MENU_CODE,
+					MENU_INTRO,
+					MENU_EN_INTRO, 
+					MENU_URL,
+					MENU_PARENT_CODE,
+					DEPTH,
+					CREATE_DATE,
+					CREATED_BY,
+					ORDERNO,
+					CPNY_ID,
+					BUILD_FLAG,
+					ACTIVITY)
+				VALUES(
+					null ,
+					#MENU_CODE:VARCHAR# ,
+					#MENU_INTRO:VARCHAR# ,
+					#MENU_EN_INTRO:VARCHAR# , 
+					#MENU_URL:VARCHAR# ,
+					#PARENT_MENU_CODE:VARCHAR# ,
+					(SELECT DEPTH + 1 FROM SY_MENU T WHERE T.MENU_CODE = #PARENT_MENU_CODE:VARCHAR#) ,
+					now() ,
+					#CREATED_BY:VARCHAR# ,
+					#ORDERNO:NUMERIC# ,
+					#CPNY_ID:VARCHAR# , 
+					#YN_ID:VARCHAR# , 
+					#STATUS_ID:NUMERIC#
+				)
+		]]>
+	</insert>
+	
+	<insert id="addSyScreenGrantFor2" parameterClass="linkMap" >
+		<![CDATA[
+			INSERT INTO SY_SCREEN_GRANT
+              (SCREEN_CODE,
+               SCREEN_GRANT_ID,
+               SELECTR,
+               SAVER,
+               INSERTR,
+               UPDATER,
+               DELETER,
+               CANCELR,
+               CREATE_DATE,
+               CREATED_BY, 
+               ACTIVITY)
+				VALUES(#MENU_CODE:VARCHAR#,'2',0,0,0,0,0,0,now(),#CREATED_BY#,1),
+				       (#MENU_CODE:VARCHAR#,'3',0,0,0,0,0,0,now(),#CREATED_BY#,1),
+				       (#MENU_CODE:VARCHAR#,'5',0,0,0,0,0,0,now(),#CREATED_BY#,1),
+				       (#MENU_CODE:VARCHAR#,'8',0,0,0,0,0,0,now(),#CREATED_BY#,1),
+				       (#MENU_CODE:VARCHAR#,'10',0,0,0,0,0,0,now(),#CREATED_BY#,1),
+				       (#MENU_CODE:VARCHAR#,'18',0,0,0,0,0,0,now(),#CREATED_BY#,1),
+				       (#MENU_CODE:VARCHAR#,'173',0,0,0,0,0,0,now(),#CREATED_BY#,1),
+				       (#MENU_CODE:VARCHAR#,'188',0,0,0,0,0,0,now(),#CREATED_BY#,1);
+		]]>
+	</insert>
+	 
+	<update id="updateMenuInfo" parameterClass="linkMap" >
+		<![CDATA[
+			UPDATE SY_MENU
+				SET 
+					MENU_INTRO = #MENU_INTRO:VARCHAR# ,
+					MENU_EN_INTRO = #MENU_EN_INTRO:VARCHAR# , 
+					MENU_URL = #MENU_URL:VARCHAR# ,
+					ORDERNO = #ORDERNO:NUMERIC#,
+					DEPTH = #DEPTH:NUMERIC#,
+					UPDATE_DATE = now() ,
+					UPDATED_BY = #UPDATED_BY:VARCHAR# ,
+					CPNY_ID = #CPNY_ID:VARCHAR# ,
+					BUILD_FLAG = IF(#DEPTH:NUMERIC#=2,#YN_ID:VARCHAR#,BUILD_FLAG) ,
+					ACTIVITY  = #STATUS_ID:NUMERIC# 
+				WHERE MENU_NO = #MENU_NO:NUMERIC# AND MENU_CODE = #MENU_CODE:VARCHAR#
+		]]>
+	</update>
+	
+	<delete id="deleteMenuInfo" parameterClass="linkMap" >
+		<![CDATA[
+			DELETE from SY_MENU WHERE MENU_NO = #MENU_NO:NUMERIC# AND MENU_CODE = #MENU_CODE:VARCHAR#
+		]]>
+	</delete>
+	
+	<insert id="addCodeInfo" parameterClass="linkMap" >
+		<![CDATA[
+			INSERT INTO SY_CODE (
+					CODE_NO,
+					CODE_ID,
+					CODE_NAME,
+					CODE_EN_NAME, 
+					DESCRIPTION,
+					PARENT_CODE,
+					DEPTH,
+					CREATE_DATE,
+					CREATED_BY,
+					ORDERNO,
+					CPNY_ID,
+					ACTIVITY)
+				VALUES(
+					null ,
+					#CODE_ID:VARCHAR# ,
+					#CODE_NAME:VARCHAR# ,
+					#CODE_EN_NAME:VARCHAR# , 
+					#DESCRIPTION:VARCHAR# ,
+					#PARENT_CODE:VARCHAR# ,
+					(SELECT DEPTH + 1 FROM SY_CODE T WHERE T.CODE_ID = #PARENT_CODE:VARCHAR#) ,
+					now() ,
+					#CREATED_BY:VARCHAR# ,
+					#ORDERNO:NUMERIC# ,
+					#CPNY_ID:VARCHAR# ,
+					#STATUS_ID:NUMERIC#
+				)
+		]]>
+	</insert>
+	
+	<update id="updateCodeInfo" parameterClass="linkMap" >
+		<![CDATA[
+			UPDATE SY_CODE
+				SET 
+					CODE_NAME = #CODE_NAME:VARCHAR# ,
+					CODE_EN_NAME = #CODE_EN_NAME:VARCHAR# , 
+					DESCRIPTION = #DESCRIPTION:VARCHAR# ,
+					UPDATE_DATE = now() ,
+					UPDATED_BY = #UPDATED_BY:VARCHAR# ,
+					CPNY_ID = #CPNY_ID:VARCHAR# ,
+					ACTIVITY  = #STATUS_ID:NUMERIC# 
+				WHERE CODE_NO = #CODE_NO:NUMERIC#
+		]]>
+	</update>
+	
+	<delete id="deleteCodeInfo" parameterClass="linkMap" >
+		<![CDATA[
+			DELETE SY_CODE WHERE CODE_NO = #CODE_NO:NUMERIC#
+		]]>
+	</delete>
+	
+	<select id="getSysCodeSelectMap"   parameterClass="linkMap"
+		resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT T.CODE_ID CODE_ID,
+				  (CASE WHEN #language# = 'en' THEN
+						NVL(T.CODE_EN_NAME, T.CODE_NAME)
+						ELSE
+					       T.CODE_NAME
+					    END) AS CODE_NAME
+			  FROM SY_CODE T
+			 WHERE T.PARENT_CODE = #PARENTCODE#
+			   AND T.CPNY_ID = #CPNY_ID# 
+			   AND T.ACTIVITY = 1
+			]]>
+	</select>
+	
+	<select id="getSysCodeSelectList"   parameterClass="linkMap"
+		resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT T.CODE_ID CODE_ID,
+				  (CASE WHEN #language# = 'en' THEN
+						IFNULL(T.CODE_EN_NAME, T.CODE_NAME)
+						ELSE
+					       T.CODE_NAME
+					    END) AS CODE_NAME
+			  FROM SY_CODE T
+			 WHERE T.PARENT_CODE = #PARENTCODE#
+			   AND T.CPNY_ID = #CPNY_ID# 
+			   AND T.ACTIVITY = 1
+			]]>
+	</select>
+	  
+	<select id="getActivitySelectMap"   parameterClass="linkMap"
+		resultClass="linkMap" remapResults="true">
+		<![CDATA[
+		 SELECT '1' STATUS_ID,
+		        IF(#language#='en', 'Available', '可用') STATUS
+		   FROM DUAL
+		 UNION
+		 SELECT '0' STATUS_ID,
+		        IF(#language#='en', 'Unavailable', '不可用') STATUS
+		   FROM DUAL
+			]]>
+	</select>
+	  
+	<select id="getCompanySelectMap"   parameterClass="linkMap"
+		resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT T.CPNY_ID CPNY_ID, 
+			       IF(#language#='en', T.CPNY_EN_NAME, T.CPNY_NAME) CPNY_NAME
+			  FROM HR_COMPANY T
+			 WHERE T.ACTIVITY = 1
+			]]>
+	</select>
+	
+	<select id="getDeptLevelList"   parameterClass="linkMap"
+		resultClass="linkMap" remapResults="true">
+		<![CDATA[
+		SELECT DISTINCT A.DEPT_LEVEL ID, A.DEPT_LEVEL NAME, A.DEPT_LEVEL EN_NAME
+		  FROM HR_DEPARTMENT A
+		 WHERE A.CPNY_ID = #CPNY_ID#
+		   AND (A.DATE_CREATED < SYSDATE AND A.DATE_ENDED > SYSDATE OR
+		       A.DATE_ENDED IS NULL)
+		   AND A.ACTIVITY = 1
+		   ORDER BY A.DEPT_LEVEL
+			]]>
+	</select>
+	
+	<sql id="annSearchCondition"> 	     
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+				(	
+						SAN.ANN_CONTENT          LIKE concat('%',TRIM(#keyWord#),'%')
+						OR SAN.REMARK            LIKE concat('%',TRIM(#keyWord#),'%')
+				) 
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="E_DATE" >
+			<![CDATA[
+    		   SAN.CREATED_DATE <= str_to_date(#E_DATE#,'%Y-%m-%d')
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="S_DATE" >
+			<![CDATA[
+    		   SAN.CREATED_DATE >= str_to_date(#S_DATE#,'%Y-%m-%d')
+			]]>
+		</isNotEmpty>
+		<![CDATA[
+				ORDER BY SAN.CREATED_DATE DESC
+		]]>
+	</sql> 
+	 
+	<select id="getAnnouncementList" parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[
+			SELECT SAN.ANN_NO                                   ANN_NO,
+			       SAN.ANN_TYPE_CODE                            ANN_TYPE_CODE,
+			       IF(#language# ='en',A.CODE_EN_NAME,A.CODE_NAME)  ANN_TYPE,
+			       SAN.ANN_CONTENT                              ANN_CONTENT,
+			       SAN.REMARK                                   REMARK,
+			       SAN.CREATED_DATE                             CREATED_DATE
+			FROM SY_ANNOUNCEMENT  SAN, SY_CODE A
+			WHERE SAN.ACTIVITY = 1
+			AND   SAN.ANN_TYPE_CODE = A.CODE_ID
+		]]>
+		<include refid="annSearchCondition" />		
+	</select>
+	
+	<select id="getAnnouncementListCnt" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+			SELECT COUNT(0)
+			FROM SY_ANNOUNCEMENT  SAN
+			WHERE SAN.ACTIVITY = 1
+		]]>
+		<include refid="annSearchCondition" />	
+	</select>
+	
+	<insert id="addAnnouncement" parameterClass="linkMap">
+	<![CDATA[
+		DECLARE
+ 		BEGIN
+			INSERT INTO SY_ANNOUNCEMENT(ANN_NO,ANN_TYPE_CODE,ANN_CONTENT,REMARK,CPNY_ID,
+					CREATED_BY,CREATED_DATE,ACTIVITY,ORDERNO) 
+			VALUES(SY_ANN_SEQ.NEXTVAL,#ANN_TYPE_CODE#,#ANN_CONTENT#, #REMARK#,'wooribank',
+					#CREATED_BY#,SYSDATE,1,SY_ANN_SEQ.CURRVAL);
+		END;	
+	]]>
+	</insert>
+	
+	<update id="updateAnnouncement" parameterClass="linkMap">
+	<![CDATA[
+		DECLARE
+		BEGIN
+			UPDATE SY_ANNOUNCEMENT SET ANN_TYPE_CODE = #ANN_TYPE_CODE#, ANN_CONTENT = #ANN_CONTENT#,REMARK = #REMARK#, UPDATED_BY = #UPDATED_BY#, UPDATED_DATE = SYSDATE
+			WHERE ANN_NO = #ANN_NO#;
+		END; 
+	]]>	
+	</update>
+
+	<update id="removeAnnouncement" parameterClass="linkMap">
+	<![CDATA[
+		DECLARE
+		BEGIN
+		UPDATE SY_ANNOUNCEMENT SET ACTIVITY= 0,UPDATED_BY = #UPDATED_BY#, UPDATED_DATE = SYSDATE
+		WHERE ANN_NO = #ANN_NO#;
+		END; 
+	]]>	
+	</update>
+	
+	<select id="getTypeParentCodeList" parameterClass="linkMap" resultClass="linkMap">
+		<![CDATA[
+			SELECT T.CODE_ID, 
+			       (CASE WHEN #language# = 'en' THEN
+					NVL(T.CODE_EN_NAME, T.CODE_NAME)
+					ELSE
+				       T.CODE_NAME
+				    END) AS CODE_NAME,
+				   T.CPNY_ID,
+			       DECODE(#language#, 'en', A.CPNY_EN_NAME, A.CPNY_NAME) CPNY_NAME,
+			       T.ACTIVITY STATUS_ID,
+			       DECODE(T.ACTIVITY,
+			            '1',
+			            DECODE(#language#, 'en', 'Available', '可用'),
+			            DECODE(#language#, 'en', 'Unavailable', '不可用')) STATUS,
+				   T.DESCRIPTION,
+			       T.DEPTH
+			  FROM SY_CODE T, HR_COMPANY A
+			 WHERE T.DEPTH < 3  
+			  AND T.CPNY_ID = A.CPNY_ID(+)
+			 START WITH T.PARENT_CODE = 'ProType'
+			CONNECT BY PRIOR T.CODE_ID = T.PARENT_CODE
+			 ORDER SIBLINGS BY T.ORDERNO
+		]]>	  
+	</select>
+	
+	<sql id="getCategoryListCondition">
+		<isNotEmpty prepend="AND" property="PARENT_ID">
+			<![CDATA[
+				SC.PARENT_ID = #PARENT_ID#
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend=" " property="ROOT">
+			<![CDATA[
+				START WITH SC.PARENT_ID = #ROOT#
+				CONNECT BY PRIOR SC.CATEGORY_ID = SC.PARENT_ID
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend=" " property="ROOT_TREE">
+			<![CDATA[
+				START WITH SC.CATEGORY_ID = #ROOT_TREE#
+				CONNECT BY PRIOR SC.CATEGORY_ID = SC.PARENT_ID
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="CATEGORY_ID">
+			<![CDATA[
+				SC.CATEGORY_ID = #CATEGORY_ID#
+			]]>
+		</isNotEmpty>
+	</sql>
+	
+	<select id="getCategoryList" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT SC.CATEGORY_NO,
+				SC.CATEGORY_ID,
+				SC.CATEGORY_NAME,
+				SC.PARENT_ID,
+                SC.PRE_CODE,
+				SC.REMARK
+			FROM SY_CATEGORY SC
+			WHERE SC.ACTIVITY = 1
+		]]>
+		<include refid="getCategoryListCondition" />
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY $sortname$ $sortorder$
+			]]>
+		</isNotEmpty>
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY SC.CATEGORY_ID
+			]]>
+		</isEmpty>
+	</select>
+	<select id="getCategoryListCnt" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+			SELECT COUNT(0)
+			FROM SY_CATEGORY SC
+			WHERE SC.ACTIVITY = 1
+		]]>
+		<include refid="getCategoryListCondition" />
+	</select>
+	
+	
+	<sql id="getPropertyListCondition">
+		<isNotEmpty prepend="AND" property="CATEGORY_ID">
+			<![CDATA[
+				SCP.PROPERTY_ID IN(
+					SELECT 
+						SCPD.PROPERTY_ID 
+					FROM SY_CATEGORY_PROPERTY_DETAIL SCPD
+					WHERE SCPD.ACTIVITY = 1
+					AND SCPD.CPNY_ID = #CPNY_ID#
+					AND SCPD.CATEGORY_ID IN(
+						SELECT SC.CATEGORY_ID FROM SY_CATEGORY SC
+						where SC.PARENT_ID = SC.CATEGORY_ID
+						and(SC.CATEGORY_ID = #CATEGORY_ID# or SC.PARENT_ID = #CATEGORY_ID#)
+						
+					)
+				)
+			]]>
+		</isNotEmpty>
+		
+	<!-- 	<isNotEmpty prepend="AND" property="NOT_CATEGORY_ID">
+			<![CDATA[
+				SCP.PROPERTY_ID NOT IN(
+					SELECT 
+						SCPD.PROPERTY_ID 
+					FROM SY_CATEGORY_PROPERTY_DETAIL SCPD
+					WHERE SCPD.ACTIVITY = 1
+					AND SCPD.CPNY_ID = #CPNY_ID#
+					AND SCPD.CATEGORY_ID IN(
+						SELECT SC.CATEGORY_ID FROM SY_CATEGORY SC
+						START WITH SC.CATEGORY_ID = #NOT_CATEGORY_ID#
+						CONNECT BY PRIOR SC.PARENT_ID = SC.CATEGORY_ID
+					)
+				)
+			]]>
+		</isNotEmpty> -->
+		<isNotEmpty prepend="AND" property="NOT_CATEGORY_ID">
+			<![CDATA[
+				SCP.PROPERTY_ID NOT IN(
+					SELECT 
+						SCPD.PROPERTY_ID 
+					FROM SY_CATEGORY_PROPERTY_DETAIL SCPD
+					WHERE SCPD.ACTIVITY = 1
+					AND SCPD.CPNY_ID = #CPNY_ID#
+					AND SCPD.CATEGORY_ID IN(
+						SELECT SC.CATEGORY_ID FROM SY_CATEGORY SC
+						where PRIOR SC.PARENT_ID = SC.CATEGORY_ID
+						and(SC.CATEGORY_ID = #NOT_CATEGORY_ID# or SC.PARENT_ID=  #NOT_CATEGORY_ID#)
+						
+					)
+				)
+			]]>
+		</isNotEmpty>
+	</sql>
+	<sql id="getPropertyListCondition2">
+		<isNotEmpty prepend="AND" property="CATEGORY_ID">
+			<![CDATA[
+				S.CATEGORY_ID = #CATEGORY_ID#
+			]]>
+		</isNotEmpty>
+	</sql>
+	
+	<select id="getPropertyList" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT 
+				SCP.PROPERTY_NO,
+				SCP.PROPERTY_ID,
+				SCP.PROPERTY_NAME,
+				SCP.P_VALUE_TYPE,
+				SCODE.CODE_NAME,
+				SCP.REMARK,
+				ifnull(SC.PROPERTY_ID,'YES') IS_PARENT
+			FROM SY_CATEGORY_PROPERTY SCP
+			LEFT JOIN (
+				SELECT DISTINCT S.PROPERTY_ID FROM SY_CATEGORY_PROPERTY_DETAIL S
+				WHERE S.ACTIVITY = 1
+				AND S.CPNY_ID = #CPNY_ID# 
+		]]>
+		<include refid="getPropertyListCondition2" />
+		<![CDATA[	
+			) SC
+			ON SCP.PROPERTY_ID = SC.PROPERTY_ID
+			LEFT JOIN (
+		        SELECT CODE_ID,CODE_NAME FROM SY_CODE
+		      ) SCODE
+		      ON SCP.P_VALUE_TYPE = SCODE.CODE_ID
+			WHERE SCP.ACTIVITY = 1
+			AND SCP.CPNY_ID = #CPNY_ID#
+		]]>
+		<include refid="getPropertyListCondition" />
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY $sortname$ $sortorder$
+			]]>
+		</isNotEmpty>
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY SCP.PROPERTY_ID
+			]]>
+		</isEmpty>
+	</select>
+	<select id="getPropertyListCnt" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+			SELECT COUNT(0)
+			FROM SY_CATEGORY_PROPERTY SCP
+			WHERE SCP.ACTIVITY = 1
+			AND SCP.CPNY_ID = #CPNY_ID#
+		]]>
+		<include refid="getPropertyListCondition" />
+	</select>
+	
+	<insert id="addPropertyToCategory" parameterClass="linkMap" >
+		<![CDATA[
+		DECLARE
+		
+		BEGIN
+			DELETE FROM SY_CATEGORY_PROPERTY_DETAIL SCP
+			WHERE SCP.ACTIVITY = 1
+			AND SCP.CPNY_ID = #CPNY_ID#
+			AND SCP.PROPERTY_ID = #PROPERTY_ID#
+			AND SCP.CATEGORY_ID IN(
+				SELECT SC.CATEGORY_ID FROM SY_CATEGORY SC
+				WHERE SC.ACTIVITY = 1
+				AND SC.CPNY_ID = #CPNY_ID#
+				START WITH SC.PARENT_ID = #CATEGORY_ID#
+				CONNECT BY PRIOR SC.CATEGORY_ID = SC.PARENT_ID
+			);
+			
+			INSERT INTO SY_CATEGORY_PROPERTY_DETAIL (
+				CATEGORY_ID,
+				PROPERTY_ID,
+				CREATED_BY,
+				CREATE_DATE,
+				ACTIVITY,
+				CPNY_ID
+			)
+			VALUES (
+				#CATEGORY_ID#,
+				#PROPERTY_ID#,
+				#CREATED_BY#,
+				SYSDATE,
+				1,
+				#CPNY_ID#
+			);
+		END;
+		]]>
+	</insert>
+	
+	<delete id="deletePropertyFromCategory" parameterClass="linkMap" >
+		<![CDATA[
+			DELETE FROM SY_CATEGORY_PROPERTY_DETAIL SCPD
+			WHERE SCPD.ACTIVITY = 1
+			AND SCPD.CPNY_ID = #CPNY_ID#
+			AND SCPD.CATEGORY_ID = #CATEGORY_ID#
+			AND SCPD.PROPERTY_ID = #PROPERTY_ID#
+		]]>
+	</delete>
+	
+	<insert id="addValueToProperty" parameterClass="linkMap" >
+		<![CDATA[
+			INSERT INTO SY_PROPERTY_VALUE_DETAIL (
+				PROPERTY_ID,
+				P_VALUE_ID,
+				CREATED_BY,
+				CREATE_DATE,
+				ACTIVITY,
+				CPNY_ID
+			)
+			VALUES (
+				#PROPERTY_ID#,
+				#P_VALUE_ID#,
+				#CREATED_BY#,
+				SYSDATE,
+				1,
+				#CPNY_ID#
+			)
+		]]>
+	</insert>
+	
+	<delete id="deleteValueFromProperty" parameterClass="linkMap" >
+		<![CDATA[
+			DELETE FROM SY_PROPERTY_VALUE_DETAIL SCPD
+			WHERE SCPD.ACTIVITY = 1
+			AND SCPD.CPNY_ID = #CPNY_ID#
+			AND SCPD.PROPERTY_ID = #PROPERTY_ID#
+			AND SCPD.P_VALUE_ID = #P_VALUE_ID#
+		]]>
+	</delete>
+	
+	
+	<update id="updateCategory" parameterClass="linkMap">
+		<![CDATA[
+			UPDATE SY_CATEGORY SET
+				CATEGORY_NAME = #CATEGORY_NAME#,
+				REMARK = #REMARK#,
+				UPDATED_BY = #UPDATED_BY#,
+                PRE_CODE = #PRE_CODE#,
+				UPDATE_DATE = SYSDATE
+			WHERE CATEGORY_ID = #CATEGORY_ID#
+			AND CPNY_ID = #CPNY_ID#
+			AND ACTIVITY = 1
+		]]>
+	</update>
+	<update id="updateProperty" parameterClass="linkMap">
+		<![CDATA[
+			UPDATE SY_CATEGORY_PROPERTY SET
+				PROPERTY_NAME = #PROPERTY_NAME#,
+				P_VALUE_TYPE = #P_VALUE_TYPE#,
+				REMARK = #REMARK#,
+				UPDATED_BY = #UPDATED_BY#,
+				UPDATE_DATE = SYSDATE
+			WHERE PROPERTY_ID = #PROPERTY_ID#
+			AND CPNY_ID = #CPNY_ID#
+			AND ACTIVITY = 1
+		]]>
+	</update>
+	<update id="updatePropertyValue" parameterClass="linkMap">
+		<![CDATA[
+			UPDATE SY_PROPERTY_VALUE SET
+				P_VALUE = #P_VALUE#,
+				REMARK = #REMARK#,
+				UPDATED_BY = #UPDATED_BY#,
+				UPDATE_DATE = SYSDATE
+			WHERE P_VALUE_ID = #P_VALUE_ID#
+			AND CPNY_ID = #CPNY_ID#
+			AND ACTIVITY = 1
+		]]>
+	</update>
+	
+	<insert id="addCategoryInfo" parameterClass="linkMap" >
+		<![CDATA[ 
+		INSERT INTO SY_CATEGORY (
+			CATEGORY_NO,
+			CATEGORY_ID,
+			CATEGORY_NAME,
+			REMARK,
+			PARENT_ID,
+			CREATED_BY,
+			CREATE_DATE,
+			ACTIVITY,
+            PRE_CODE,
+			CPNY_ID
+		)
+		VALUES (
+			SY_CATEGORY_SEQ.NEXTVAL,
+			#CATEGORY_ID#,
+			#CATEGORY_NAME#,
+			#REMARK#,
+			#PARENT_ID#,
+			#CREATED_BY#,
+			SYSDATE,
+			1,
+            #PRE_CODE#,
+			#CPNY_ID#
+		)
+		]]>
+	</insert>
+	
+	<select id="checkCategoryId" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+			SELECT COUNT(0)
+			FROM SY_CATEGORY SC
+			WHERE SC.ACTIVITY = 1
+			AND SC.CPNY_ID = #CPNY_ID#
+			AND SC.CATEGORY_ID = #CATEGORY_ID#
+		]]>
+	</select>
+	
+	<select id="checkCategoryDelete" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+			SELECT COUNT(0)
+			FROM PRODUCT_PROPERTY_DETAIL
+			WHERE CATEGORY_ID = #CATEGORY_ID#
+			AND ACTIVITY = 1
+			AND CPNY_ID = #CPNY_ID#
+		]]>
+	</select>
+	
+	<insert id="addPropertyInfo" parameterClass="linkMap" >
+		<![CDATA[ 
+		INSERT INTO SY_CATEGORY_PROPERTY (
+			PROPERTY_NO,
+			PROPERTY_ID,
+			PROPERTY_NAME,
+			REMARK,
+			CREATED_BY,
+			CREATE_DATE,
+			ACTIVITY,
+			CPNY_ID,
+			P_VALUE_TYPE
+		)
+		VALUES (
+			SY_CATEGORY_PROPERTY_SEQ.NEXTVAL,
+			#PROPERTY_ID#,
+			#PROPERTY_NAME#,
+			#REMARK#,
+			#CREATED_BY#,
+			SYSDATE,
+			1,
+			#CPNY_ID#,
+			#P_VALUE_TYPE#
+		)
+		]]>
+	</insert>
+	
+	<select id="checkPropertyId" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+			SELECT COUNT(0)
+			FROM SY_CATEGORY_PROPERTY SC
+			WHERE SC.ACTIVITY = 1
+			AND SC.CPNY_ID = #CPNY_ID#
+			AND SC.PROPERTY_ID = #PROPERTY_ID#
+		]]>
+	</select>
+	
+	<delete id="deleteCategoryInfo" parameterClass="linkMap" >
+		<![CDATA[
+		DECLARE
+		BEGIN
+			DELETE FROM SY_CATEGORY_PROPERTY_DETAIL SC
+			WHERE SC.ACTIVITY = 1
+			AND SC.CPNY_ID = #CPNY_ID#
+			AND SC.CATEGORY_ID IN(
+				SELECT S.CATEGORY_ID FROM SY_CATEGORY S
+				WHERE S.ACTIVITY = 1
+				AND S.CPNY_ID = #CPNY_ID#
+				START WITH S.CATEGORY_ID = #CATEGORY_ID#
+				CONNECT BY PRIOR S.CATEGORY_ID = S.PARENT_ID
+			);
+		
+			DELETE FROM SY_CATEGORY SC
+			WHERE SC.CPNY_ID = #CPNY_ID#
+			AND SC.CATEGORY_ID IN(
+				SELECT S.CATEGORY_ID FROM SY_CATEGORY S
+				WHERE S.ACTIVITY = 1
+				AND S.CPNY_ID = #CPNY_ID#
+				START WITH S.CATEGORY_ID = #CATEGORY_ID#
+				CONNECT BY PRIOR S.CATEGORY_ID = S.PARENT_ID
+			);
+		END;
+		]]>
+	</delete>
+	
+	<delete id="deletePropertyInfo" parameterClass="linkMap" >
+		<![CDATA[
+		DECLARE
+		BEGIN
+			DELETE FROM SY_PROPERTY_VALUE_DETAIL SCPD
+			WHERE SCPD.CPNY_ID = #CPNY_ID#
+			AND SCPD.PROPERTY_ID = #PROPERTY_ID#;
+			
+			DELETE FROM SY_CATEGORY_PROPERTY_DETAIL S
+			WHERE S.PROPERTY_ID = #PROPERTY_ID#
+			AND S.CPNY_ID = #CPNY_ID#;
+			
+			DELETE FROM PRODUCT_PROPERTY_DETAIL PPD
+			WHERE PPD.CPNY_ID = #CPNY_ID#
+			AND PPD.PROPERTY_ID = #PROPERTY_ID#;
+			
+			DELETE FROM SY_CATEGORY_PROPERTY SC
+			WHERE SC.CPNY_ID = #CPNY_ID#
+			AND SC.PROPERTY_ID = #PROPERTY_ID#;
+		END;
+		]]>
+	</delete>
+	
+	<delete id="deletePropertyValueInfo" parameterClass="linkMap" >
+		<![CDATA[
+		DECLARE
+		BEGIN
+			DELETE FROM SY_PROPERTY_VALUE_DETAIL SCPD
+			WHERE SCPD.CPNY_ID = #CPNY_ID#
+			AND SCPD.P_VALUE_ID = #P_VALUE_ID#;
+			
+			DELETE FROM PRODUCT_PROPERTY_DETAIL PPD
+			WHERE PPD.CPNY_ID = #CPNY_ID#
+			AND PPD.P_VALUE_ID = #P_VALUE_ID#;
+			
+			DELETE FROM SY_PROPERTY_VALUE SC
+			WHERE SC.CPNY_ID = #CPNY_ID#
+			AND SC.P_VALUE_ID = #P_VALUE_ID#;
+		END;
+		]]>
+	</delete>
+	
+	<sql id="getPropertyValueListCondition">
+		<isNotEmpty prepend="AND" property="keyWord">
+			<![CDATA[
+				(	
+					SP.P_VALUE_ID LIKE '%'||TRIM(#keyWord#)||'%'
+					OR SP.P_VALUE LIKE '%'||TRIM(#keyWord#)||'%'
+				)
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="P_VALUE_TYPE">
+			<![CDATA[
+				SP.P_VALUE_TYPE = #P_VALUE_TYPE#
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="PROPERTY_ID">
+			<![CDATA[
+				SP.P_VALUE_ID IN(
+					SELECT
+						SPVD.P_VALUE_ID
+					FROM SY_PROPERTY_VALUE_DETAIL SPVD
+					WHERE SPVD.ACTIVITY = 1
+					AND SPVD.CPNY_ID = #CPNY_ID#
+					AND SPVD.PROPERTY_ID = #PROPERTY_ID#
+				)
+			]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="NOT_PROPERTY_ID">
+			<![CDATA[
+				SP.P_VALUE_ID NOT IN(
+					SELECT
+						SPVD.P_VALUE_ID
+					FROM SY_PROPERTY_VALUE_DETAIL SPVD
+					WHERE SPVD.ACTIVITY = 1
+					AND SPVD.CPNY_ID = #CPNY_ID#
+					AND SPVD.PROPERTY_ID = #NOT_PROPERTY_ID#
+				)
+			]]>
+		</isNotEmpty>
+	</sql>
+	<select id="getPropertyValueList" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT
+    			SP.P_VALUE_NO,
+    			SP.P_VALUE_ID,
+    			SP.P_VALUE,
+    			S.CODE_NAME,
+    			SP.REMARK
+			FROM SY_PROPERTY_VALUE SP,
+				 SY_CODE S
+			WHERE SP.ACTIVITY = 1
+			AND SP.CPNY_ID = #CPNY_ID#
+			AND SP.P_VALUE_TYPE = S.CODE_ID(+)
+		]]>
+		<include refid="getPropertyValueListCondition" />
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY $sortname$ $sortorder$
+			]]>
+		</isNotEmpty>
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY SP.P_VALUE_NO
+			]]>
+		</isEmpty>
+	</select>
+	<select id="getPropertyValueListCnt" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+			SELECT
+    			COUNT(0)
+			FROM SY_PROPERTY_VALUE SP
+			WHERE SP.ACTIVITY = 1
+			AND SP.CPNY_ID = #CPNY_ID#
+		]]>
+		<include refid="getPropertyValueListCondition" />
+	</select>
+	
+	<insert id="addPropertyValueInfo" parameterClass="linkMap" >
+		<![CDATA[ 
+		INSERT INTO SY_PROPERTY_VALUE (
+			P_VALUE_NO,
+			P_VALUE_ID,
+			P_VALUE,
+			REMARK,
+			CREATED_BY,
+			CREATE_DATE,
+			ACTIVITY,
+			CPNY_ID
+		)
+		VALUES (
+			SY_PROPERTY_VALUE_SEQ.NEXTVAL,
+			#P_VALUE_ID#,
+			#P_VALUE#,
+			#REMARK#,
+			#CREATED_BY#,
+			SYSDATE,
+			1,
+			#CPNY_ID#
+		)
+		]]>
+	</insert>
+	
+	<select id="checkPropertyValueId" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+			SELECT COUNT(0)
+			FROM SY_PROPERTY_VALUE SC
+			WHERE SC.ACTIVITY = 1
+			AND SC.CPNY_ID = #CPNY_ID#
+			AND SC.P_VALUE_ID = #P_VALUE_ID#
+		]]>
+	</select>
+	
+	<select id="getStorageWarnList" parameterClass="linkMap" resultClass="linkMap" remapResults="true">
+		<![CDATA[
+			SELECT 
+				WARNING_NO,
+    			WARNING_ID,
+    			TARGET_ID,
+    			HE.CHINESENAME TARGET_NAME,
+    			MESSAGE_TYPE_ID,
+    			SY.CODE_NAME MESSAGE_TYPE_NAME
+			FROM PROSTOR_STORAGE_WARNING PSW,
+				 SY_CODE SY,
+				 HR_EMPLOYEE HE
+			WHERE PSW.MESSAGE_TYPE_ID = SY.CODE_ID(+)
+			AND PSW.TARGET_ID = HE.EMPID(+)
+			AND PSW.ACTIVITY = 1
+			AND PSW.CPNY_ID = #CPNY_ID#
+			AND PSW.MESSAGE_TYPE_ID = 'EMPID'
+			
+			UNION
+			SELECT 
+				WARNING_NO,
+    			WARNING_ID,
+    			TARGET_ID,
+    			HD.DEPTNAME TARGET_NAME,
+    			MESSAGE_TYPE_ID,
+    			SY.CODE_NAME MESSAGE_TYPE_NAME
+			FROM PROSTOR_STORAGE_WARNING PSW,
+				 SY_CODE SY,
+				 HR_DEPARTMENT HD
+			WHERE PSW.MESSAGE_TYPE_ID = SY.CODE_ID(+)
+			AND PSW.TARGET_ID = HD.DEPTID(+)
+			AND PSW.ACTIVITY = 1
+			AND PSW.CPNY_ID = #CPNY_ID#
+			AND PSW.MESSAGE_TYPE_ID = 'DEPTID'
+			
+			UNION
+			SELECT 
+				WARNING_NO,
+    			WARNING_ID,
+    			TARGET_ID,
+    			SL.SCREEN_GRANT_NAME TARGET_NAME,
+    			MESSAGE_TYPE_ID,
+    			SY.CODE_NAME MESSAGE_TYPE_NAME
+			FROM PROSTOR_STORAGE_WARNING PSW,
+				 SY_CODE SY,
+				 SY_LOGIN_SCREEN SL
+			WHERE PSW.MESSAGE_TYPE_ID = SY.CODE_ID(+)
+			AND PSW.TARGET_ID = SL.SCREEN_GRANT_ID(+)
+			AND PSW.ACTIVITY = 1
+			AND PSW.CPNY_ID = #CPNY_ID#
+			AND PSW.MESSAGE_TYPE_ID = 'SCREEN_GRANT_ID'
+			
+		]]>
+		<isNotEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY $sortname$ $sortorder$
+			]]>
+		</isNotEmpty>
+		<isEmpty prepend="" property="sortname">
+			<![CDATA[
+				ORDER BY WARNING_NO
+			]]>
+		</isEmpty>
+	</select>
+	<select id="getStorageWarnListCnt" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+			SELECT
+    			COUNT(0)
+			FROM(
+				SELECT 
+					WARNING_NO,
+	    			WARNING_ID,
+	    			TARGET_ID,
+	    			HE.CHINESENAME TARGET_NAME,
+	    			MESSAGE_TYPE_ID,
+	    			SY.CODE_NAME MESSAGE_TYPE_NAME
+				FROM PROSTOR_STORAGE_WARNING PSW,
+					 SY_CODE SY,
+					 HR_EMPLOYEE HE
+				WHERE PSW.MESSAGE_TYPE_ID = SY.CODE_ID(+)
+				AND PSW.TARGET_ID = HE.EMPID(+)
+				AND PSW.ACTIVITY = 1
+				AND PSW.CPNY_ID = #CPNY_ID#
+				AND PSW.MESSAGE_TYPE_ID = 'EMPID'
+				
+				UNION
+				SELECT 
+					WARNING_NO,
+	    			WARNING_ID,
+	    			TARGET_ID,
+	    			HD.DEPTNAME TARGET_NAME,
+	    			MESSAGE_TYPE_ID,
+	    			SY.CODE_NAME MESSAGE_TYPE_NAME
+				FROM PROSTOR_STORAGE_WARNING PSW,
+					 SY_CODE SY,
+					 HR_DEPARTMENT HD
+				WHERE PSW.MESSAGE_TYPE_ID = SY.CODE_ID(+)
+				AND PSW.TARGET_ID = HD.DEPTID(+)
+				AND PSW.ACTIVITY = 1
+				AND PSW.CPNY_ID = #CPNY_ID#
+				AND PSW.MESSAGE_TYPE_ID = 'DEPTID'
+				
+				UNION
+				SELECT 
+					WARNING_NO,
+	    			WARNING_ID,
+	    			TARGET_ID,
+	    			SL.SCREEN_GRANT_NAME TARGET_NAME,
+	    			MESSAGE_TYPE_ID,
+	    			SY.CODE_NAME MESSAGE_TYPE_NAME
+				FROM PROSTOR_STORAGE_WARNING PSW,
+					 SY_CODE SY,
+					 SY_LOGIN_SCREEN SL
+				WHERE PSW.MESSAGE_TYPE_ID = SY.CODE_ID(+)
+				AND PSW.TARGET_ID = SL.SCREEN_GRANT_ID(+)
+				AND PSW.ACTIVITY = 1
+				AND PSW.CPNY_ID = #CPNY_ID#
+				AND PSW.MESSAGE_TYPE_ID = 'SCREEN_GRANT_ID'
+			)
+		]]>
+	</select>
+	
+	<insert id="addStorageWarnTarget" parameterClass="linkMap" >
+		<![CDATA[ 
+		INSERT INTO PROSTOR_STORAGE_WARNING (
+			WARNING_NO,
+    		TARGET_ID,
+    		MESSAGE_TYPE_ID,
+    		CREATED_BY,
+    		CREATE_DATE,
+    		ACTIVITY,
+    		CPNY_ID
+		)
+		VALUES (
+			PROSTOR_STORAGE_WARNING_SEQ.NEXTVAL,
+			#TARGET_ID#,
+			#MESSAGE_TYPE_ID#,
+			#CREATED_BY#,
+			SYSDATE,
+			1,
+			#CPNY_ID#
+		)
+		]]>
+	</insert>
+	
+	<select id="checkAddStorageWarnTarget" parameterClass="linkMap" resultClass="int">
+		<![CDATA[
+			SELECT COUNT(0)
+			FROM PROSTOR_STORAGE_WARNING PS
+			WHERE PS.ACTIVITY = 1
+			AND PS.CPNY_ID = #CPNY_ID#
+			AND PS.TARGET_ID = #TARGET_ID#
+		]]>
+	</select>
+	
+	<delete id="deleteStorageWarnTarget" parameterClass="linkMap" >
+		<![CDATA[
+			DELETE FROM PROSTOR_STORAGE_WARNING 
+			WHERE CPNY_ID = #CPNY_ID#
+			AND ACTIVITY = 1
+			AND WARNING_NO = #WARNING_NO#
+		]]>
+	</delete>
+</sqlMap>
